@@ -7,13 +7,33 @@ from django.utils import timezone
 
 def generate_hospital_number():
     """Generate the next SAGE/YYYY/NNNNNN number. Race-safe via SELECT FOR UPDATE."""
-    from patients.models import HospitalNumberSequence
+    from patients.models import HospitalNumberSequence, Patient
+    from django.db import transaction
 
     year = timezone.localdate().year
     with transaction.atomic():
         seq, _ = HospitalNumberSequence.objects.select_for_update().get_or_create(
             year=year, defaults={"last_value": 0}
         )
+
+        # Find the highest existing hospital number for the current year in Patient table
+        # and update the sequence if it's behind.
+        prefix = f"SAGE/{year}/"
+        max_patient_number = Patient.objects.filter(
+            hospital_number__startswith=prefix
+        ).aggregate(max_num=models.Max("hospital_number"))["max_num"]
+
+        if max_patient_number:
+            try:
+                # Extract the numeric part from the max_patient_number
+                current_max_numeric = int(max_patient_number.split("/")[-1])
+                if current_max_numeric > seq.last_value:
+                    seq.last_value = current_max_numeric
+            except (ValueError, IndexError):
+                # Handle cases where existing hospital_number might not conform to expected format
+                # For robustness, we'll just log and proceed without updating based on malformed numbers
+                pass # You might want to log this in a real application
+
         seq.last_value += 1
         seq.save(update_fields=["last_value"])
         return f"SAGE/{year}/{seq.last_value:06d}"
