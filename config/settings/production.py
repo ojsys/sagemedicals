@@ -1,10 +1,7 @@
-import pymysql
 import sentry_sdk
 from decouple import config
 
 from .base import *  # noqa: F403
-
-pymysql.install_as_MySQLdb()
 
 DEBUG = False
 

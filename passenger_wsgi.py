@@ -1,6 +1,12 @@
 import os
 import sys
 
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
 # Absolute path to the project root (same directory as this file).
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
