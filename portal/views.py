@@ -157,6 +157,19 @@ class PortalRegisterView(View):
 
     def post(self, request):
         phone = request.session.get("portal_otp_phone", "")
+        # Explicitly check if phone is available and valid before proceeding
+        if not phone:
+            messages.error(request, "Your registration session has expired or is invalid. Please start again.")
+            return redirect("portal:login")
+        
+        # Optionally, validate phone format early if not already done by start_otp_login for all cases
+        # from patients.services import validate_nigerian_phone
+        # try:
+        #     phone = validate_nigerian_phone(phone)
+        # except ValueError:
+        #     messages.error(request, "Invalid phone number in session. Please start again.")
+        #     return redirect("portal:login")
+
         form = SelfRegisterForm(request.POST)
         if form.is_valid():
             try:
