@@ -80,7 +80,6 @@ def portal_login_required(view_func):
     return wrapper
 
 
-@transaction.atomic
 def self_register(first_name, last_name, date_of_birth, sex, phone, email=""):
     """
     Register a new patient via the portal (OTP already verified).
@@ -97,17 +96,18 @@ def self_register(first_name, last_name, date_of_birth, sex, phone, email=""):
     MAX_RETRIES = 5
     for _ in range(MAX_RETRIES):
         try:
-            hospital_number = generate_hospital_number()
-            patient = Patient.objects.create(
-                hospital_number=hospital_number,
-                first_name=first_name.strip().title(),
-                last_name=last_name.strip().title(),
-                date_of_birth=date_of_birth,
-                sex=sex,
-                phone=phone,
-                payer_type="self_pay",
-            )
-            return patient, True
+            with transaction.atomic(): # New atomic block for each retry attempt
+                hospital_number = generate_hospital_number()
+                patient = Patient.objects.create(
+                    hospital_number=hospital_number,
+                    first_name=first_name.strip().title(),
+                    last_name=last_name.strip().title(),
+                    date_of_birth=date_of_birth,
+                    sex=sex,
+                    phone=phone,
+                    payer_type="self_pay",
+                )
+                return patient, True
         except IntegrityError as e:
             # Check if the error is specifically due to duplicate hospital_number
             # This check might need refinement depending on the database backend and error message format

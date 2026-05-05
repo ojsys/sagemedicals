@@ -10,12 +10,13 @@ def generate_hospital_number():
     from patients.models import HospitalNumberSequence
 
     year = timezone.localdate().year
-    seq, _ = HospitalNumberSequence.objects.select_for_update().get_or_create(
-        year=year, defaults={"last_value": 0}
-    )
-    seq.last_value += 1
-    seq.save(update_fields=["last_value"])
-    return f"SAGE/{year}/{seq.last_value:06d}"
+    with transaction.atomic():
+        seq, _ = HospitalNumberSequence.objects.select_for_update().get_or_create(
+            year=year, defaults={"last_value": 0}
+        )
+        seq.last_value += 1
+        seq.save(update_fields=["last_value"])
+        return f"SAGE/{year}/{seq.last_value:06d}"
 
 
 def _soundex(name):
