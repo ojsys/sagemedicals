@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% block title %}{{ order.test.name }} — {{ order.patient.full_name }}{% endblock %}
+
+{% block extra_css %}
+.result-value {
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+.ref-band {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 6px;
+}
+.timeline-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.timeline-step:last-child { border-bottom: none; }
+.timeline-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.timeline-dot.done { background: var(--sage-green); border-color: var(--sage-green); }
+.timeline-dot.pending { background: var(--line); }
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Laboratory · Order {{ order.barcode }}</div>
+    <h1 class="page-title">{{ order.test.name }}</h1>
+    <p class="page-sub">
+      {{ order.patient.full_name }} · {{ order.patient.hospital_number }}
+      · {{ order.test.panel }}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'laboratory:worklist' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Worklist</a>
+    {% if order.status in 'verified,released' %}
+      <a href="{% url 'laboratory:result_pdf' order.pk %}" class="btn btn-ghost" target="_blank"><i class="bi bi-file-earmark-pdf"></i>PDF</a>
+    {% endif %}
+    {% if order.status == 'ordered' %}
+      <form method="post" action="{% url 'laboratory:collect' order.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button class="btn btn-primary"><i class="bi bi-droplet"></i>Collect Sample</button>
+      </form>
+    {% elif order.status in 'sample_collected,in_progress' %}
+      <a href="{% url 'laboratory:result_entry' order.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i>Enter Results</a>
+    {% elif order.status == 'resulted' %}
+      <form method="post" action="{% url 'laboratory:result_verify' order.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button class="btn btn-teal"><i class="bi bi-shield-check"></i>Verify &amp; Release</button>
+      </form>
+      <a href="{% url 'laboratory:result_entry' order.pk %}" class="btn btn-ghost">Edit Result</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if result and result.is_critical and not result.critical_acknowledged_at %}
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;background:var(--sage-red-soft);border:1px solid var(--sage-red);border-radius:var(--radius-md);margin-bottom:20px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <i class="bi bi-exclamation-octagon-fill" style="font-size:22px;color:var(--sage-red)"></i>
+    <div>
+      <div style="font-weight:700;color:var(--sage-red);font-size:14px">Critical Value — Unacknowledged</div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-top:2px">
+        {{ order.test.name }}: {{ result.value }} {{ result.unit }} — notify ordering clinician immediately.
+      </div>
+    </div>
+  </div>
+  <form method="post" action="{% url 'laboratory:acknowledge' order.pk %}">
+    {% csrf_token %}
+    <button class="btn btn-sm" style="background:var(--sage-red);color:#fff;border:none;white-space:nowrap">
+      <i class="bi bi-check-lg"></i> Acknowledge
+    </button>
+  </form>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+
+  <!-- Left: result panel -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    {% if result %}
+    <!-- Result card -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Result</div>
+        {% if order.status == 'released' %}
+          <span class="tag green" style="font-size:11.5px"><i class="bi bi-check-circle-fill" style="font-size:9px"></i> Verified &amp; Released</span>
+        {% elif order.status == 'resulted' %}
+          <span class="tag amber" style="font-size:11.5px">Awaiting Verification</span>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:20px">
+        <div>
+          <div class="result-value {% if result.abnormal_flag in 'critical_low,critical_high' %}
+            style="color:var(--sage-red)"
+          {% elif result.abnormal_flag in 'low,high' %}
+            style="color:var(--sage-amber)"
+          {% else %}
+            style="color:var(--sage-green)"
+          {% endif %}">
+            {{ result.value }}
+            <span style="font-size:16px;font-weight:400;color:var(--text-2);margin-left:4px">{{ result.unit }}</span>
+          </div>
+          <div class="ref-band">
+            {% if result.reference_low or result.reference_high %}
+              <i class="bi bi-arrows-expand-vertical"></i>
+              Reference: {{ result.reference_low|default:"—" }} – {{ result.reference_high|default:"—" }} {{ result.unit }}
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          {% if result.abnormal_flag == 'normal' %}
+            <span class="tag green" style="font-size:13px;padding:6px 12px">Normal</span>
+          {% elif result.abnormal_flag == 'low' %}
+            <span class="tag amber" style="font-size:13px;padding:6px 12px"><i class="bi bi-arrow-down"></i> Low</span>
+          {% elif result.abnormal_flag == 'high' %}
+            <span class="tag amber" style="font-size:13px;padding:6px 12px"><i class="bi bi-arrow-up"></i> High</span>
+          {% elif result.abnormal_flag == 'critical_low' %}
+            <span class="tag red" style="font-size:13px;padding:6px 12px"><i class="bi bi-exclamation-octagon-fill"></i> Critical Low</span>
+          {% elif result.abnormal_flag == 'critical_high' %}
+            <span class="tag red" style="font-size:13px;padding:6px 12px"><i class="bi bi-exclamation-octagon-fill"></i> Critical High</span>
+          {% elif result.abnormal_flag == 'abnormal' %}
+            <span class="tag amber" style="font-size:13px;padding:6px 12px">Abnormal</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if result.notes %}
+      <div style="padding:12px 14px;background:var(--bg-2);border-radius:var(--radius);border:1px solid var(--line-soft);font-size:13px;color:var(--text-2)">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:4px">Interpretation / Notes</div>
+        {{ result.notes }}
+      </div>
+      {% endif %}
+
+      <!-- Verification info -->
+      {% if result.verified_by %}
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);display:flex;gap:20px;font-size:12px;color:var(--text-3)">
+        <div>
+          <div style="margin-bottom:2px">Technician</div>
+          <div style="color:var(--text-2)">{{ result.technician.get_full_name }}</div>
+        </div>
+        <div>
+          <div style="margin-bottom:2px">Verified by</div>
+          <div style="color:var(--text-2)">{{ result.verified_by.get_full_name }}</div>
+        </div>
+        <div>
+          <div style="margin-bottom:2px">Verified at</div>
+          <div style="color:var(--text-2)">{{ result.verified_at|date:"d M Y, H:i" }}</div>
+        </div>
+        {% if result.critical_acknowledged_by %}
+        <div>
+          <div style="margin-bottom:2px">Ack. by</div>
+          <div style="color:var(--sage-green)"><i class="bi bi-check-circle-fill"></i> {{ result.critical_acknowledged_by.get_full_name }}</div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <!-- No result yet -->
+    <div class="card" style="text-align:center;padding:48px 20px">
+      <i class="bi bi-flask" style="font-size:40px;color:var(--text-3);opacity:.3;display:block;margin-bottom:12px"></i>
+      <div style="font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:6px">No result entered yet</div>
+      <div style="font-size:13px;color:var(--text-3);margin-bottom:20px">
+        {% if order.status == 'ordered' %}Sample has not been collected.
+        {% elif order.status == 'sample_collected' %}Sample collected — awaiting analysis.
+        {% elif order.status == 'in_progress' %}Analysis in progress.{% endif %}
+      </div>
+      {% if order.status == 'ordered' %}
+        <form method="post" action="{% url 'laboratory:collect' order.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-primary"><i class="bi bi-droplet"></i>Collect Sample</button>
+        </form>
+      {% elif order.status in 'sample_collected,in_progress' %}
+        <a href="{% url 'laboratory:result_entry' order.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i>Enter Results</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right: sidebar info -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- Order info -->
+    <div class="card">
+      <div class="card-head"><div class="card-title">Order Info</div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-3)">Barcode</span>
+          <span class="mono" style="font-size:12px">{{ order.barcode }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-3)">Sample</span>
+          <span>{{ order.test.get_sample_type_display }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-3)">Panel</span>
+          <span>{{ order.test.panel }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-3)">Priority</span>
+          <span>
+            <span class="tag {% if order.priority == 'stat' %}red{% elif order.priority == 'urgent' %}amber{% else %}gray{% endif %}" style="font-size:10.5px">
+              {{ order.get_priority_display }}
+            </span>
+          </span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-3)">Ordered by</span>
+          <span>Dr. {{ order.ordering_clinician.get_full_name }}</span>
+        </div>
+        {% if order.encounter %}
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-3)">Encounter</span>
+          <a href="{% url 'encounters:workspace' order.encounter.pk %}" style="color:var(--sage-primary);font-size:12px;font-family:var(--mono)">
+            View →
+          </a>
+        </div>
+        {% endif %}
+        {% if order.clinical_notes %}
+        <div style="border-top:1px solid var(--line-soft);padding-top:8px;margin-top:4px">
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Clinical Notes</div>
+          <div style="font-size:12px;color:var(--text-2)">{{ order.clinical_notes }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card">
+      <div class="card-head"><div class="card-title">Timeline</div></div>
+      <div>
+        <div class="timeline-step">
+          <div class="timeline-dot done"></div>
+          <div>
+            <div style="font-size:13px;font-weight:500">Ordered</div>
+            <div style="font-size:11.5px;color:var(--text-3)">{{ order.created_at|date:"d M Y, H:i" }}</div>
+          </div>
+        </div>
+        <div class="timeline-step">
+          <div class="timeline-dot {% if order.collected_at %}done{% else %}pending{% endif %}"></div>
+          <div>
+            <div style="font-size:13px;font-weight:500;{% if not order.collected_at %}color:var(--text-3){% endif %}">Sample Collected</div>
+            {% if order.collected_at %}
+            <div style="font-size:11.5px;color:var(--text-3)">{{ order.collected_at|date:"d M Y, H:i" }}{% if order.collected_by %} · {{ order.collected_by.get_full_name }}{% endif %}</div>
+            {% else %}
+            <div style="font-size:11.5px;color:var(--text-3)">Pending</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="timeline-step">
+          <div class="timeline-dot {% if result %}done{% else %}pending{% endif %}"></div>
+          <div>
+            <div style="font-size:13px;font-weight:500;{% if not result %}color:var(--text-3){% endif %}">Result Entered</div>
+            {% if result %}
+            <div style="font-size:11.5px;color:var(--text-3)">{{ result.created_at|date:"d M Y, H:i" }} · {{ result.technician.get_full_name }}</div>
+            {% else %}
+            <div style="font-size:11.5px;color:var(--text-3)">Pending</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="timeline-step">
+          <div class="timeline-dot {% if result.verified_at %}done{% else %}pending{% endif %}"></div>
+          <div>
+            <div style="font-size:13px;font-weight:500;{% if not result or not result.verified_at %}color:var(--text-3){% endif %}">Verified &amp; Released</div>
+            {% if result and result.verified_at %}
+            <div style="font-size:11.5px;color:var(--text-3)">{{ result.verified_at|date:"d M Y, H:i" }} · {{ result.verified_by.get_full_name }}</div>
+            {% else %}
+            <div style="font-size:11.5px;color:var(--text-3)">Pending</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

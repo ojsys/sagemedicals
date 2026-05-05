@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Drug Batches{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Pharmacy</div>
+    <h1 class="page-title">Drug Batches</h1>
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:flex;gap:8px;align-items:center">
+      <select name="store" class="form-select" style="width:200px" onchange="this.form.submit()">
+        <option value="">Select store…</option>
+        {% for s in stores %}
+          <option value="{{ s.pk }}" {% if store and store.pk == s.pk %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+{% if store %}
+<div class="card">
+  <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Drug</th>
+          <th>Batch #</th>
+          <th>Expiry</th>
+          <th style="text-align:right">Remaining</th>
+          <th>Supplier</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in batches %}
+        <tr {% if b.expiry_date <= today %}style="background:rgba(184,58,38,.04)"{% elif b.is_quarantined %}style="background:rgba(100,100,100,.04)"{% endif %}>
+          <td style="font-weight:500">{{ b.drug }}</td>
+          <td class="mono" style="font-size:12px">{{ b.batch_number }}</td>
+          <td style="color:{% if b.expiry_date <= today %}var(--sage-red){% else %}var(--text-3){% endif %}">{{ b.expiry_date }}</td>
+          <td style="text-align:right;font-family:'Geist Mono',monospace">{{ b.quantity_remaining }}</td>
+          <td style="color:var(--text-3)">{{ b.supplier|default:"—" }}</td>
+          <td>
+            {% if b.expiry_date <= today %}
+            <span class="tag red" style="font-size:10.5px">Expired</span>
+            {% elif b.is_quarantined %}
+            <span class="tag gray" style="font-size:10.5px">Quarantined</span>
+            {% else %}
+            <span class="tag green" style="font-size:10.5px">Active</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="color:var(--text-3)">No batches with remaining stock.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px;color:var(--text-3)">
+  <i class="bi bi-layers" style="font-size:32px;display:block;margin-bottom:12px"></i>
+  Select a store above to view drug batches.
+</div>
+{% endif %}
+{% endblock %}

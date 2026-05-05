@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% block title %}Admit — {{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Admissions</div>
+    <h1 class="page-title">Admit <em>patient</em></h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- Patient banner -->
+<div style="background:linear-gradient(135deg,var(--sage-ink),var(--sage-ink-soft));border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:24px;color:#fff;display:flex;align-items:center;gap:16px">
+  <div class="avatar" style="width:48px;height:48px;font-size:15px;flex-shrink:0">{{ patient.first_name.0 }}{{ patient.last_name.0 }}</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-family:'Fraunces',serif;font-size:19px;font-weight:400">{{ patient.full_name }}</div>
+    <div style="font-size:11.5px;color:rgba(255,255,255,.6);font-family:'Geist Mono',monospace;margin-top:2px">
+      {{ patient.hospital_number }} · {{ patient.age_display }}{% if patient.gender %} · {{ patient.get_gender_display }}{% endif %}
+    </div>
+  </div>
+  {% if patient.active_allergies %}
+  <div style="background:rgba(184,58,38,.25);border:1px solid rgba(184,58,38,.4);border-radius:6px;padding:7px 12px;font-size:12px;flex-shrink:0">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <strong>Allergies:</strong>
+    {% for a in patient.active_allergies %}{{ a.allergen }}{% if not forloop.last %}, {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div x-data="admitWizard({{ ward_data_json|safe }})" style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start">
+
+  <!-- Step sidebar -->
+  <div class="card" style="position:sticky;top:80px">
+    <div style="padding:16px 0">
+      <template x-for="(s, i) in steps" :key="i">
+        <div @click="goTo(i)"
+             :style="step === i
+               ? 'background:var(--sage-ink);color:#fff;border-radius:8px;margin:0 8px'
+               : step > i
+               ? 'color:var(--sage-teal);margin:0 8px'
+               : 'color:var(--text-3);margin:0 8px;cursor:default'"
+             style="display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s">
+          <div :style="step === i ? 'background:rgba(255,255,255,.2)' : step > i ? 'background:rgba(27,153,139,.15)' : 'background:var(--bg)'"
+               style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">
+            <template x-if="step > i"><i class="bi bi-check2" style="font-size:12px"></i></template>
+            <template x-if="step <= i"><span x-text="i + 1"></span></template>
+          </div>
+          <span x-text="s"></span>
+        </div>
+      </template>
+    </div>
+    <!-- Progress bar -->
+    <div style="margin:0 16px 16px;height:3px;background:var(--line);border-radius:2px">
+      <div :style="'width:' + ((step / (steps.length - 1)) * 100) + '%'" style="height:100%;background:var(--sage-teal);border-radius:2px;transition:width .3s"></div>
+    </div>
+  </div>
+
+  <!-- Step content -->
+  <div>
+    <form method="post" id="admit-form" @submit.prevent="submitForm">
+      {% csrf_token %}
+      <!-- Hidden fields populated by wizard -->
+      <input type="hidden" name="bed" :value="selectedBedId">
+      <input type="hidden" name="diagnosis_on_admission" :value="diagnosis">
+
+      <!-- ── Step 0: Presenting complaint ── -->
+      <div x-show="step === 0" x-transition:enter="step-in" x-transition:enter-start="step-start" x-transition:enter-end="step-end">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Presenting Complaint</div>
+            <div class="card-sub">Why is the patient being admitted?</div>
+          </div>
+
+          <div style="margin-bottom:18px">
+            <label class="form-label">Chief Complaint</label>
+            <textarea x-model="chiefComplaint" rows="3" placeholder="e.g. Severe abdominal pain, fever for 3 days…"
+                      style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);font-size:14px;font-family:'Geist',sans-serif;resize:vertical;color:var(--text);background:var(--surface)"></textarea>
+          </div>
+
+          <div style="margin-bottom:18px">
+            <label class="form-label">Triage Priority</label>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <template x-for="t in triage" :key="t.value">
+                <button type="button" @click="triagePriority = t.value"
+                        :style="triagePriority === t.value ? 'border-color:' + t.color + ';background:' + t.bg + ';color:' + t.color : ''"
+                        style="padding:10px 6px;border:1.5px solid var(--line);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-weight:600;text-align:center;transition:all .15s">
+                  <div :style="'color:' + t.color" style="font-size:18px;margin-bottom:4px" x-text="t.icon"></div>
+                  <div x-text="t.label" :style="triagePriority === t.value ? 'color:' + t.color : 'color:var(--text)'"></div>
+                  <div x-text="t.sub" style="font-size:10px;color:var(--text-3);font-weight:400;margin-top:2px"></div>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+            <div>
+              <label class="form-label">Referring Doctor / Facility</label>
+              <input x-model="referredBy" type="text" placeholder="Optional"
+                     style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);font-size:14px;font-family:'Geist',sans-serif;color:var(--text);background:var(--surface)">
+            </div>
+            <div>
+              <label class="form-label">Admission Type</label>
+              <select x-model="admissionType" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);font-size:14px;font-family:'Geist',sans-serif;color:var(--text);background:var(--surface)">
+                <option value="emergency">Emergency</option>
+                <option value="elective">Elective</option>
+                <option value="maternity">Maternity</option>
+                <option value="transfer">Transfer-In</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+          <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-ghost">Cancel</a>
+          <button type="button" @click="next()" class="btn btn-primary">Ward &amp; Bed <i class="bi bi-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- ── Step 1: Ward & Bed selection ── -->
+      <div x-show="step === 1" x-transition:enter="step-in" x-transition:enter-start="step-start" x-transition:enter-end="step-end">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Ward &amp; Bed</div>
+            <div class="card-sub">Select an available bed</div>
+          </div>
+
+          <!-- Ward tabs -->
+          <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--line);overflow-x:auto">
+            <template x-for="w in wards" :key="w.id">
+              <button type="button" @click="activeWard = w.id"
+                      :style="activeWard === w.id ? 'border-bottom:2px solid var(--sage-primary);color:var(--sage-primary);font-weight:600' : 'border-bottom:2px solid transparent;color:var(--text-2)'"
+                      style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-size:13px;font-family:'Geist',sans-serif;white-space:nowrap;transition:all .15s"
+                      x-text="w.name"></button>
+            </template>
+            <template x-if="wards.length === 0">
+              <div style="padding:8px 16px;font-size:13px;color:var(--text-3)">No wards configured</div>
+            </template>
+          </div>
+
+          <!-- Legend -->
+          <div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px;color:var(--text-2)">
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:var(--sage-teal);border-radius:3px;display:inline-block;opacity:.25"></span> Available</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:var(--sage-ink);border-radius:3px;display:inline-block;opacity:.3"></span> Occupied</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:#f59e0b;border-radius:3px;display:inline-block;opacity:.35"></span> Maintenance</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:var(--sage-primary);border-radius:3px;display:inline-block"></span> Selected</span>
+          </div>
+
+          <!-- Bed grid -->
+          <template x-for="w in wards" :key="w.id">
+            <div x-show="activeWard === w.id">
+              <template x-for="room in w.rooms" :key="room.name">
+                <div style="margin-bottom:20px">
+                  <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                    <span x-text="room.name"></span>
+                    <template x-if="room.is_isolation">
+                      <span style="background:rgba(184,58,38,.1);color:var(--sage-red);border-radius:4px;padding:1px 6px;font-size:10px">ISOLATION</span>
+                    </template>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px">
+                    <template x-for="bed in room.beds" :key="bed.id">
+                      <button type="button"
+                        @click="bed.status === 'available' ? selectBed(bed) : null"
+                        :disabled="bed.status !== 'available'"
+                        :style="selectedBedId === bed.id
+                          ? 'background:var(--sage-primary);border-color:var(--sage-primary);color:#fff'
+                          : bed.status === 'available'
+                          ? 'background:rgba(27,153,139,.08);border-color:rgba(27,153,139,.35);color:var(--text)'
+                          : bed.status === 'occupied'
+                          ? 'background:rgba(11,30,45,.06);border-color:rgba(11,30,45,.15);color:var(--text-3);cursor:not-allowed'
+                          : 'background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.3);color:var(--text-3);cursor:not-allowed'"
+                        style="width:72px;height:72px;border:1.5px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:600;font-family:'Geist',sans-serif;transition:all .15s">
+                        <i :class="bed.status === 'available' ? 'bi bi-hospital' : bed.status === 'occupied' ? 'bi bi-person-fill' : 'bi bi-tools'"
+                           style="font-size:16px"></i>
+                        <span x-text="'Bed ' + bed.label"></span>
+                        <span x-text="bed.status === 'available' ? 'Free' : bed.status === 'occupied' ? 'In use' : 'Maint.'"
+                              style="font-size:10px;font-weight:400;opacity:.7"></span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template x-if="w.rooms.length === 0">
+                <div style="text-align:center;padding:32px;color:var(--text-3);font-size:13px">No rooms in this ward</div>
+              </template>
+            </div>
+          </template>
+
+          <!-- No wards -->
+          <template x-if="wards.length === 0">
+            <div style="text-align:center;padding:40px;color:var(--text-3)">
+              <i class="bi bi-building" style="font-size:32px;display:block;margin-bottom:8px"></i>
+              No wards have been configured yet.
+            </div>
+          </template>
+
+          <template x-if="selectedBedId">
+            <div style="margin-top:16px;padding:12px 16px;background:rgba(27,153,139,.08);border:1px solid rgba(27,153,139,.25);border-radius:var(--radius);font-size:13px;color:var(--sage-teal);display:flex;align-items:center;gap:8px">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>Selected: <strong x-text="selectedBedLabel"></strong></span>
+            </div>
+          </template>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px">
+          <button type="button" @click="prev()" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Back</button>
+          <button type="button" @click="next()" :disabled="!selectedBedId"
+                  :style="!selectedBedId ? 'opacity:.45;cursor:not-allowed' : ''"
+                  class="btn btn-primary">Clinical Details <i class="bi bi-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- ── Step 2: Clinical details ── -->
+      <div x-show="step === 2" x-transition:enter="step-in" x-transition:enter-start="step-start" x-transition:enter-end="step-end">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Clinical Details</div>
+            <div class="card-sub">Admitting diagnosis and clinical notes</div>
+          </div>
+
+          <div style="margin-bottom:16px">
+            <label class="form-label">Admitting Diagnosis <span style="color:var(--sage-red)">*</span></label>
+            <textarea x-model="diagnosis" rows="3"
+                      placeholder="Primary diagnosis / working diagnosis on admission…"
+                      style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);font-size:14px;font-family:'Geist',sans-serif;resize:vertical;color:var(--text);background:var(--surface)"
+                      :style="diagnosisError ? 'border-color:var(--sage-red)' : ''"></textarea>
+            <template x-if="diagnosisError">
+              <div style="color:var(--sage-red);font-size:12px;margin-top:4px">Please enter an admitting diagnosis.</div>
+            </template>
+          </div>
+
+          <div style="margin-bottom:16px">
+            <label class="form-label">Instructions to Ward Nurse <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
+            <textarea x-model="nurseInstructions" rows="2"
+                      placeholder="e.g. Hourly obs, strict fluid balance, nil by mouth…"
+                      style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);font-size:14px;font-family:'Geist',sans-serif;resize:vertical;color:var(--text);background:var(--surface)"></textarea>
+          </div>
+
+          <div style="margin-bottom:4px">
+            <label class="form-label">Admission Vitals <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div>
+              <label style="font-size:11px;color:var(--text-3);margin-bottom:4px;display:block">BP (mmHg)</label>
+              <input x-model="vitals.bp" type="text" placeholder="120/80"
+                     style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;font-family:'Geist Mono',monospace;color:var(--text);background:var(--surface)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-3);margin-bottom:4px;display:block">Pulse (bpm)</label>
+              <input x-model="vitals.pulse" type="number" placeholder="72" min="20" max="300"
+                     style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;font-family:'Geist Mono',monospace;color:var(--text);background:var(--surface)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-3);margin-bottom:4px;display:block">Temp (°C)</label>
+              <input x-model="vitals.temp" type="number" placeholder="36.6" min="30" max="45" step="0.1"
+                     style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;font-family:'Geist Mono',monospace;color:var(--text);background:var(--surface)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-3);margin-bottom:4px;display:block">SpO₂ (%)</label>
+              <input x-model="vitals.spo2" type="number" placeholder="98" min="50" max="100"
+                     style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;font-family:'Geist Mono',monospace;color:var(--text);background:var(--surface)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-3);margin-bottom:4px;display:block">RR (breaths/min)</label>
+              <input x-model="vitals.rr" type="number" placeholder="16" min="4" max="80"
+                     style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;font-family:'Geist Mono',monospace;color:var(--text);background:var(--surface)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-3);margin-bottom:4px;display:block">Weight (kg)</label>
+              <input x-model="vitals.weight" type="number" placeholder="70" min="1" max="400" step="0.1"
+                     style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;font-family:'Geist Mono',monospace;color:var(--text);background:var(--surface)">
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px">
+          <button type="button" @click="prev()" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Back</button>
+          <button type="button" @click="nextStep2()" class="btn btn-primary">Review &amp; Confirm <i class="bi bi-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- ── Step 3: Review & Confirm ── -->
+      <div x-show="step === 3" x-transition:enter="step-in" x-transition:enter-start="step-start" x-transition:enter-end="step-end">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <div class="card-title">Review &amp; Confirm</div>
+            <div class="card-sub">Check all details before admitting</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden">
+            <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--line);border-right:1px solid var(--line)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:4px">Patient</div>
+              <div style="font-size:14px;font-weight:500">{{ patient.full_name }}</div>
+              <div style="font-size:12px;color:var(--text-2);font-family:'Geist Mono',monospace">{{ patient.hospital_number }}</div>
+            </div>
+            <div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--line)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:4px">Assigned Bed</div>
+              <div style="font-size:14px;font-weight:500" x-text="selectedBedLabel || '—'"></div>
+            </div>
+            <div style="padding:12px 16px;border-bottom:1px solid var(--line);border-right:1px solid var(--line)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:4px">Triage</div>
+              <div style="font-size:14px;font-weight:500">
+                <template x-for="t in triage" :key="t.value">
+                  <span x-show="triagePriority === t.value" :style="'color:' + t.color" x-text="t.label"></span>
+                </template>
+              </div>
+            </div>
+            <div style="padding:12px 16px;border-bottom:1px solid var(--line)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:4px">Admission Type</div>
+              <div style="font-size:14px;font-weight:500;text-transform:capitalize" x-text="admissionType"></div>
+            </div>
+            <div style="padding:12px 16px;border-right:1px solid var(--line)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:4px">Chief Complaint</div>
+              <div style="font-size:13.5px;color:var(--text)" x-text="chiefComplaint || '—'"></div>
+            </div>
+            <div style="padding:12px 16px">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:4px">Admitting Diagnosis</div>
+              <div style="font-size:13.5px;color:var(--text)" x-text="diagnosis || '—'"></div>
+            </div>
+          </div>
+
+          <!-- Vitals summary if entered -->
+          <template x-if="vitals.bp || vitals.pulse || vitals.temp || vitals.spo2">
+            <div style="margin-top:16px;padding:12px 16px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--line)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:8px">Admission Vitals</div>
+              <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px">
+                <template x-if="vitals.bp">
+                  <span style="font-family:'Geist Mono',monospace"><span style="color:var(--text-3)">BP</span> <strong x-text="vitals.bp"></strong></span>
+                </template>
+                <template x-if="vitals.pulse">
+                  <span style="font-family:'Geist Mono',monospace"><span style="color:var(--text-3)">P</span> <strong x-text="vitals.pulse"></strong></span>
+                </template>
+                <template x-if="vitals.temp">
+                  <span style="font-family:'Geist Mono',monospace"><span style="color:var(--text-3)">T</span> <strong x-text="vitals.temp + '°C'"></strong></span>
+                </template>
+                <template x-if="vitals.spo2">
+                  <span style="font-family:'Geist Mono',monospace"><span style="color:var(--text-3)">SpO₂</span> <strong x-text="vitals.spo2 + '%'"></strong></span>
+                </template>
+                <template x-if="vitals.rr">
+                  <span style="font-family:'Geist Mono',monospace"><span style="color:var(--text-3)">RR</span> <strong x-text="vitals.rr"></strong></span>
+                </template>
+                <template x-if="vitals.weight">
+                  <span style="font-family:'Geist Mono',monospace"><span style="color:var(--text-3)">Wt</span> <strong x-text="vitals.weight + ' kg'"></strong></span>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div style="background:#FBE9E5;border:1px solid #F5C8C0;border-left:4px solid var(--sage-red);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--sage-red)">
+          {{ form.non_field_errors.0 }}
+        </div>
+        {% endif %}
+
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <button type="button" @click="prev()" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Back</button>
+          <button type="submit" :disabled="submitting" class="btn btn-primary" style="min-width:160px">
+            <template x-if="!submitting">
+              <span><i class="bi bi-check2-circle"></i> Admit Patient</span>
+            </template>
+            <template x-if="submitting">
+              <span><span class="spinner-border spinner-border-sm" style="width:14px;height:14px;border-width:2px"></span> Admitting…</span>
+            </template>
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<style>
+  .step-in { animation: stepFade .2s ease; }
+  .step-start { opacity:0; transform:translateX(12px); }
+  .step-end   { opacity:1; transform:translateX(0); }
+  @keyframes stepFade { from { opacity:0; transform:translateX(12px) } to { opacity:1; transform:translateX(0) } }
+</style>
+
+<script>
+function admitWizard(wardsData) {
+  return {
+    step: 0,
+    steps: ['Presenting', 'Ward & Bed', 'Clinical Detail', 'Confirm'],
+    wards: wardsData,
+    activeWard: wardsData.length ? wardsData[0].id : null,
+
+    // Step 0
+    chiefComplaint: '',
+    triagePriority: 'p3',
+    referredBy: '',
+    admissionType: 'emergency',
+    triage: [
+      { value:'p1', label:'P1 Critical',   sub:'Immediate',  icon:'⚡', color:'#B83A26', bg:'rgba(184,58,38,.08)' },
+      { value:'p2', label:'P2 Urgent',     sub:'< 30 min',   icon:'🔴', color:'#C2410C', bg:'rgba(194,65,12,.08)' },
+      { value:'p3', label:'P3 Semi-urgent',sub:'< 2 hrs',    icon:'🟡', color:'#92400E', bg:'rgba(146,64,14,.08)' },
+      { value:'p4', label:'P4 Non-urgent', sub:'< 4 hrs',    icon:'🟢', color:'#065F46', bg:'rgba(6,95,70,.08)'   },
+    ],
+
+    // Step 1
+    selectedBedId: null,
+    selectedBedLabel: '',
+
+    // Step 2
+    diagnosis: '',
+    diagnosisError: false,
+    nurseInstructions: '',
+    vitals: { bp:'', pulse:'', temp:'', spo2:'', rr:'', weight:'' },
+
+    submitting: false,
+
+    selectBed(bed) {
+      this.selectedBedId = bed.id;
+      // find ward/room label
+      for (const w of this.wards) {
+        for (const r of w.rooms) {
+          for (const b of r.beds) {
+            if (b.id === bed.id) {
+              this.selectedBedLabel = `${w.name} / ${r.name} / Bed ${b.label}`;
+              return;
+            }
+          }
+        }
+      }
+    },
+
+    goTo(i) {
+      if (i < this.step) this.step = i;
+    },
+    next() { this.step++; },
+    prev() { this.step--; },
+
+    nextStep2() {
+      this.diagnosisError = !this.diagnosis.trim();
+      if (!this.diagnosisError) this.step++;
+    },
+
+    submitForm() {
+      if (this.submitting) return;
+      this.submitting = true;
+      document.getElementById('admit-form').submit();
+    },
+  }
+}
+</script>
+{% endblock %}

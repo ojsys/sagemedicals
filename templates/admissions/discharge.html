@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Discharge — {{ admission.patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Admissions</div>
+    <h1 class="page-title">Discharge Patient</h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'admissions:detail' admission.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+  </div>
+</div>
+
+<div style="max-width:560px">
+  <div style="background:linear-gradient(135deg,var(--sage-ink),var(--sage-ink-soft));border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:16px;color:#fff;font-size:13px">
+    <strong>{{ admission.patient.full_name }}</strong>
+    <span style="color:rgba(255,255,255,.6);margin-left:10px" class="mono">{{ admission.patient.hospital_number }}</span>
+    <div style="color:rgba(255,255,255,.6);font-size:12px;margin-top:4px">
+      Admitted {{ admission.admitted_at|date:"d M Y" }} · Bed {{ admission.bed }}
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-head"><div class="card-title">Discharge Details</div></div>
+      {% for f in form %}
+      <div style="margin-bottom:14px">
+        <label class="form-label">{{ f.label }}</label>
+        {{ f }}
+        {% if f.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ f.errors }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary" style="background:var(--sage-red);border-color:var(--sage-red)">
+          <i class="bi bi-check2"></i>Confirm Discharge
+        </button>
+        <a href="{% url 'admissions:detail' admission.pk %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

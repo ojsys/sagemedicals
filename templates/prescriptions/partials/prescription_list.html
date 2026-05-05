@@ -1,0 +1,28 @@
+{% for rx in prescriptions %}
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line-soft)">
+  <div>
+    <span style="font-weight:500;color:var(--sage-ink)">{{ rx.drug.generic_name }}</span>
+    {% if rx.drug.strength %}<span style="color:var(--text-3);font-size:12px"> {{ rx.drug.strength }}</span>{% endif %}
+    <span style="color:var(--text-3);font-size:12px;margin-left:8px">{{ rx.dose }} · {{ rx.get_frequency_display }} · {{ rx.duration_days|default:"?" }}d</span>
+    {% if rx.is_stat %}<span class="tag red" style="font-size:10px;margin-left:6px">STAT</span>{% endif %}
+    {% if rx.is_prn %}<span class="tag gray" style="font-size:10px;margin-left:6px">PRN</span>{% endif %}
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="tag {% if rx.status == 'pending' %}amber{% elif rx.status == 'dispensed' %}green{% else %}gray{% endif %}" style="font-size:10.5px">
+      {{ rx.get_status_display }}
+    </span>
+    {% if rx.status == 'pending' and encounter.status == 'draft' %}
+    <form method="post" action="{% url 'prescriptions:cancel' rx.pk %}"
+          hx-post="{% url 'prescriptions:cancel' rx.pk %}"
+          hx-target="#rx-list" hx-swap="innerHTML">
+      {% csrf_token %}
+      <button class="btn btn-sm" style="background:transparent;border:1px solid var(--line-soft);color:var(--text-3);padding:3px 7px">
+        <i class="bi bi-x" style="font-size:13px"></i>
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div style="color:var(--text-3);font-size:13px;padding:12px 16px">No prescriptions yet.</div>
+{% endfor %}

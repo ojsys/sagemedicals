@@ -1,0 +1,14 @@
+{% for cond in conditions %}
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line-soft)">
+  <div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="problem-name">{{ cond.description }}</span>
+      {% if cond.icd10_code %}<span class="mono" style="color:var(--text-3);font-size:11.5px">{{ cond.icd10_code }}</span>{% endif %}
+      <span class="tag {% if cond.status == 'active' %}amber{% elif cond.status == 'resolved' %}green{% else %}gray{% endif %}" style="font-size:10.5px">{{ cond.get_status_display }}</span>
+    </div>
+    {% if cond.onset_date %}<div class="problem-meta">Since {{ cond.onset_date|date:"M Y" }}</div>{% endif %}
+  </div>
+</div>
+{% empty %}
+<div style="color:var(--text-3);font-size:13px;padding:8px 0">No chronic conditions on record.</div>
+{% endfor %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Book Appointment{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Scheduling</div>
+    <h1 class="page-title">Book Appointment</h1>
+  </div>
+  <div class="page-actions">
+    {% if patient %}
+    <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+    {% endif %}
+  </div>
+</div>
+
+<div style="max-width:600px">
+  {% if patient %}
+  <div style="background:linear-gradient(135deg,var(--sage-ink),var(--sage-ink-soft));border-radius:var(--radius-lg);padding:12px 18px;margin-bottom:16px;color:#fff;font-size:13px">
+    Booking for <strong>{{ patient.full_name }}</strong>
+    <span class="mono" style="color:rgba(255,255,255,.6);margin-left:8px">{{ patient.hospital_number }}</span>
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-head"><div class="card-title">Appointment Details</div></div>
+      {% for f in form %}
+      <div style="margin-bottom:14px">
+        <label class="form-label">{{ f.label }}{% if f.field.required %} <span style="color:var(--sage-red)">*</span>{% endif %}</label>
+        {{ f }}
+        {% if f.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ f.errors }}</div>{% endif %}
+        {% if f.help_text %}<div style="color:var(--text-3);font-size:12px;margin-top:3px">{{ f.help_text }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary"><i class="bi bi-check2"></i>Book</button>
+        {% if patient %}
+        <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-ghost">Cancel</a>
+        {% else %}
+        <a href="/" class="btn btn-ghost">Cancel</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

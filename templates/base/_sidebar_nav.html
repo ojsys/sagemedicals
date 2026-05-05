@@ -1,0 +1,93 @@
+{% load i18n %}
+{% with role=request.user.role url=request.path %}
+
+<a class="nav-item {% if url == '/' %}active{% endif %}" href="/">
+  <i class="bi bi-grid-1x2"></i>Dashboard
+</a>
+
+<div class="nav-section-label">Workspace</div>
+
+{% if role in "super_admin,hospital_admin,doctor,resident,nurse,receptionist,records_officer" %}
+<a class="nav-item {% if '/patients' in url and 'register' not in url %}active{% endif %}" href="/patients/">
+  <i class="bi bi-people"></i>Patients
+</a>
+<a class="nav-item {% if 'register' in url %}active{% endif %}" href="/patients/register/">
+  <i class="bi bi-person-plus"></i>Register
+</a>
+{% endif %}
+
+{% if role in "super_admin,hospital_admin,doctor,resident,nurse,receptionist" %}
+<a class="nav-item {% if '/scheduling/appointments' in url %}active{% endif %}" href="{% url 'scheduling:appointments' %}">
+  <i class="bi bi-calendar3"></i>Appointments
+</a>
+<a class="nav-item {% if url == '/scheduling/' %}active{% endif %}" href="{% url 'scheduling:queue' %}">
+  <i class="bi bi-list-ol"></i>Queue
+</a>
+{% endif %}
+
+{% if role in "super_admin,doctor,resident,nurse" %}
+<a class="nav-item {% if '/encounters' in url %}active{% endif %}" href="{% url 'encounters:list' %}">
+  <i class="bi bi-person-vcard"></i>Encounters
+</a>
+{% endif %}
+
+<div class="nav-section-label">Clinical</div>
+
+{% if role in "super_admin,doctor,resident,nurse" %}
+<a class="nav-item {% if '/prescriptions' in url %}active{% endif %}" href="{% url 'prescriptions:list' %}">
+  <i class="bi bi-capsule"></i>e-Prescribing
+</a>
+{% endif %}
+
+{% if role in "super_admin,doctor,resident,nurse,lab_tech" %}
+<a class="nav-item {% if '/lab' in url %}active{% endif %}" href="/lab/">
+  <i class="bi bi-droplet-half"></i>Laboratory
+</a>
+{% endif %}
+
+{% if role in "super_admin,pharmacist" %}
+<a class="nav-item {% if '/pharmacy' in url %}active{% endif %}" href="/pharmacy/">
+  <i class="bi bi-prescription2"></i>Pharmacy
+</a>
+<a class="nav-item {% if '/pharmacy/stock' in url %}active{% endif %}" href="/pharmacy/stock/">
+  <i class="bi bi-boxes"></i>Drug Inventory
+</a>
+{% endif %}
+
+{% if role in "super_admin,doctor,resident,nurse,hospital_admin" %}
+<a class="nav-item {% if '/admissions' in url %}active{% endif %}" href="{% url 'admissions:ward_map' %}">
+  <i class="bi bi-hospital"></i>Wards &amp; Beds
+</a>
+{% endif %}
+
+{% if role in "super_admin,doctor,hospital_admin" %}
+<a class="nav-item {% if '/surgery' in url %}active{% endif %}" href="/surgery/">
+  <i class="bi bi-scissors"></i>Operating Theatre
+</a>
+{% endif %}
+
+<div class="nav-section-label">Operations</div>
+
+{% if role in "super_admin,billing_officer" %}
+<a class="nav-item {% if '/billing' in url %}active{% endif %}" href="{% url 'billing:list' %}">
+  <i class="bi bi-cash-stack"></i>Billing
+</a>
+<a class="nav-item {% if '/reports/claims' in url %}active{% endif %}" href="{% url 'reports:claims' %}">
+  <i class="bi bi-shield-check"></i>NHIA Claims
+</a>
+{% endif %}
+
+{% if role in "super_admin,hospital_admin" %}
+<a class="nav-item {% if '/reports' in url and 'claims' not in url %}active{% endif %}" href="{% url 'reports:operational' %}">
+  <i class="bi bi-bar-chart"></i>Reports
+</a>
+{% endif %}
+
+<a class="nav-item {% if '/admin' in url %}active{% endif %}" href="/admin/">
+  <i class="bi bi-gear"></i>Settings
+</a>
+<a class="nav-item {% if '/tutorial' in url %}active{% endif %}" href="{% url 'core:tutorial' %}">
+  <i class="bi bi-journal-bookmark"></i>Staff Guide
+</a>
+
+{% endwith %}

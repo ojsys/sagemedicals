@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Receive Stock — GRN{% endblock %}
+
+{% block extra_css %}
+.grn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+.grn-full { grid-column: 1 / -1; }
+.field-wrap { display: flex; flex-direction: column; gap: 5px; }
+.field-wrap label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-3);
+}
+
+/* Line items table */
+.grn-table { width: 100%; border-collapse: collapse; }
+.grn-table thead tr {
+  background: var(--bg-2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-3);
+}
+.grn-table th {
+  padding: 9px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.grn-table th.num { text-align: right; }
+.grn-table td { padding: 6px 6px; vertical-align: middle; border-bottom: 1px solid var(--line-soft); }
+.grn-table tr.line-row:last-child td { border-bottom: none; }
+.grn-table tr.line-row:hover { background: var(--bg-2); }
+.grn-table td input, .grn-table td select {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--sage-ink);
+  font-family: inherit;
+  transition: border-color .15s;
+}
+.grn-table td input:focus, .grn-table td select:focus {
+  outline: none;
+  border-color: var(--sage-primary);
+  box-shadow: 0 0 0 3px rgba(15,76,129,.08);
+}
+.grn-table td input.num-field {
+  font-family: var(--mono);
+  text-align: right;
+}
+.line-total {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sage-ink);
+  text-align: right;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+.remove-row {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 15px;
+  transition: all .12s;
+  margin: 0 auto;
+}
+.remove-row:hover { background: var(--sage-red-soft); color: var(--sage-red); }
+.grn-summary {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 16px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.grn-summary-label { color: var(--text-3); }
+.grn-summary-value {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--sage-ink);
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Pharmacy · Inventory</div>
+    <h1 class="page-title">Receive <em>stock</em></h1>
+    <p class="page-sub">Goods Received Note (GRN) — updates batch and stock level records</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'pharmacy:stock' %}" class="btn btn-ghost"><i class="bi bi-boxes"></i>Stock Levels</a>
+    <a href="{% url 'pharmacy:dashboard' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Dashboard</a>
+  </div>
+</div>
+
+<form method="post" id="grn-form">
+  {% csrf_token %}
+
+  <!-- Receipt header -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head">
+      <div class="card-title"><i class="bi bi-clipboard2-check" style="color:var(--sage-teal);margin-right:8px"></i>Receipt Details</div>
+    </div>
+    <div class="grn-grid">
+      <div class="field-wrap">
+        <label for="{{ form.store.id_for_label }}">{{ form.store.label }}</label>
+        {{ form.store }}
+        {% if form.store.errors %}<div style="color:var(--sage-red);font-size:12px">{{ form.store.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="field-wrap">
+        <label for="{{ form.supplier.id_for_label }}">{{ form.supplier.label }}</label>
+        {{ form.supplier }}
+        {% if form.supplier.errors %}<div style="color:var(--sage-red);font-size:12px">{{ form.supplier.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="field-wrap">
+        <label for="{{ form.invoice_reference.id_for_label }}">Supplier Invoice Ref.</label>
+        {{ form.invoice_reference }}
+        {% if form.invoice_reference.errors %}<div style="color:var(--sage-red);font-size:12px">{{ form.invoice_reference.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="field-wrap">
+        <label for="{{ form.received_date.id_for_label }}">{{ form.received_date.label }}</label>
+        {{ form.received_date }}
+        {% if form.received_date.errors %}<div style="color:var(--sage-red);font-size:12px">{{ form.received_date.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="field-wrap grn-full">
+        <label for="{{ form.notes.id_for_label }}">Notes <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        {{ form.notes }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Line items -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head">
+      <div class="card-title"><i class="bi bi-list-ul" style="color:var(--sage-teal);margin-right:8px"></i>Line Items</div>
+      <div style="font-size:12px;color:var(--text-3)" id="line-count"></div>
+    </div>
+
+    {{ formset.management_form }}
+
+    <div style="overflow-x:auto">
+      <table class="grn-table">
+        <thead>
+          <tr>
+            <th style="min-width:220px">Drug</th>
+            <th style="min-width:120px">Batch No.</th>
+            <th style="min-width:130px">Expiry Date</th>
+            <th class="num" style="min-width:90px">Qty Ordered</th>
+            <th class="num" style="min-width:100px">Qty Received</th>
+            <th class="num" style="min-width:110px">Unit Cost (₦)</th>
+            <th class="num" style="min-width:100px">Line Total</th>
+            <th style="width:40px"></th>
+          </tr>
+        </thead>
+        <tbody id="line-items-body">
+          {% for lf in formset %}
+          <tr class="line-row" id="row-{{ forloop.counter0 }}">
+            <td style="display:none">{{ lf.id }}</td>
+            <td>
+              {{ lf.drug }}
+              {% if lf.drug.errors %}<div style="color:var(--sage-red);font-size:11px;margin-top:2px">{{ lf.drug.errors.0 }}</div>{% endif %}
+            </td>
+            <td>
+              <input type="text" name="{{ lf.batch_number.html_name }}" value="{{ lf.batch_number.value|default:'' }}"
+                     placeholder="e.g. BN-2024-01" class="form-control">
+            </td>
+            <td>
+              <input type="date" name="{{ lf.expiry_date.html_name }}" value="{{ lf.expiry_date.value|default:'' }}"
+                     class="form-control">
+            </td>
+            <td>
+              <input type="number" name="{{ lf.quantity_ordered.html_name }}" value="{{ lf.quantity_ordered.value|default:'' }}"
+                     min="0" class="num-field qty-ordered form-control" placeholder="0">
+            </td>
+            <td>
+              <input type="number" name="{{ lf.quantity_received.html_name }}" value="{{ lf.quantity_received.value|default:'' }}"
+                     min="0" class="num-field qty-received form-control" placeholder="0">
+            </td>
+            <td>
+              <input type="number" name="{{ lf.unit_cost.html_name }}" value="{{ lf.unit_cost.value|default:'' }}"
+                     min="0" step="0.01" class="num-field unit-cost form-control" placeholder="0.00">
+            </td>
+            <td><span class="line-total">—</span></td>
+            <td>
+              <input type="checkbox" name="{{ lf.DELETE.html_name }}" style="display:none" class="delete-flag">
+              <button type="button" class="remove-row" title="Remove row" onclick="removeLine(this)">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+        <!-- Hidden template row for JS cloning -->
+        <tr id="empty-row-template" style="display:none" aria-hidden="true">
+          <td style="display:none"><input type="hidden" name="lines-__prefix__-id" value=""></td>
+          <td>
+            <select name="lines-__prefix__-drug" class="form-select">
+              <option value="">— Select drug —</option>
+              {% for drug in drug_list %}
+              <option value="{{ drug.pk }}">{{ drug.generic_name }}{% if drug.strength %} {{ drug.strength }}{% endif %}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><input type="text" name="lines-__prefix__-batch_number" placeholder="Batch No." class="form-control"></td>
+          <td><input type="date" name="lines-__prefix__-expiry_date" class="form-control"></td>
+          <td><input type="number" name="lines-__prefix__-quantity_ordered" min="0" class="num-field qty-ordered form-control" placeholder="0"></td>
+          <td><input type="number" name="lines-__prefix__-quantity_received" min="0" class="num-field qty-received form-control" placeholder="0"></td>
+          <td><input type="number" name="lines-__prefix__-unit_cost" min="0" step="0.01" class="num-field unit-cost form-control" placeholder="0.00"></td>
+          <td><span class="line-total">—</span></td>
+          <td>
+            <input type="checkbox" name="lines-__prefix__-DELETE" style="display:none" class="delete-flag">
+            <button type="button" class="remove-row" title="Remove row" onclick="removeLine(this)">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="grn-summary">
+      <span><span class="grn-summary-label">Items: </span><span id="total-lines" class="grn-summary-value">0</span></span>
+      <span><span class="grn-summary-label">Total Value: </span><span class="grn-summary-label">₦</span><span id="grand-total" class="grn-summary-value">0.00</span></span>
+    </div>
+
+    <!-- Add row button -->
+    <div style="padding:14px 16px;border-top:1px solid var(--line-soft)">
+      <button type="button" id="add-line-btn" class="btn btn-ghost btn-sm" onclick="addLine()">
+        <i class="bi bi-plus-lg"></i>Add Item
+      </button>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center">
+    <a href="{% url 'pharmacy:dashboard' %}" class="btn btn-ghost">Cancel</a>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check2-circle"></i>Receive &amp; Update Stock
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // Management form fields
+  const totalFormsInput = document.querySelector('[name="lines-TOTAL_FORMS"]');
+  const template = document.getElementById('empty-row-template');
+  const tbody = document.getElementById('line-items-body');
+
+  function formatNum(n) {
+    return n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function updateLineTotals() {
+    let grand = 0;
+    let activeLines = 0;
+    document.querySelectorAll('#line-items-body tr.line-row').forEach(row => {
+      if (row.style.display === 'none') return;
+      const deleteFlag = row.querySelector('.delete-flag');
+      if (deleteFlag && deleteFlag.checked) return;
+
+      const qty = parseFloat(row.querySelector('.qty-received')?.value) || 0;
+      const cost = parseFloat(row.querySelector('.unit-cost')?.value) || 0;
+      const lineTotal = qty * cost;
+      const totalCell = row.querySelector('.line-total');
+      if (totalCell) {
+        totalCell.textContent = lineTotal > 0 ? '₦' + formatNum(lineTotal) : '—';
+        totalCell.style.color = lineTotal > 0 ? 'var(--sage-teal)' : 'var(--text-3)';
+      }
+      if (qty > 0 || cost > 0) {
+        grand += lineTotal;
+        activeLines++;
+      }
+    });
+    document.getElementById('grand-total').textContent = formatNum(grand);
+    const lc = document.getElementById('total-lines');
+    if (lc) lc.textContent = activeLines + ' item' + (activeLines !== 1 ? 's' : '');
+    document.getElementById('line-count').textContent =
+      activeLines > 0 ? activeLines + ' item' + (activeLines !== 1 ? 's' : '') : '';
+  }
+
+  window.addLine = function () {
+    const idx = parseInt(totalFormsInput.value, 10);
+    const clone = template.cloneNode(true);
+    clone.id = 'row-' + idx;
+    clone.classList.add('line-row');
+    clone.style.display = '';
+    clone.removeAttribute('aria-hidden');
+    // Replace __prefix__ with real index
+    clone.innerHTML = clone.innerHTML.replaceAll('__prefix__', idx);
+    tbody.appendChild(clone);
+    totalFormsInput.value = idx + 1;
+    // Focus the drug select in the new row
+    const sel = clone.querySelector('select');
+    if (sel) sel.focus();
+    attachRowListeners(clone);
+    updateLineTotals();
+  };
+
+  window.removeLine = function (btn) {
+    const row = btn.closest('tr');
+    const flag = row.querySelector('.delete-flag');
+    if (flag && flag.name && !flag.name.includes('__prefix__')) {
+      // Existing DB row — mark for deletion
+      flag.checked = true;
+      row.style.display = 'none';
+    } else {
+      // New unsaved row — remove from DOM and decrement count
+      row.remove();
+      totalFormsInput.value = parseInt(totalFormsInput.value, 10) - 1;
+      // Renumber remaining __prefix__ rows so indices stay contiguous
+      tbody.querySelectorAll('tr.line-row').forEach((r, i) => {
+        r.querySelectorAll('[name]').forEach(el => {
+          el.name = el.name.replace(/lines-\d+-/, 'lines-' + i + '-');
+        });
+      });
+    }
+    updateLineTotals();
+  };
+
+  function attachRowListeners(row) {
+    row.querySelectorAll('.qty-received, .unit-cost').forEach(el => {
+      el.addEventListener('input', updateLineTotals);
+    });
+  }
+
+  // Attach to existing rows on load
+  document.querySelectorAll('#line-items-body tr.line-row').forEach(attachRowListeners);
+  updateLineTotals();
+})();
+</script>
+{% endblock %}

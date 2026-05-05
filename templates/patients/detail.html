@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow"><a href="/patients/" style="color:var(--text-3);text-decoration:none">Patients</a> / Profile</div>
+    <h1 class="page-title"><em>{{ patient.full_name }}</em></h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'patients:update' patient.pk %}" class="btn btn-ghost"><i class="bi bi-pencil"></i>Edit</a>
+    <form method="post" action="{% url 'encounters:create' patient.pk %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary"><i class="bi bi-journal-plus"></i>New Encounter</button>
+    </form>
+  </div>
+</div>
+
+<!-- Patient header card -->
+<div class="patient-header-card">
+  <div class="ph-grid">
+    <div class="patient-avatar">{{ patient.first_name.0 }}{{ patient.last_name.0 }}</div>
+    <div>
+      <div class="ph-name">{{ patient.full_name }}</div>
+      <div class="ph-id">{{ patient.hospital_number }} · {{ patient.age_display }} · {{ patient.get_sex_display }}{% if patient.blood_group %} · {{ patient.blood_group }}{% endif %}</div>
+      <div class="ph-meta">
+        {% if patient.payer_type == 'nhia' %}<div class="ph-meta-item"><strong>NHIA</strong>{% if patient.nhia_number %} · {{ patient.nhia_number }}{% endif %}</div>{% endif %}
+        {% if patient.hmo_name %}<div class="ph-meta-item"><strong>HMO</strong> · {{ patient.hmo_name }}</div>{% endif %}
+        {% if patient.address %}<div class="ph-meta-item">📍 {{ patient.address|truncatechars:30 }}</div>{% endif %}
+        <div class="ph-meta-item">📞 {{ patient.phone }}</div>
+        {% if patient.last_visit %}<div class="ph-meta-item">Last visit · {{ patient.last_visit|date:"d M Y" }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="ph-actions">
+      {% if patient.outstanding_balance %}
+      <div class="ph-balance-label">Outstanding</div>
+      <div class="ph-balance num">₦{{ patient.outstanding_balance|floatformat:0 }}</div>
+      {% endif %}
+      <a href="/billing/?patient={{ patient.pk }}" class="btn btn-sm" style="background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.15);margin-top:6px">View bills</a>
+    </div>
+  </div>
+  {% if patient.allergies.count %}
+  <div class="allergy-banner">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+      <strong>Documented allergies:</strong>
+      {% for a in patient.allergies.all %}{% if a.is_active %}{{ a.allergen }}{% if a.reaction %} ({{ a.reaction }}){% endif %}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <a href="#demographics" class="tab active">Demographics</a>
+  <a href="{% url 'encounters:list' %}?patient={{ patient.pk }}" class="tab">Encounters</a>
+  <a href="{% url 'laboratory:worklist' %}?patient={{ patient.pk }}" class="tab">Labs</a>
+  <a href="{% url 'billing:list' %}?patient={{ patient.pk }}" class="tab">Billing</a>
+</div>
+
+<div class="patient-shell">
+
+  <!-- Left column -->
+  <div>
+
+    <!-- Allergies -->
+    <div class="card" style="margin-bottom:16px" id="allergy-panel">
+      <div class="card-head">
+        <div class="card-title" style="font-size:15px"><i class="bi bi-exclamation-triangle" style="color:var(--sage-red);margin-right:8px"></i>Allergies</div>
+        <button class="btn btn-sm btn-ghost" data-bs-toggle="collapse" data-bs-target="#add-allergy-form">
+          <i class="bi bi-plus"></i>Add
+        </button>
+      </div>
+      <div class="collapse" id="add-allergy-form">
+        <form method="post" action="{% url 'patients:allergy_add' patient.pk %}"
+              hx-post="{% url 'patients:allergy_add' patient.pk %}"
+              hx-target="#allergy-panel" hx-swap="outerHTML"
+              style="background:var(--surface-warm);border-top:1px solid var(--line);padding:14px;margin:-20px -20px 16px;border-radius:0">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Allergen *</label>{{ allergy_form.allergen }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Type</label>{{ allergy_form.allergy_type }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Severity</label>{{ allergy_form.severity }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button type="submit" class="btn btn-sm" style="background:var(--sage-red);color:#fff;width:100%">Save</button>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Reaction / Notes</label>{{ allergy_form.reaction }}
+            </div>
+          </div>
+        </form>
+      </div>
+      {% include "patients/partials/allergy_list.html" %}
+    </div>
+
+    <!-- Problem List -->
+    <div class="card" id="condition-panel">
+      <div class="card-head">
+        <div class="card-title" style="font-size:15px"><i class="bi bi-journal-medical" style="margin-right:8px"></i>Problem List</div>
+        <button class="btn btn-sm btn-ghost" data-bs-toggle="collapse" data-bs-target="#add-condition-form">
+          <i class="bi bi-plus"></i>Add
+        </button>
+      </div>
+      <div class="collapse" id="add-condition-form">
+        <form method="post" action="{% url 'patients:condition_add' patient.pk %}"
+              hx-post="{% url 'patients:condition_add' patient.pk %}"
+              hx-target="#condition-panel" hx-swap="outerHTML"
+              style="background:var(--surface-warm);border-top:1px solid var(--line);padding:14px;margin:-20px -20px 16px;border-radius:0">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-md-3"><label class="form-label">ICD-10</label>{{ condition_form.icd10_code }}</div>
+            <div class="col-md-5"><label class="form-label">Description *</label>{{ condition_form.description }}</div>
+            <div class="col-md-2"><label class="form-label">Status</label>{{ condition_form.status }}</div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button type="submit" class="btn btn-sm btn-ghost" style="width:100%">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      {% include "patients/partials/condition_list.html" %}
+    </div>
+
+  </div>
+
+  <!-- Right column / rail -->
+  <div class="rail">
+
+    <!-- Demographics summary -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title" style="font-size:15px">Demographics</div>
+        <a href="{% url 'patients:update' patient.pk %}" class="btn btn-sm btn-ghost"><i class="bi bi-pencil"></i></a>
+      </div>
+      <div style="font-size:13px">
+        {% if patient.date_of_birth %}
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line-soft)">
+          <span style="color:var(--text-3)">Date of Birth</span>
+          <span>{{ patient.date_of_birth|date:"d M Y" }}</span>
+        </div>
+        {% endif %}
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line-soft)">
+          <span style="color:var(--text-3)">Phone</span>
+          <span class="num">{{ patient.phone }}</span>
+        </div>
+        {% if patient.phone_alt %}
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line-soft)">
+          <span style="color:var(--text-3)">Alt. Phone</span>
+          <span class="num">{{ patient.phone_alt }}</span>
+        </div>
+        {% endif %}
+        {% if patient.address %}
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line-soft)">
+          <span style="color:var(--text-3)">Address</span>
+          <span style="text-align:right;max-width:160px">{{ patient.address }}{% if patient.address_state %}, {{ patient.address_state }}{% endif %}</span>
+        </div>
+        {% endif %}
+        {% if patient.occupation %}
+        <div style="display:flex;justify-content:space-between;padding:6px 0">
+          <span style="color:var(--text-3)">Occupation</span>
+          <span>{{ patient.occupation }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Payer -->
+    <div class="card">
+      <div class="card-title" style="font-size:15px;margin-bottom:12px"><i class="bi bi-shield-check" style="margin-right:8px"></i>Insurance / Payer</div>
+      <div>
+        {% if patient.payer_type == 'nhia' %}<span class="tag teal">NHIA</span>
+        {% elif patient.payer_type == 'private_hmo' %}<span class="tag blue">HMO</span>
+        {% elif patient.payer_type == 'corporate' %}<span class="tag blue">Corporate</span>
+        {% else %}<span class="tag gray">Self-pay</span>{% endif %}
+        {% if patient.nhia_number %}<div style="font-size:12px;color:var(--text-3);margin-top:8px">NHIA: <strong style="color:var(--text)">{{ patient.nhia_number }}</strong></div>{% endif %}
+        {% if patient.hmo_name %}<div style="font-size:12px;color:var(--text-3);margin-top:4px">HMO: {{ patient.hmo_name }}{% if patient.hmo_plan %} — {{ patient.hmo_plan }}{% endif %}</div>{% endif %}
+        {% if patient.corporate_employer %}<div style="font-size:12px;color:var(--text-3);margin-top:4px">Employer: {{ patient.corporate_employer }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- Next of Kin -->
+    {% with nok=patient.next_of_kin %}
+    {% if nok %}
+    <div class="card">
+      <div class="card-title" style="font-size:15px;margin-bottom:12px"><i class="bi bi-people" style="margin-right:8px"></i>Next of Kin</div>
+      <div style="font-size:13px">
+        <div style="font-weight:500;color:var(--sage-ink)">{{ nok.full_name }}</div>
+        {% if nok.relationship %}<div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ nok.get_relationship_display }}</div>{% endif %}
+        <div class="num" style="margin-top:4px">{{ nok.phone }}{% if nok.phone_alt %} · {{ nok.phone_alt }}{% endif %}</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Quick actions -->
+    <div class="card">
+      <div class="card-title" style="font-size:15px;margin-bottom:12px"><i class="bi bi-lightning" style="margin-right:8px"></i>Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <a href="/scheduling/book/?patient={{ patient.pk }}" class="btn btn-ghost btn-sm"><i class="bi bi-calendar-plus"></i>Book Appointment</a>
+        <form method="post" action="{% url 'encounters:create' patient.pk %}" style="display:contents">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost btn-sm" style="width:100%"><i class="bi bi-journal-plus"></i>New Encounter</button>
+        </form>
+        <a href="/lab/order/?patient={{ patient.pk }}" class="btn btn-ghost btn-sm"><i class="bi bi-droplet-half"></i>Order Lab</a>
+        <a href="/billing/?patient={{ patient.pk }}" class="btn btn-ghost btn-sm"><i class="bi bi-receipt"></i>View Bills</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

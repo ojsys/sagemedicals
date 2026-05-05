@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Ward Map{% endblock %}
+
+{% block extra_css %}
+.ward-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+.ward-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ward-tab:hover { color: var(--sage-ink); }
+.ward-tab.active {
+  color: var(--sage-primary);
+  border-bottom-color: var(--sage-primary);
+  font-weight: 600;
+}
+.bed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.bed {
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--surface);
+  transition: box-shadow .12s;
+}
+.bed.occupied {
+  background: #E5EEF6;
+  border-color: #C4D8EA;
+  cursor: pointer;
+}
+.bed.occupied:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+.bed.maintenance {
+  background: var(--bg-2);
+  border-color: var(--line-strong);
+  opacity: .7;
+}
+.bed-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: .04em;
+}
+.bed.occupied .bed-num { color: #4A7BA0; }
+.bed-pat {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--sage-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 4px;
+}
+.bed-status {
+  font-size: 10.5px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.bed.occupied .bed-status { color: #5A8BAA; }
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Inpatient · Live</div>
+    <h1 class="page-title">Ward <em>map</em></h1>
+    <p class="page-sub">
+      {{ occupied_count }} of {{ total_beds }} beds occupied
+      · {{ available_count }} vacant
+      {% if maintenance_count %} · {{ maintenance_count }} maintenance{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'admissions:list' %}" class="btn btn-ghost"><i class="bi bi-list-ul"></i>Inpatient List</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-hospital"></i></div>
+    <div class="stat-label">Total Beds</div>
+    <div class="stat-value num">{{ total_beds }}</div>
+    <div class="stat-meta">Across {{ wards|length }} ward{{ wards|length|pluralize }}</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:#E5EEF6;color:#4A7BA0"><i class="bi bi-person-fill"></i></div>
+    <div class="stat-label">Occupied</div>
+    <div class="stat-value num" {% if occupied_count %}style="color:#4A7BA0"{% endif %}>{{ occupied_count }}</div>
+    <div class="stat-meta">Active inpatients</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-label">Available</div>
+    <div class="stat-value num" style="color:var(--sage-green)">{{ available_count }}</div>
+    <div class="stat-meta">Ready to admit</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--bg-2);color:var(--text-3)"><i class="bi bi-tools"></i></div>
+    <div class="stat-label">Maintenance</div>
+    <div class="stat-value num">{{ maintenance_count }}</div>
+    <div class="stat-meta">Out of service</div>
+  </div>
+</div>
+
+{% if ward %}
+
+<!-- Ward tabs -->
+<div class="ward-tabs">
+  {% for w in wards %}
+  <a href="?ward={{ w.pk }}" class="ward-tab {% if ward.pk == w.pk %}active{% endif %}">
+    {{ w.name }}
+    <span class="tag {% if ward.pk == w.pk %}blue{% else %}gray{% endif %}" style="font-size:10px">{{ w.occ }}/{{ w.tot }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Current ward card -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <div class="card-title">{{ ward.name }}</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">
+        {{ ward.floor }}{% if ward.ward_type %} · {{ ward.ward_type|capfirst }}{% endif %}
+        {% if ward.consultant %} · Consultant: Dr. {{ ward.consultant.get_full_name }}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      {% if ward.occ %}
+      <span class="tag blue" style="font-size:11.5px">{{ ward.occ }} of {{ ward.tot }} occupied</span>
+      {% else %}
+      <span class="tag green" style="font-size:11.5px">All beds available</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% for entry in bed_map %}
+  <div style="margin-bottom:24px">
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+      <i class="bi bi-door-open" style="font-size:12px;color:var(--sage-teal)"></i>
+      {{ entry.room.name }}
+      {% if entry.room.is_isolation %}
+        <span style="background:rgba(184,58,38,.1);color:var(--sage-red);border-radius:4px;padding:1px 6px;font-size:10px;text-transform:uppercase">Isolation</span>
+      {% endif %}
+      <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">{{ entry.beds|length }} bed{{ entry.beds|length|pluralize }}</span>
+    </div>
+
+    <div class="bed-grid">
+      {% for item in entry.beds %}
+      {% with bed=item.bed admission=item.admission days=item.days_in %}
+
+      {% if admission %}
+      <a href="{% url 'admissions:detail' admission.pk %}" style="text-decoration:none">
+        <div class="bed occupied" title="{{ admission.patient.full_name }} — {{ admission.diagnosis_on_admission|truncatechars:60 }}">
+          <div>
+            <div class="bed-num">{{ bed.label }}</div>
+            <div class="bed-pat">{{ admission.patient.last_name }}, {{ admission.patient.first_name.0 }}</div>
+          </div>
+          <div class="bed-status">Day {{ days }}</div>
+        </div>
+      </a>
+
+      {% elif bed.status == 'maintenance' %}
+      <div class="bed maintenance">
+        <div>
+          <div class="bed-num">{{ bed.label }}</div>
+          <div class="bed-pat" style="color:var(--text-3)">Maint.</div>
+        </div>
+        <div class="bed-status">OOS</div>
+      </div>
+
+      {% else %}
+      <div class="bed" style="cursor:default">
+        <div>
+          <div class="bed-num">{{ bed.label }}</div>
+        </div>
+        <div class="bed-status" style="color:var(--sage-green)">Vacant</div>
+      </div>
+      {% endif %}
+
+      {% endwith %}
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div style="text-align:center;padding:48px;color:var(--text-3)">No rooms configured for this ward.</div>
+  {% endfor %}
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#E5EEF6;border:1px solid #C4D8EA"></div>Occupied</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--surface);border:1px solid var(--line)"></div>Vacant</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--bg-2);border:1px solid var(--line-strong)"></div>Maintenance</div>
+  </div>
+</div>
+
+{% else %}
+<div style="text-align:center;padding:80px;color:var(--text-3)">
+  <i class="bi bi-hospital" style="font-size:48px;display:block;margin-bottom:16px;opacity:.2"></i>
+  No wards configured.
+</div>
+{% endif %}
+
+{% endblock %}

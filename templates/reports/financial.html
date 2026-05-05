@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Financial Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Reports · Financial</div>
+    <h1 class="page-title">Financial <em>dashboard</em></h1>
+    <p class="page-sub">{{ start|date:"j M Y" }} — {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:flex;gap:8px;align-items:center">
+      <input type="date" name="start" value="{{ start }}" class="form-control" style="width:140px">
+      <span style="color:var(--text-3);font-size:13px">to</span>
+      <input type="date" name="end" value="{{ end }}" class="form-control" style="width:140px">
+      <button class="btn btn-primary"><i class="bi bi-funnel"></i>Apply</button>
+    </form>
+  </div>
+</div>
+{% include "reports/_subnav.html" %}
+
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-currency-dollar"></i></div>
+    <div class="stat-label">Total Revenue</div>
+    <div class="stat-value num" style="color:var(--sage-green)">₦{{ revenue.total|floatformat:0 }}</div>
+  </div>
+  {% for mode in revenue.by_mode %}
+  <div class="stat">
+    <div class="stat-label">{{ mode.mode|title }}</div>
+    <div class="stat-value">₦{{ mode.total|floatformat:0 }}</div>
+    <div class="stat-sub">{{ mode.count }} payments</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:16px">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Daily Revenue</div></div>
+    <canvas id="revenueChart" height="90"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">By Service Category</div></div>
+    <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+      <table class="data">
+        <thead><tr><th>Category</th><th style="text-align:right">₦ Total</th></tr></thead>
+        <tbody>
+          {% for c in by_category %}
+          <tr>
+            <td>{{ c.service__category|default:"Uncategorised"|title }}</td>
+            <td style="text-align:right;font-family:'Geist Mono',monospace;font-size:13px">{{ c.total|floatformat:0 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" style="color:var(--text-3)">No data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-title" style="color:var(--sage-red)"><i class="bi bi-exclamation-circle" style="margin-right:6px"></i>Outstanding Invoices <span style="color:var(--text-3);font-weight:400;font-size:13px">(top 20)</span></div>
+  </div>
+  <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+    <table class="data">
+      <thead>
+        <tr><th>Invoice</th><th>Patient</th><th>Date</th><th style="text-align:right">Total</th><th style="text-align:right">Balance</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for inv in outstanding %}
+        <tr>
+          <td class="mono">{{ inv.invoice_number }}</td>
+          <td><a href="{% url 'patients:detail' inv.patient.pk %}" style="color:var(--sage-primary);text-decoration:none">{{ inv.patient.full_name }}</a></td>
+          <td style="color:var(--text-3)">{{ inv.created_at|date:"d M Y" }}</td>
+          <td style="text-align:right;font-family:'Geist Mono',monospace">₦{{ inv.total|floatformat:0 }}</td>
+          <td style="text-align:right;font-family:'Geist Mono',monospace;color:var(--sage-red);font-weight:600">₦{{ inv.balance|floatformat:0 }}</td>
+          <td><span class="tag amber">{{ inv.get_status_display }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="color:var(--text-3)">No outstanding invoices.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('revenueChart'), {
+  type: 'line',
+  data: {
+    labels: {{ daily_labels|safe }},
+    datasets: [{
+      label: 'Revenue (₦)',
+      data: {{ daily_data|safe }},
+      borderColor: '#1B998B',
+      backgroundColor: 'rgba(27,153,139,0.08)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { font: { family: 'Geist Mono' } } } }
+  }
+});
+</script>
+{% endblock %}

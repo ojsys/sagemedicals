@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Disable Two-Factor Authentication{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Account · Security</div>
+    <h1 class="page-title">Disable <em>two-factor auth</em></h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'accounts:profile' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Cancel</a>
+  </div>
+</div>
+
+<div style="max-width:480px">
+  <div class="card">
+    <div style="background:var(--sage-red-soft);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start">
+      <i class="bi bi-exclamation-triangle-fill" style="color:var(--sage-red);font-size:20px;flex-shrink:0;margin-top:1px"></i>
+      <div>
+        <div style="font-weight:600;color:var(--sage-red);font-size:13px">This will reduce your account security</div>
+        <div style="font-size:12.5px;color:var(--sage-red);opacity:.8;margin-top:4px">
+          Disabling 2FA means your account will only be protected by your password. Anyone who obtains your password will have full access.
+        </div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-2);margin-bottom:16px">
+      Are you sure you want to remove the authenticator app from your account?
+    </p>
+    <form method="post" style="display:flex;gap:8px">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost" style="color:var(--sage-red);border-color:var(--sage-red-soft)">
+        <i class="bi bi-shield-x"></i>Yes, disable 2FA
+      </button>
+      <a href="{% url 'accounts:profile' %}" class="btn btn-primary">Keep 2FA enabled</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

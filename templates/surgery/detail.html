@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}{{ booking.procedure_name }} · Surgery{% endblock %}
+
+{% block extra_css %}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+  gap: 12px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
+.info-value { color: var(--sage-ink); text-align: right; }
+.timeline-step {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 16px;
+  position: relative;
+}
+.timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 20px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line-soft);
+}
+.tl-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.tl-dot.done { background: var(--sage-teal); border-color: var(--sage-teal); }
+.tl-dot.active { background: var(--sage-primary); border-color: var(--sage-primary); }
+.tl-label { font-size: 13px; font-weight: 500; color: var(--sage-ink); }
+.tl-meta { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Operating Theatre · {{ booking.theatre.name }}</div>
+    <h1 class="page-title">
+      {{ booking.procedure_name }}
+      <span class="tag {% if booking.status == 'completed' %}green{% elif booking.status == 'in_progress' %}blue{% elif booking.status == 'confirmed' %}teal{% elif booking.status == 'cancelled' %}red{% else %}gray{% endif %}" style="font-size:13px;margin-left:10px;vertical-align:middle">
+        {{ booking.get_status_display }}
+      </span>
+    </h1>
+    <p class="page-sub">
+      <span class="tag {% if booking.priority == 'emergency' %}red{% elif booking.priority == 'urgent' %}amber{% elif booking.priority == 'elective' %}teal{% else %}gray{% endif %}" style="font-size:11px">{{ booking.get_priority_display }}</span>
+      &nbsp;{{ booking.scheduled_date|date:"l, j F Y" }} at {{ booking.scheduled_time|time:"H:i" }}
+      {% if booking.duration_minutes %}&nbsp;· {{ booking.duration_minutes }} min{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'surgery:list' %}?date={{ booking.scheduled_date }}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i>Back to Schedule
+    </a>
+    {% if booking.patient %}
+    <a href="{% url 'patients:detail' booking.patient.pk %}" class="btn btn-ghost">
+      <i class="bi bi-person"></i>Patient File
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Patient identity strip -->
+{% if booking.patient %}
+<div class="card" style="margin-bottom:16px;display:flex;align-items:center;gap:16px;padding:16px 20px">
+  <div style="width:44px;height:44px;border-radius:50%;background:var(--sage-teal-soft);color:var(--sage-teal);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0">
+    {{ booking.patient.first_name.0 }}{{ booking.patient.last_name.0 }}
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:600;font-size:15px;color:var(--sage-ink)">{{ booking.patient.full_name }}</div>
+    <div style="font-size:12px;color:var(--text-3);margin-top:2px;font-family:var(--mono)">
+      {{ booking.patient.hospital_number }}
+      {% if booking.patient.date_of_birth %} · Age {{ booking.patient.age }}{% endif %}
+      {% if booking.patient.sex %} · {{ booking.patient.get_sex_display }}{% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
+
+  <!-- Left: notes + status actions -->
+  <div>
+
+    {% if booking.status not in 'completed,cancelled,postponed' %}
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><div class="card-title">Update Status</div></div>
+      <form method="post" action="{% url 'surgery:status' booking.pk %}">
+        {% csrf_token %}
+        {% if booking.status == 'in_progress' %}
+        <div style="margin-bottom:12px">
+          <label class="form-label">Post-op Notes</label>
+          <textarea name="post_op_notes" class="form-control" rows="4" placeholder="Operative findings, complications, closure…"></textarea>
+        </div>
+        {% endif %}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          {% if booking.status == 'scheduled' %}
+          <button name="status" value="confirmed" class="btn btn-primary"><i class="bi bi-check2"></i>Confirm</button>
+          <button name="status" value="postponed" class="btn btn-ghost" style="color:var(--sage-amber)"><i class="bi bi-clock"></i>Postpone</button>
+          <button name="status" value="cancelled" class="btn btn-ghost" style="color:var(--sage-red)"><i class="bi bi-x-lg"></i>Cancel</button>
+          {% elif booking.status == 'confirmed' %}
+          <button name="status" value="in_progress" class="btn btn-primary"><i class="bi bi-play-fill"></i>Start Surgery</button>
+          <button name="status" value="cancelled" class="btn btn-ghost" style="color:var(--sage-red)"><i class="bi bi-x-lg"></i>Cancel</button>
+          {% elif booking.status == 'in_progress' %}
+          <button name="status" value="completed" class="btn btn-primary" style="background:var(--sage-green);border-color:var(--sage-green)">
+            <i class="bi bi-check2-all"></i>Mark Completed
+          </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if booking.pre_op_notes %}
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><div class="card-title"><i class="bi bi-file-earmark-text" style="color:var(--sage-teal);margin-right:6px"></i>Pre-op Notes</div></div>
+      <div style="font-size:13px;line-height:1.65;color:var(--sage-ink);white-space:pre-wrap">{{ booking.pre_op_notes }}</div>
+    </div>
+    {% endif %}
+
+    {% if booking.post_op_notes %}
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <div class="card-title"><i class="bi bi-clipboard2-check" style="color:var(--sage-green);margin-right:6px"></i>Post-op Notes</div>
+      </div>
+      <div style="font-size:13px;line-height:1.65;color:var(--sage-ink);white-space:pre-wrap">{{ booking.post_op_notes }}</div>
+    </div>
+    {% endif %}
+
+    {% if not booking.pre_op_notes and not booking.post_op_notes and booking.status in 'completed,cancelled' %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--text-3)">
+      <i class="bi bi-file-earmark" style="font-size:28px;opacity:.3;display:block;margin-bottom:8px"></i>
+      No notes recorded.
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right rail: booking details + team + timeline -->
+  <div>
+
+    <!-- Booking details -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><div class="card-title">Booking Details</div></div>
+      <div class="info-row">
+        <span class="info-label">Theatre</span>
+        <span class="info-value">{{ booking.theatre.name }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Date</span>
+        <span class="info-value">{{ booking.scheduled_date|date:"j M Y" }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Start Time</span>
+        <span class="info-value mono">{{ booking.scheduled_time|time:"H:i" }}</span>
+      </div>
+      {% if booking.duration_minutes %}
+      <div class="info-row">
+        <span class="info-label">Duration</span>
+        <span class="info-value">{{ booking.duration_minutes }} min</span>
+      </div>
+      {% endif %}
+      <div class="info-row">
+        <span class="info-label">Surgeon</span>
+        <span class="info-value">{% if booking.lead_surgeon %}Dr. {{ booking.lead_surgeon.get_full_name }}{% else %}—{% endif %}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Anaesthetist</span>
+        <span class="info-value">{% if booking.anaesthetist %}Dr. {{ booking.anaesthetist.get_full_name }}{% else %}—{% endif %}</span>
+      </div>
+      {% if booking.icd10_code %}
+      <div class="info-row">
+        <span class="info-label">ICD-10</span>
+        <span class="info-value mono" style="font-size:12px">{{ booking.icd10_code }}</span>
+      </div>
+      {% endif %}
+      {% if booking.booked_by %}
+      <div class="info-row">
+        <span class="info-label">Booked by</span>
+        <span class="info-value">{{ booking.booked_by.get_full_name }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Status timeline -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><div class="card-title">Timeline</div></div>
+
+      <div class="timeline-step">
+        <div class="tl-dot done"></div>
+        <div>
+          <div class="tl-label">Booked</div>
+          <div class="tl-meta">{{ booking.created_at|date:"j M Y, H:i" }}</div>
+        </div>
+      </div>
+
+      <div class="timeline-step">
+        <div class="tl-dot {% if booking.status != 'scheduled' %}done{% endif %}"></div>
+        <div>
+          <div class="tl-label" style="{% if booking.status == 'scheduled' %}color:var(--text-3){% endif %}">Confirmed</div>
+          {% if booking.status == 'scheduled' %}<div class="tl-meta">Pending</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="timeline-step">
+        <div class="tl-dot {% if booking.status == 'in_progress' %}active{% elif booking.started_at %}done{% endif %}"></div>
+        <div>
+          <div class="tl-label" style="{% if booking.status not in 'in_progress,completed' and not booking.started_at %}color:var(--text-3){% endif %}">In Progress</div>
+          {% if booking.started_at %}<div class="tl-meta">{{ booking.started_at|date:"H:i" }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="timeline-step">
+        <div class="tl-dot {% if booking.status == 'completed' %}done{% endif %}"></div>
+        <div>
+          <div class="tl-label" style="{% if booking.status != 'completed' %}color:var(--text-3){% endif %}">Completed</div>
+          {% if booking.completed_at %}<div class="tl-meta">{{ booking.completed_at|date:"H:i" }}</div>{% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    {% if booking.team.all %}
+    <div class="card">
+      <div class="card-head"><div class="card-title">Surgical Team</div></div>
+      {% for member in booking.team.all %}
+      <div class="info-row">
+        <span class="info-label">{{ member.role|capfirst }}</span>
+        <span class="info-value">{{ member.user.get_full_name }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

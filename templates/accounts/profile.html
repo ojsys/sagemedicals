@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Account</div>
+    <h1 class="page-title">My <em>profile</em></h1>
+    <p class="page-sub">{{ request.user.get_full_name }} · {{ request.user.email }}</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;max-width:900px">
+
+  <!-- Identity card -->
+  <div class="card">
+    <div class="card-head"><div class="card-title">Account Details</div></div>
+    <div style="display:flex;align-items:center;gap:16px;padding-bottom:16px;border-bottom:1px solid var(--line-soft)">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--sage-teal-soft);color:var(--sage-teal);display:grid;place-items:center;font-size:20px;font-weight:700">
+        {{ request.user.get_short_name|slice:":2"|upper }}
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:600;color:var(--sage-ink)">{{ request.user.get_full_name }}</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ request.user.email }}</div>
+      </div>
+    </div>
+    <div style="padding-top:12px;display:grid;grid-template-columns:120px 1fr;gap:8px 12px;font-size:13px">
+      <span style="color:var(--text-3)">Role</span>
+      <span>{{ request.user.get_role_display|default:"—" }}</span>
+      <span style="color:var(--text-3)">Account active</span>
+      <span>{% if request.user.is_active %}<span class="tag green">Yes</span>{% else %}<span class="tag red">Suspended</span>{% endif %}</span>
+      <span style="color:var(--text-3)">Member since</span>
+      <span>{{ request.user.date_joined|date:"j M Y" }}</span>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <a href="/accounts/password/change/" class="btn btn-ghost btn-sm"><i class="bi bi-key"></i>Change Password</a>
+    </div>
+  </div>
+
+  <!-- 2FA card -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><i class="bi bi-shield-lock" style="color:var(--sage-teal);margin-right:6px"></i>Two-Factor Authentication</div>
+    </div>
+    {% if totp_device %}
+    <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--sage-green-soft);border-radius:var(--radius);margin-bottom:14px">
+      <i class="bi bi-shield-check" style="color:var(--sage-green);font-size:18px"></i>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--sage-green)">2FA is active</div>
+        <div style="font-size:11.5px;color:var(--sage-green);opacity:.8;margin-top:1px">Authenticator app configured</div>
+      </div>
+    </div>
+    <a href="{% url 'accounts:2fa_disable' %}" class="btn btn-ghost btn-sm" style="color:var(--sage-red);border-color:var(--sage-red-soft)">
+      <i class="bi bi-shield-x"></i>Disable 2FA
+    </a>
+    {% else %}
+    <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--sage-amber-soft);border-radius:var(--radius);margin-bottom:14px">
+      <i class="bi bi-shield-exclamation" style="color:var(--sage-amber);font-size:18px"></i>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--sage-amber)">2FA not enabled</div>
+        <div style="font-size:11.5px;color:var(--sage-amber);opacity:.8;margin-top:1px">We strongly recommend enabling 2FA</div>
+      </div>
+    </div>
+    <a href="{% url 'accounts:2fa_setup' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-shield-plus"></i>Enable 2FA
+    </a>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

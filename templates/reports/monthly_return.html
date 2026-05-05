@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Monthly Return — {{ data.period }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Reports · Statutory</div>
+    <h1 class="page-title">Monthly <em>return</em></h1>
+    <p class="page-sub">NHMIS statutory reporting</p>
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:flex;gap:8px;align-items:center">
+      <select name="year" class="form-select" style="width:100px" onchange="this.form.submit()">
+        {% for y in year_range %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+      <select name="month" class="form-select" style="width:60px" onchange="this.form.submit()">
+        {% for m in month_range %}
+        <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-primary">Go</button>
+    </form>
+  </div>
+</div>
+{% include "reports/_subnav.html" %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+  <div class="card">
+    <div class="card-head"><div class="card-title">{{ data.period }} — Summary</div></div>
+    <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+      <table class="data">
+        <tbody>
+          <tr><td style="font-weight:500">New Registrations</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.new_registrations }}</td></tr>
+          <tr><td style="padding-left:20px;color:var(--text-3)">— Male</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.new_male }}</td></tr>
+          <tr><td style="padding-left:20px;color:var(--text-3)">— Female</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.new_female }}</td></tr>
+          <tr><td style="font-weight:500">Outpatient Visits</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.total_outpatient_visits }}</td></tr>
+          <tr><td style="font-weight:500">Inpatient Admissions</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.total_inpatient_admissions }}</td></tr>
+          <tr><td style="font-weight:500">Discharges</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.total_discharges }}</td></tr>
+          <tr><td style="font-weight:500">Deaths (Inpatient)</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.deaths_inpatient }}</td></tr>
+          <tr><td style="font-weight:500">Lab Tests Ordered</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.lab_tests_ordered }}</td></tr>
+          <tr><td style="font-weight:500">Lab Tests Completed</td><td style="text-align:right;font-family:'Geist Mono',monospace">{{ data.lab_tests_completed }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title">Revenue</div></div>
+    <div style="font-size:28px;font-weight:700;color:var(--sage-green);margin-bottom:12px">₦{{ data.revenue.total|floatformat:0 }}</div>
+    <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+      <table class="data">
+        <tbody>
+          {% for mode in data.revenue.by_mode %}
+          <tr>
+            <td style="font-weight:500">{{ mode.mode|title }}</td>
+            <td style="text-align:right;font-family:'Geist Mono',monospace">₦{{ mode.total|floatformat:0 }}</td>
+            <td style="color:var(--text-3);font-size:12px">{{ mode.count }} payments</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="color:var(--text-3)">No revenue data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-title">Top 5 Diagnoses</div></div>
+  <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+    <table class="data">
+      <thead><tr><th>ICD-10</th><th>Description</th><th style="text-align:right">Cases</th></tr></thead>
+      <tbody>
+        {% for d in data.top_diagnoses %}
+        <tr>
+          <td class="mono" style="font-size:12px">{{ d.icd10_code }}</td>
+          <td>{{ d.description }}</td>
+          <td style="text-align:right;font-family:'Geist Mono',monospace">{{ d.count }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" style="color:var(--text-3)">No diagnoses recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

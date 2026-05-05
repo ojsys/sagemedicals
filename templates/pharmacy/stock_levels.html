@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Drug Inventory{% endblock %}
+
+{% block extra_css %}
+.stock-bar {
+  height: 5px;
+  background: var(--line);
+  border-radius: 3px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+.stock-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .3s;
+}
+.stock-fill.good     { background: var(--sage-green); }
+.stock-fill.low      { background: var(--sage-amber); }
+.stock-fill.critical { background: var(--sage-red); }
+.stock-fill.empty    { background: var(--line-strong); }
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Pharmacy · Inventory</div>
+    <h1 class="page-title">Drug <em>stock</em></h1>
+    <p class="page-sub">
+      {{ total_skus }} SKU{{ total_skus|pluralize }}
+      {% if low_count %} · <span style="color:var(--sage-amber)">{{ low_count }} below reorder</span>{% endif %}
+      {% if expiring_count %} · <span style="color:var(--sage-red)">{{ expiring_count }} expiring &lt;30d</span>{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:inline">
+      <select name="store" class="form-select" style="min-width:180px;display:inline-block" onchange="this.form.submit()">
+        {% for s in stores %}
+        <option value="{{ s.pk }}" {% if store and store.pk == s.pk %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <a href="{% url 'pharmacy:receive' %}" class="btn btn-ghost"><i class="bi bi-truck"></i>Goods Receipt</a>
+    <a href="{% url 'pharmacy:batches' %}" class="btn btn-ghost"><i class="bi bi-upc-scan"></i>Batches</a>
+  </div>
+</div>
+
+{% if store %}
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-boxes"></i></div>
+    <div class="stat-label">Total SKUs</div>
+    <div class="stat-value num">{{ total_skus }}</div>
+    <div class="stat-meta">{{ store.name }}</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-arrow-down-circle"></i></div>
+    <div class="stat-label">Below Reorder</div>
+    <div class="stat-value num" {% if low_count %}style="color:var(--sage-amber)"{% endif %}>{{ low_count }}</div>
+    <div class="stat-meta">{% if low_count %}Action needed{% else %}All healthy{% endif %}</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-red-soft);color:var(--sage-red)"><i class="bi bi-calendar-x"></i></div>
+    <div class="stat-label">Expiring &lt;30d</div>
+    <div class="stat-value num" {% if expiring_count %}style="color:var(--sage-red)"{% endif %}>{{ expiring_count }}</div>
+    <div class="stat-meta">Review immediately</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-red-soft);color:var(--sage-red)"><i class="bi bi-slash-circle"></i></div>
+    <div class="stat-label">Out of Stock</div>
+    <div class="stat-value num" {% if out_count %}style="color:var(--sage-red)"{% endif %}>{{ out_count }}</div>
+    <div class="stat-meta">Zero units on hand</div>
+  </div>
+</div>
+
+<!-- Search + filter -->
+<div class="table-wrap">
+  <div class="table-head" style="flex-wrap:wrap;gap:10px">
+    <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:260px">
+      <input type="hidden" name="store" value="{{ store.pk }}">
+      <div class="search" style="flex:1;max-width:360px">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" value="{{ search }}" placeholder="Generic name, brand…">
+      </div>
+      {% if search %}<button type="submit" name="q" value="" class="btn btn-ghost btn-sm">Clear</button>{% endif %}
+    </form>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <a href="?store={{ store.pk }}" class="chip {% if not stock_filter %}on{% endif %}">All <span class="num">{{ total_skus }}</span></a>
+      <a href="?store={{ store.pk }}&filter=low" class="chip {% if stock_filter == 'low' %}on{% endif %}">Low stock <span class="num">{{ low_count }}</span></a>
+      <a href="?store={{ store.pk }}&filter=expiring" class="chip {% if stock_filter == 'expiring' %}on{% endif %}">Expiring <span class="num">{{ expiring_count }}</span></a>
+      <a href="?store={{ store.pk }}&filter=out" class="chip {% if stock_filter == 'out' %}on{% endif %}">Out of stock <span class="num">{{ out_count }}</span></a>
+    </div>
+  </div>
+
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Drug</th>
+        <th>Form</th>
+        <th>Batch · Expiry</th>
+        <th style="min-width:160px">Stock level</th>
+        <th style="text-align:right">Reorder</th>
+        <th style="text-align:right">Unit cost</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in stock_rows %}
+      {% with sl=row.sl b=row.batch %}
+      <tr>
+        <td>
+          <div style="font-weight:500;color:var(--sage-ink)">
+            {{ sl.drug.generic_name }}
+            {% if sl.drug.strength %} {{ sl.drug.strength }}{% endif %}
+          </div>
+          {% if sl.drug.nafdac_number %}
+          <div style="font-size:11.5px;color:var(--text-3);font-family:var(--mono);margin-top:2px">
+            NAFDAC {{ sl.drug.nafdac_number }}
+            {% if sl.drug.atc_code %} · {{ sl.drug.atc_code }}{% endif %}
+          </div>
+          {% endif %}
+        </td>
+        <td><span class="tag gray" style="font-size:11px">{{ sl.drug.dosage_form|capfirst }}</span></td>
+        <td>
+          {% if b %}
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text-2)">{{ b.batch_number }}</div>
+          <div style="font-size:11px;margin-top:2px;
+            {% if row.out_of_stock %}color:var(--text-3)
+            {% elif row.expiring_soon %}color:var(--sage-red);font-weight:500
+            {% elif row.days_to_expiry <= 90 %}color:var(--sage-amber)
+            {% else %}color:var(--text-3){% endif %}">
+            Exp {{ b.expiry_date|date:"d M Y" }}
+            {% if row.days_to_expiry != None and row.days_to_expiry <= 90 %}
+              · {{ row.days_to_expiry }}d
+            {% endif %}
+          </div>
+          {% else %}
+          <span style="color:var(--text-3);font-size:12px">No batch</span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px">
+            <span>{{ sl.quantity_on_hand }} units</span>
+            <span style="
+              {% if row.out_of_stock %}color:var(--sage-red);font-weight:600
+              {% elif sl.needs_reorder %}color:var(--sage-amber);font-weight:500
+              {% elif row.expiring_soon %}color:var(--sage-red)
+              {% else %}color:var(--sage-green){% endif %}">
+              {% if row.out_of_stock %}Out of stock
+              {% elif sl.needs_reorder %}Low
+              {% elif row.expiring_soon %}Expiring
+              {% else %}Healthy{% endif %}
+            </span>
+          </div>
+          <div class="stock-bar">
+            <div class="stock-fill
+              {% if row.out_of_stock %}empty
+              {% elif sl.needs_reorder or row.expiring_soon %}{% if row.fill_pct < 20 %}critical{% else %}low{% endif %}
+              {% else %}good{% endif %}"
+              style="width:{{ row.fill_pct }}%"></div>
+          </div>
+        </td>
+        <td class="num" style="text-align:right">{{ sl.reorder_level }}</td>
+        <td class="num" style="text-align:right">
+          {% if b %}₦{{ b.unit_cost|floatformat:0 }}{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if row.out_of_stock %}
+            <button class="btn btn-teal btn-sm">Order Now</button>
+          {% elif sl.needs_reorder %}
+            <button class="btn btn-ghost btn-sm">Reorder</button>
+          {% else %}
+            <button class="btn btn-ghost btn-sm">View</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr>
+        <td colspan="7" style="text-align:center;padding:48px;color:var(--text-3)">
+          {% if search %}No drugs matching "{{ search }}".
+          {% elif stock_filter %}No items in this filter.
+          {% else %}No stock data for this store.{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

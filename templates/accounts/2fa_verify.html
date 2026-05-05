@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Verify Your Identity{% endblock %}
+
+{% block content %}
+<div style="max-width:420px;margin:60px auto">
+  <div class="card">
+    <div style="text-align:center;padding:8px 0 16px">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--sage-teal-soft);color:var(--sage-teal);display:grid;place-items:center;font-size:24px;margin:0 auto 12px">
+        <i class="bi bi-shield-lock"></i>
+      </div>
+      <div style="font-size:18px;font-weight:600;color:var(--sage-ink)">Two-Factor Verification</div>
+      <div style="font-size:13px;color:var(--text-3);margin-top:6px">Enter the 6-digit code from your authenticator app</div>
+    </div>
+    {% if error %}
+    <div style="background:var(--sage-red-soft);border:1px solid #F5C8C0;border-radius:var(--radius);padding:10px 14px;color:var(--sage-red);font-size:13px;margin-bottom:12px;text-align:center">
+      <i class="bi bi-exclamation-triangle"></i> Invalid code. Please try again.
+    </div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+      <div style="margin-bottom:16px">
+        <input type="text" name="code" class="form-control"
+               inputmode="numeric" autocomplete="one-time-code"
+               maxlength="6" minlength="6"
+               placeholder="000000"
+               style="font-family:var(--mono);font-size:24px;text-align:center;letter-spacing:.3em;padding:14px"
+               autofocus required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+        <i class="bi bi-arrow-right-circle"></i>Verify
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

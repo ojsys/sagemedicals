@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Clinical Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Reports · Clinical</div>
+    <h1 class="page-title">Clinical <em>dashboard</em></h1>
+    <p class="page-sub">{{ start|date:"j M Y" }} — {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:flex;gap:8px;align-items:center">
+      <input type="date" name="start" value="{{ start }}" class="form-control" style="width:140px">
+      <span style="color:var(--text-3);font-size:13px">to</span>
+      <input type="date" name="end" value="{{ end }}" class="form-control" style="width:140px">
+      <button class="btn btn-primary"><i class="bi bi-funnel"></i>Apply</button>
+    </form>
+  </div>
+</div>
+{% include "reports/_subnav.html" %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Top Diagnoses (ICD-10)</div></div>
+    <canvas id="diagChart" height="200"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">Encounter Volume</div></div>
+    <canvas id="volChart" height="200"></canvas>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Top Drugs Prescribed</div></div>
+    <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+      <table class="data">
+        <thead><tr><th>#</th><th>Drug</th><th>Strength</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody>
+          {% for d in drugs %}
+          <tr>
+            <td style="color:var(--text-3)">{{ forloop.counter }}</td>
+            <td style="font-weight:500">{{ d.drug__generic_name }}</td>
+            <td style="color:var(--text-3)">{{ d.drug__strength }}</td>
+            <td style="text-align:right;font-family:'Geist Mono',monospace">{{ d.count }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="color:var(--text-3)">No data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title">Lab Test Volumes</div></div>
+    <div class="table-wrap" style="margin:0;border:none;box-shadow:none">
+      <table class="data">
+        <thead><tr><th>Test</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody>
+          {% for t in turnaround %}
+          <tr>
+            <td style="font-weight:500">{{ t.test__name }}</td>
+            <td style="text-align:right;font-family:'Geist Mono',monospace">{{ t.count }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" style="color:var(--text-3)">No released labs in period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('diagChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ diag_labels|safe }},
+    datasets: [{ label: 'Cases', data: {{ diag_data|safe }}, backgroundColor: 'rgba(184,58,38,0.65)', borderRadius: 4 }]
+  },
+  options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+});
+new Chart(document.getElementById('volChart'), {
+  type: 'line',
+  data: {
+    labels: {{ vol_labels|safe }},
+    datasets: [{ label: 'Encounters', data: {{ vol_data|safe }}, borderColor: '#0F4C81', backgroundColor: 'rgba(15,76,129,0.08)', fill: true, tension: 0.3 }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endblock %}

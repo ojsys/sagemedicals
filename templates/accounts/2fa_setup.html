@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Set Up Two-Factor Authentication{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Account · Security</div>
+    <h1 class="page-title">Set up <em>two-factor auth</em></h1>
+    <p class="page-sub">Scan the QR code with your authenticator app, then enter the 6-digit code to confirm.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'accounts:profile' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Cancel</a>
+  </div>
+</div>
+
+<div style="max-width:520px">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title"><i class="bi bi-qr-code" style="color:var(--sage-teal);margin-right:6px"></i>Step 1 — Scan QR Code</div></div>
+    <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">
+      Open <strong>Google Authenticator</strong>, <strong>Authy</strong>, or any TOTP app, then scan this code:
+    </p>
+    <div style="text-align:center;padding:16px;background:var(--bg-2);border-radius:var(--radius)">
+      <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code" style="width:180px;height:180px;image-rendering:pixelated">
+    </div>
+    <details style="margin-top:12px">
+      <summary style="font-size:12px;color:var(--text-3);cursor:pointer">Can't scan? Enter code manually</summary>
+      <div style="font-family:var(--mono);font-size:12px;background:var(--bg-2);padding:10px;border-radius:var(--radius);margin-top:8px;word-break:break-all;color:var(--sage-ink)">
+        {{ device.config_url }}
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title"><i class="bi bi-123" style="color:var(--sage-teal);margin-right:6px"></i>Step 2 — Verify Code</div></div>
+    {% if error %}
+    <div style="background:var(--sage-red-soft);border:1px solid #F5C8C0;border-radius:var(--radius);padding:10px 14px;color:var(--sage-red);font-size:13px;margin-bottom:12px">
+      <i class="bi bi-exclamation-triangle"></i> Invalid code. Please try again.
+    </div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div style="margin-bottom:14px">
+        <label class="form-label">6-digit code from your app</label>
+        <input type="text" name="code" class="form-control"
+               inputmode="numeric" autocomplete="one-time-code"
+               maxlength="6" minlength="6"
+               placeholder="000000"
+               style="font-family:var(--mono);font-size:20px;text-align:center;letter-spacing:.2em"
+               autofocus required>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-shield-check"></i>Activate 2FA</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

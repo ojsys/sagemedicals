@@ -1,0 +1,91 @@
+{% extends "portal/base_portal.html" %}
+{% block title %}My Health Summary{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<!-- Patient header -->
+<div style="background:linear-gradient(135deg,var(--sage-ink),var(--sage-primary));border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;color:#fff;position:relative;overflow:hidden">
+  <div style="position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(27,153,139,.25),transparent 60%)"></div>
+  <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1">
+    <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1B998B,#234B66);display:grid;place-items:center;font-family:'Fraunces',serif;font-size:22px;color:#fff;border:2px solid rgba(255,255,255,.15)">
+      {{ patient.first_name.0 }}{{ patient.last_name.0 }}
+    </div>
+    <div>
+      <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:400;letter-spacing:-0.02em">{{ patient.full_name }}</div>
+      <div style="font-size:11.5px;color:rgba(255,255,255,.6);font-family:'Geist Mono',monospace;margin-top:3px">{{ patient.hospital_number }} · {{ patient.age_display }} · {{ patient.get_sex_display }}</div>
+    </div>
+  </div>
+  {% if patient.active_allergies %}
+  <div style="margin-top:14px;background:rgba(184,58,38,.2);border:1px solid rgba(184,58,38,.3);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:#fff;position:relative;z-index:1">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <strong>Allergies:</strong> {% for a in patient.active_allergies %}{{ a.allergen }}{% if not forloop.last %} · {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Quick links -->
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px">
+  <a href="{% url 'portal:appointments' %}" style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;text-decoration:none;display:flex;align-items:center;gap:12px">
+    <i class="bi bi-calendar-plus" style="font-size:20px;color:var(--sage-primary)"></i>
+    <div><div style="font-weight:500;color:var(--sage-ink);font-size:13px">Appointments</div><div style="font-size:11px;color:var(--text-3);margin-top:1px">Book or view</div></div>
+  </a>
+  <a href="{% url 'portal:results' %}" style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;text-decoration:none;display:flex;align-items:center;gap:12px">
+    <i class="bi bi-droplet-half" style="font-size:20px;color:var(--sage-teal)"></i>
+    <div><div style="font-weight:500;color:var(--sage-ink);font-size:13px">Lab Results</div><div style="font-size:11px;color:var(--text-3);margin-top:1px">View reports</div></div>
+  </a>
+  <a href="{% url 'portal:bills' %}" style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;text-decoration:none;display:flex;align-items:center;gap:12px">
+    <i class="bi bi-receipt" style="font-size:20px;color:var(--sage-amber)"></i>
+    <div><div style="font-weight:500;color:var(--sage-ink);font-size:13px">Bills</div><div style="font-size:11px;color:var(--text-3);margin-top:1px">View invoices</div></div>
+  </a>
+  <a href="{% url 'portal:appointments' %}" style="background:var(--sage-teal);border:1px solid var(--sage-teal);border-radius:var(--radius);padding:14px 16px;text-decoration:none;display:flex;align-items:center;gap:12px">
+    <i class="bi bi-plus-circle" style="font-size:20px;color:#fff"></i>
+    <div><div style="font-weight:500;color:#fff;font-size:13px">Book Visit</div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:1px">New appointment</div></div>
+  </a>
+</div>
+
+<!-- Upcoming appointments -->
+<div class="portal-section-h">Upcoming Appointments<a href="{% url 'portal:appointments' %}">See all</a></div>
+{% for appt in upcoming_appointments %}
+<div class="portal-card">
+  <div style="display:grid;grid-template-columns:52px 1fr auto;gap:14px;align-items:center">
+    <div style="background:var(--bg);border-radius:var(--radius);padding:8px;text-align:center">
+      <div style="font-family:'Fraunces',serif;font-size:22px;line-height:1;color:var(--sage-ink);font-weight:500">{{ appt.date|date:"d" }}</div>
+      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.14em;color:var(--text-3);margin-top:2px">{{ appt.date|date:"M" }}</div>
+    </div>
+    <div>
+      <div style="font-weight:500;color:var(--sage-ink);font-size:14px">{{ appt.clinic }}</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">{{ appt.slot_time|time:"H:i" }}{% if appt.doctor %} · Dr. {{ appt.doctor.get_short_name }}{% endif %}</div>
+    </div>
+    <span class="tag teal"><span class="dot"></span>{{ appt.get_status_display }}</span>
+  </div>
+</div>
+{% empty %}
+<div class="portal-card" style="text-align:center;padding:24px;color:var(--text-3)">
+  <i class="bi bi-calendar" style="font-size:24px;display:block;margin-bottom:8px;opacity:.4"></i>
+  No upcoming appointments.
+  <div style="margin-top:12px"><a href="{% url 'portal:appointments' %}" class="btn btn-teal" style="font-size:13px;padding:8px 16px">Book Appointment</a></div>
+</div>
+{% endfor %}
+
+<!-- Recent visits -->
+<div class="portal-section-h">Recent Visits</div>
+{% for enc in recent_encounters %}
+<div class="portal-card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <div style="font-weight:500;color:var(--sage-ink);font-size:14px">{{ enc.date_time|date:"d M Y" }}</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">{{ enc.chief_complaint|truncatechars:60|default:"General consultation" }}</div>
+    </div>
+    {% if not enc.feedback %}
+    <a href="{% url 'portal:feedback' enc.pk %}" style="font-size:12px;color:var(--sage-primary)">Rate visit</a>
+    {% else %}
+    <i class="bi bi-star-fill" style="color:var(--sage-amber)"></i>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div class="portal-card" style="text-align:center;padding:24px;color:var(--text-3)">
+  No recent visits on record.
+</div>
+{% endfor %}
+{% endblock %}

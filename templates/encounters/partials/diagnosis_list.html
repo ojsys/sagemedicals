@@ -1,0 +1,22 @@
+{% for diag in diagnoses %}
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line-soft)">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span class="tag {% if diag.diagnosis_type == 'primary' %}blue{% elif diag.diagnosis_type == 'secondary' %}gray{% else %}gray{% endif %}" style="font-size:10.5px">
+      {{ diag.get_diagnosis_type_display }}
+    </span>
+    {% if diag.icd10_code %}<span class="mono" style="color:var(--text-3);font-size:11.5px">{{ diag.icd10_code }}</span>{% endif %}
+    <span style="font-size:13px;font-weight:500;color:var(--sage-ink)">{{ diag.description }}</span>
+  </div>
+  <form method="post"
+        action="{% url 'encounters:diagnosis_delete' diag.encounter.pk diag.pk %}"
+        hx-post="{% url 'encounters:diagnosis_delete' diag.encounter.pk diag.pk %}"
+        hx-target="#diagnosis-list" hx-swap="innerHTML">
+    {% csrf_token %}
+    <button class="btn btn-sm" style="background:transparent;border:1px solid var(--line-soft);color:var(--text-3);padding:4px 8px">
+      <i class="bi bi-trash" style="font-size:11px"></i>
+    </button>
+  </form>
+</div>
+{% empty %}
+<div style="color:var(--text-3);font-size:13px;padding:8px 0">No diagnoses added.</div>
+{% endfor %}

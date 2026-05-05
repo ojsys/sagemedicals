@@ -1,0 +1,31 @@
+{% for order in lab_orders %}
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid var(--line-soft)">
+  <div>
+    <span style="font-weight:500;color:var(--sage-ink);font-size:13px">{{ order.test.name }}</span>
+    {% if order.test.panel %}<span style="color:var(--text-3);font-size:12px;margin-left:8px">{{ order.test.panel }}</span>{% endif %}
+    {% if order.priority != 'routine' %}
+    <span class="tag {% if order.priority == 'stat' %}red{% else %}amber{% endif %}" style="font-size:10px;margin-left:6px">
+      {{ order.get_priority_display }}
+    </span>
+    {% endif %}
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="tag {% if order.status == 'released' %}green{% elif order.status == 'resulted' %}blue{% else %}gray{% endif %}" style="font-size:10.5px">
+      {{ order.get_status_display }}
+    </span>
+    {% if order.barcode %}
+    <span class="mono" style="color:var(--text-3);font-size:10.5px">{{ order.barcode }}</span>
+    {% endif %}
+    {% if order.status == 'released' and order.result %}
+    <span style="font-family:'Geist Mono',monospace;font-size:13px;font-weight:600;
+      {% if order.result.abnormal_flag in 'critical_low,critical_high' %}color:var(--sage-red)
+      {% elif order.result.abnormal_flag in 'low,high' %}color:var(--sage-amber)
+      {% else %}color:var(--sage-green){% endif %}">
+      {{ order.result.value }} {{ order.result.unit }}
+    </span>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div style="color:var(--text-3);font-size:13px;padding:12px 16px">No lab orders yet.</div>
+{% endfor %}

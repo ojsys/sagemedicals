@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Theatre Schedule · {{ selected_date }}{% endblock %}
+
+{% block extra_css %}
+.or-grid {
+  display: grid;
+  grid-template-columns: 72px repeat({{ theatres|length }}, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+.or-header {
+  font-weight: 600;
+  font-size: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--text-2);
+  text-align: center;
+}
+.or-time {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  letter-spacing: .04em;
+}
+.or-cell {
+  border-radius: var(--radius);
+  min-height: 72px;
+  padding: 10px 12px;
+}
+.or-cell.empty {
+  background: var(--bg-2);
+  border: 1.5px dashed var(--line);
+}
+.or-case {
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+  transition: box-shadow .12s;
+  text-decoration: none;
+  display: block;
+}
+.or-case:hover { box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+.or-case.routine {
+  background: linear-gradient(135deg, #E5EEF6, var(--surface));
+  border-color: #C4D8EA;
+}
+.or-case.elective {
+  background: linear-gradient(135deg, var(--sage-teal-soft), var(--surface));
+  border-color: #B0DBD3;
+}
+.or-case.urgent {
+  background: linear-gradient(135deg, var(--sage-amber-soft), var(--surface));
+  border-color: #E8D5B0;
+}
+.or-case.emergency {
+  background: linear-gradient(135deg, var(--sage-red-soft), var(--surface));
+  border-color: #F5C8C0;
+}
+.or-case-pname {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sage-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.or-case-proc {
+  font-size: 11.5px;
+  color: var(--text-2);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.or-case-team {
+  font-size: 10.5px;
+  color: var(--text-3);
+  margin-top: 6px;
+  font-family: var(--mono);
+}
+.or-case-status {
+  margin-top: 6px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Operating Theatre</div>
+    <h1 class="page-title">Theatre <em>schedule</em></h1>
+    <p class="page-sub">{{ selected_date|date:"l, j F Y" }}
+      {% if selected_date == today %}· Today{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <!-- Day navigation -->
+    <a href="?date={{ prev_date }}" class="btn btn-ghost" title="Previous day"><i class="bi bi-chevron-left"></i></a>
+    <form method="get" style="display:flex;align-items:center">
+      <input type="date" name="date" value="{{ selected_date }}"
+             class="form-control" style="width:155px;font-size:13px" onchange="this.form.submit()">
+    </form>
+    <a href="?date={{ next_date }}" class="btn btn-ghost" title="Next day"><i class="bi bi-chevron-right"></i></a>
+    <a href="{% url 'surgery:book' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Book Surgery</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-scissors"></i></div>
+    <div class="stat-label">Cases Today</div>
+    <div class="stat-value num">{{ cases_today }}</div>
+    <div class="stat-meta">Across {{ theatres|length }} theatre{{ theatres|length|pluralize }}</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-check2-circle"></i></div>
+    <div class="stat-label">Completed</div>
+    <div class="stat-value num" style="color:var(--sage-green)">{{ completed_today }}</div>
+    <div class="stat-meta">Done today</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:#E5EEF6;color:#4A7BA0"><i class="bi bi-clock"></i></div>
+    <div class="stat-label">Avg Duration</div>
+    <div class="stat-value num">{{ avg_duration }}</div>
+    <div class="stat-meta">Minutes per case</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-x-circle"></i></div>
+    <div class="stat-label">Cancellations</div>
+    <div class="stat-value num">{{ cancelled_today }}</div>
+    <div class="stat-meta">Today</div>
+  </div>
+</div>
+
+{% if theatres %}
+<div class="card">
+  <div class="card-head" style="border-bottom:1px solid var(--line-soft);padding-bottom:14px;margin-bottom:16px">
+    <div class="card-title">OR Grid</div>
+    <div style="display:flex;gap:10px;font-size:12px;color:var(--text-3)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#E5EEF6;border:1px solid #C4D8EA;display:inline-block"></span>Routine</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--sage-teal-soft);border:1px solid #B0DBD3;display:inline-block"></span>Elective</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--sage-amber-soft);border:1px solid #E8D5B0;display:inline-block"></span>Urgent</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--sage-red-soft);border:1px solid #F5C8C0;display:inline-block"></span>Emergency</span>
+    </div>
+  </div>
+
+  <div class="or-grid">
+    <!-- Header row -->
+    <div></div>
+    {% for theatre in theatres %}
+    <div class="or-header">
+      <div>{{ theatre.name }}</div>
+      {% if theatre.location %}<div style="font-size:10.5px;font-weight:400;color:var(--text-3);margin-top:2px">{{ theatre.location }}</div>{% endif %}
+    </div>
+    {% endfor %}
+
+    {% if or_grid %}
+      {% for row in or_grid %}
+      <!-- Time: {{ row.time }} -->
+      <div class="or-time">{{ row.time|time:"H:i" }}</div>
+      {% for booking in row.cells %}
+        {% if booking %}
+        <a href="{% url 'surgery:detail' booking.pk %}" class="or-cell or-case {{ booking.priority }}">
+          <div class="or-case-pname">{{ booking.patient.full_name }}</div>
+          <div class="or-case-proc">{{ booking.procedure_name|truncatechars:40 }}</div>
+          <div class="or-case-team">
+            {% if booking.lead_surgeon %}Dr. {{ booking.lead_surgeon.get_full_name }}{% endif %}
+            {% if booking.duration_minutes %} · {{ booking.duration_minutes }}min{% endif %}
+          </div>
+          <div class="or-case-status">
+            <span class="tag {% if booking.status == 'completed' %}green{% elif booking.status == 'in_progress' %}blue{% elif booking.status == 'confirmed' %}teal{% else %}gray{% endif %}" style="font-size:10px">
+              {{ booking.get_status_display }}
+            </span>
+          </div>
+        </a>
+        {% else %}
+        <div class="or-cell empty"></div>
+        {% endif %}
+      {% endfor %}
+      {% endfor %}
+    {% else %}
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-3)">
+        <i class="bi bi-scissors" style="font-size:36px;display:block;margin-bottom:12px;opacity:.2"></i>
+        No surgeries scheduled for {{ selected_date|date:"j F Y" }}.
+        <div style="margin-top:12px">
+          <a href="{% url 'surgery:book' %}" class="btn btn-primary btn-sm">Book a case</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<div class="card" style="text-align:center;padding:80px;color:var(--text-3)">
+  <i class="bi bi-hospital" style="font-size:48px;display:block;margin-bottom:16px;opacity:.2"></i>
+  No theatres configured.
+</div>
+{% endif %}
+
+{% endblock %}

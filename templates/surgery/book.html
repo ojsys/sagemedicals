@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Book Surgery{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Operating Theatre</div>
+    <h1 class="page-title">Book Surgery</h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'surgery:list' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+  </div>
+</div>
+
+<div style="max-width:660px">
+  {% if patient %}
+  <div style="background:linear-gradient(135deg,var(--sage-ink),var(--sage-ink-soft));border-radius:var(--radius-lg);padding:12px 18px;margin-bottom:16px;color:#fff;font-size:13px">
+    Booking for <strong>{{ patient.full_name }}</strong>
+    <span class="mono" style="color:rgba(255,255,255,.6);margin-left:8px">{{ patient.hospital_number }}</span>
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-head"><div class="card-title">Surgery Details</div></div>
+      <div class="row g-3">
+        {% for f in form %}
+        <div class="col-md-6">
+          <label class="form-label">{{ f.label }}{% if f.field.required %} <span style="color:var(--sage-red)">*</span>{% endif %}</label>
+          {{ f }}
+          {% if f.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ f.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary"><i class="bi bi-check2"></i>Book</button>
+        <a href="{% url 'surgery:list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

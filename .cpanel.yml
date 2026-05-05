@@ -1,0 +1,9 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/sage/sage_emr
+    - export PYTHON=$DEPLOYPATH/venv/bin/python
+    - $PYTHON -m pip install -r requirements/production.txt --quiet
+    - $PYTHON manage.py migrate --settings=config.settings.production --noinput
+    - $PYTHON manage.py collectstatic --settings=config.settings.production --noinput
+    - touch passenger_wsgi.py

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Operational Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Reports</div>
+    <h1 class="page-title">Operational <em>dashboard</em></h1>
+    <p class="page-sub">Live snapshot — {{ snap.date }}</p>
+  </div>
+</div>
+{% include "reports/_subnav.html" %}
+
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-person-fill"></i></div>
+    <div class="stat-label">Outpatients Today</div>
+    <div class="stat-value num" style="color:var(--sage-primary)">{{ snap.outpatients }}</div>
+    <div class="stat-meta">Encounters signed</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-list-ol"></i></div>
+    <div class="stat-label">Queue Waiting</div>
+    <div class="stat-value num" style="color:var(--sage-amber)">{{ snap.queue_waiting }}</div>
+    <div class="stat-meta">Right now</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:#E5EEF6;color:#4A7BA0"><i class="bi bi-hospital"></i></div>
+    <div class="stat-label">Active Inpatients</div>
+    <div class="stat-value num" style="color:#4A7BA0">{{ snap.active_admissions }}</div>
+    <div class="stat-meta">Currently admitted</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-currency-dollar"></i></div>
+    <div class="stat-label">Revenue Today</div>
+    <div class="stat-value num" style="color:var(--sage-green)">₦{{ snap.revenue_today|floatformat:0 }}</div>
+    <div class="stat-meta">Payments received</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Bed Occupancy</div></div>
+    <div style="background:var(--line);border-radius:99px;height:12px;overflow:hidden;margin-bottom:12px">
+      <div style="height:100%;width:{{ occupancy.occupancy_pct }}%;background:var(--sage-primary);border-radius:99px;transition:width .4s"></div>
+    </div>
+    <div style="font-size:22px;font-weight:700;color:var(--sage-primary);margin-bottom:8px">{{ occupancy.occupancy_pct }}%</div>
+    <div style="display:flex;gap:16px;font-size:12px">
+      <div><span style="font-weight:600;color:var(--sage-red)">{{ occupancy.occupied }}</span> Occupied</div>
+      <div><span style="font-weight:600;color:var(--sage-green)">{{ occupancy.available }}</span> Available</div>
+      <div><span style="font-weight:600;color:var(--text-3)">{{ occupancy.maintenance }}</span> Maint.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title">Admissions / Discharges</div></div>
+    <div style="display:flex;gap:24px;margin-top:4px">
+      <div style="text-align:center">
+        <div style="font-size:28px;font-weight:700;color:var(--sage-teal)">{{ snap.admissions_today }}</div>
+        <div style="font-size:12px;color:var(--text-3)">Admitted</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:28px;font-weight:700;color:var(--text-3)">{{ snap.discharges_today }}</div>
+        <div style="font-size:12px;color:var(--text-3)">Discharged</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title">Outstanding Receivables</div></div>
+    <div style="font-size:28px;font-weight:700;color:var(--sage-red);margin-top:4px">₦{{ snap.invoices_outstanding|floatformat:0 }}</div>
+    <div style="font-size:12px;color:var(--text-3);margin-top:4px">Unpaid invoice balances</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-title">Encounter Volume — last 14 days</div></div>
+  <canvas id="volumeChart" height="70"></canvas>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('volumeChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ volume_labels|safe }},
+    datasets: [{
+      label: 'Encounters',
+      data: {{ volume_data|safe }},
+      backgroundColor: 'rgba(15,76,129,0.65)',
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { font: { family: 'Geist Mono' } } } }
+  }
+});
+</script>
+{% endblock %}

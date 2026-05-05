@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SAGE EMR{% endblock %}
+
+{% block content %}
+{% now "H" as hr %}
+
+<!-- Page header -->
+<div class="page-head">
+  <div>
+    <div class="eyebrow">{{ today|date:"l · j F Y" }}</div>
+    <h1 class="page-title">
+      {% if hr < "12" %}Good morning{% elif hr < "17" %}Good afternoon{% else %}Good evening{% endif %},
+      <em>{{ request.user.first_name|default:request.user.email }}</em>.
+    </h1>
+    <p class="page-sub">{{ queue_waiting }} patient{{ queue_waiting|pluralize }} in the queue today{% if pending_labs %} — {{ pending_labs }} lab order{{ pending_labs|pluralize }} pending review{% endif %}.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-ghost"><i class="bi bi-download"></i>Export</button>
+    <a href="{% url 'patients:register' %}" class="btn btn-ghost"><i class="bi bi-person-plus"></i>Register Patient</a>
+    <a href="{% url 'encounters:list' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Encounters</a>
+  </div>
+</div>
+
+<!-- Stat row -->
+<div class="stat-grid">
+
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-people"></i></div>
+    <div class="stat-label">Today's Patients</div>
+    <div class="stat-value num">{{ patients_today }}</div>
+    <div class="stat-meta"><span class="delta flat">Today</span><span>new registrations</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12" stroke="#0F4C81" stroke-width="1.5" fill="none"/>
+      <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12 L200,36 L0,36 Z" fill="url(#g1)" opacity=".18"/>
+      <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0F4C81"/><stop offset="1" stop-color="#0F4C81" stop-opacity="0"/></linearGradient></defs>
+    </svg>
+  </div>
+
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-teal-soft);color:var(--sage-teal)"><i class="bi bi-hospital"></i></div>
+    <div class="stat-label">Active Admissions</div>
+    <div class="stat-value num">{{ active_admissions }}</div>
+    <div class="stat-meta"><span class="delta flat">Live</span><span>inpatients currently</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,18 L25,16 L50,20 L75,14 L100,10 L125,12 L150,8 L175,10 L200,6" stroke="#1B998B" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-clock-history"></i></div>
+    <div class="stat-label">Queue Today</div>
+    <div class="stat-value num">{{ queue_waiting }}</div>
+    <div class="stat-meta"><span class="delta flat">Live</span><span>waiting or in consult</span></div>
+    <div style="display:flex;gap:4px;margin-top:12px;height:36px;align-items:flex-end">
+      <div style="flex:1;background:var(--sage-amber-soft);height:60%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:30%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber);height:100%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:50%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:40%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:70%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber);height:90%;border-radius:2px"></div>
+    </div>
+  </div>
+
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-red-soft);color:var(--sage-red)"><i class="bi bi-droplet-half"></i></div>
+    <div class="stat-label">Pending Labs</div>
+    <div class="stat-value num">{{ pending_labs }}</div>
+    <div class="stat-meta"><span class="delta {% if pending_labs > 0 %}down{% else %}flat{% endif %}">{{ pending_labs|pluralize:"1,many" }}</span><span>ordered or in progress</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,30 L25,24 L50,26 L75,18 L100,20 L125,12 L150,14 L175,8 L200,4" stroke="#B83A26" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+
+</div>
+
+<!-- 2-col layout -->
+<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px">
+
+  <!-- Left: Today's clinic queue -->
+  <div class="table-wrap">
+    <div class="table-head">
+      <div>
+        <div class="card-title">Today's Clinic Queue</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ today|date:"j M Y" }}</div>
+      </div>
+      <div class="filters" id="queue-filters">
+        <span class="chip on" data-filter="all">All <span class="num" id="cnt-all">{{ queue_today|length }}</span></span>
+        <span class="chip" data-filter="waiting">Waiting <span class="num" id="cnt-waiting">0</span></span>
+        <span class="chip" data-filter="with_doctor">In progress <span class="num" id="cnt-with_doctor">0</span></span>
+        <span class="chip" data-filter="completed">Done <span class="num" id="cnt-completed">0</span></span>
+      </div>
+    </div>
+
+    {% if queue_today %}
+    <table class="data" id="queue-table">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Time</th>
+          <th>Clinic</th>
+          <th>Payer</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in queue_today %}
+        <tr class="patient-row" data-status="{{ q.status }}" onclick="location.href='{% url 'patients:detail' q.patient.pk %}'">
+          <td>
+            <span class="triage {% if q.triage_level == 'red' %}red{% elif q.triage_level == 'yellow' %}amber{% else %}green{% endif %}"></span>
+            <div style="display:inline-block;vertical-align:middle">
+              <div class="pname">{{ q.patient.full_name }}</div>
+              <div class="pmeta">{{ q.patient.hospital_number }}</div>
+            </div>
+          </td>
+          <td class="num">{{ q.arrived_at|time:"H:i" }}</td>
+          <td style="font-size:13px;color:var(--text-2)">{{ q.clinic.name }}</td>
+          <td>
+            {% if q.patient.payer_type == 'nhia' %}
+              <span class="tag teal">NHIA</span>
+            {% elif q.patient.payer_type == 'private_hmo' %}
+              <span class="tag blue">HMO{% if q.patient.hmo_name %} · {{ q.patient.hmo_name }}{% endif %}</span>
+            {% elif q.patient.payer_type == 'corporate' %}
+              <span class="tag gray">Corporate</span>
+            {% else %}
+              <span class="tag gray">Self-pay</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if q.status == 'waiting' %}
+              <span class="tag amber"><span class="dot"></span>Waiting</span>
+            {% elif q.status == 'with_doctor' %}
+              <span class="tag blue"><span class="dot"></span>With Doctor</span>
+            {% elif q.status == 'completed' %}
+              <span class="tag green"><span class="dot"></span>Done</span>
+            {% else %}
+              <span class="tag gray"><span class="dot"></span>{{ q.get_status_display }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <script>
+      (function () {
+        const rows = document.querySelectorAll('#queue-table tbody tr');
+        const chips = document.querySelectorAll('#queue-filters .chip');
+
+        // tally counts per status
+        const counts = {};
+        rows.forEach(r => { const s = r.dataset.status; counts[s] = (counts[s] || 0) + 1; });
+        ['waiting', 'with_doctor', 'completed'].forEach(s => {
+          const el = document.getElementById('cnt-' + s);
+          if (el) el.textContent = counts[s] || 0;
+        });
+
+        chips.forEach(chip => {
+          chip.addEventListener('click', function () {
+            chips.forEach(c => c.classList.remove('on'));
+            this.classList.add('on');
+            const f = this.dataset.filter;
+            rows.forEach(r => {
+              r.style.display = (f === 'all' || r.dataset.status === f) ? '' : 'none';
+            });
+          });
+        });
+      })();
+    </script>
+    {% else %}
+    <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
+      <i class="bi bi-calendar2-check" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+      <div style="font-size:14px">No patients in queue today</div>
+      <a href="{% url 'scheduling:queue' %}" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--sage-primary);text-decoration:none">Open queue <i class="bi bi-arrow-right"></i></a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Today's summary -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Today's Summary</div>
+        <span class="card-sub">Live</span>
+      </div>
+      <div style="display:flex;gap:20px;align-items:center">
+        <div class="donut">
+          <div class="donut-center">
+            <div class="donut-num num">{{ active_admissions }}</div>
+            <div class="donut-lbl">Admitted</div>
+          </div>
+        </div>
+        <ul class="legend-list" style="flex:1">
+          <li><span class="sw" style="background:var(--sage-primary)"></span>Registrations<span class="vv">{{ patients_today }}</span></li>
+          <li><span class="sw" style="background:var(--sage-teal)"></span>Admissions<span class="vv">{{ active_admissions }}</span></li>
+          <li><span class="sw" style="background:var(--sage-amber)"></span>Queue<span class="vv">{{ queue_waiting }}</span></li>
+          <li><span class="sw" style="background:var(--sage-red)"></span>Pending labs<span class="vv">{{ pending_labs }}</span></li>
+        </ul>
+      </div>
+      <div style="margin-top:14px;text-align:right">
+        <a href="{% url 'admissions:ward_map' %}" style="font-size:12px;color:var(--sage-primary);text-decoration:none;font-weight:500">Ward map <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Recent Activity</div>
+        <span class="card-sub">Live</span>
+      </div>
+
+      {% for adm in recent_admissions|slice:":3" %}
+      <div class="feed-item">
+        <div class="feed-icon blue"><i class="bi bi-hospital"></i></div>
+        <div>
+          <div class="feed-text"><strong>{{ adm.patient.full_name }}</strong> admitted to {{ adm.bed.room.ward.name }}</div>
+          <div class="feed-time">{{ adm.admitted_at|timesince }} ago · Bed {{ adm.bed.label }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% for p in recent_patients|slice:":3" %}
+      <div class="feed-item">
+        <div class="feed-icon green"><i class="bi bi-person-plus"></i></div>
+        <div>
+          <div class="feed-text">New patient registered — <strong>{{ p.full_name }}</strong></div>
+          <div class="feed-time">{{ p.created_at|timesince }} ago · {{ p.hospital_number }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if pending_labs %}
+      <div class="feed-item">
+        <div class="feed-icon amber"><i class="bi bi-droplet-half"></i></div>
+        <div>
+          <div class="feed-text"><strong>{{ pending_labs }} lab order{{ pending_labs|pluralize }}</strong> awaiting results</div>
+          <div class="feed-time"><a href="{% url 'laboratory:worklist' %}" style="color:var(--sage-primary);text-decoration:none">View worklist <i class="bi bi-arrow-right" style="font-size:10px"></i></a></div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if not recent_admissions and not recent_patients and not pending_labs %}
+      <div style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">No recent activity</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

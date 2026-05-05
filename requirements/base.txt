@@ -1,0 +1,11 @@
+Django==6.0.4
+djangorestframework==3.17.1
+django-allauth==65.16.1
+django-otp==1.7.0
+python-decouple==3.8
+Pillow==11.2.1
+django-q2==1.7.4
+WeasyPrint==65.1
+reportlab==4.4.1
+qrcode==8.1
+django-jazzmin==3.0.4

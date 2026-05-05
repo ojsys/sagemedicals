@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Build Claim Batch{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Reports / NHIA Claims</div>
+    <h1 class="page-title">Build Claim Batch</h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'reports:claims' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+  </div>
+</div>
+
+<div style="max-width:520px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-head"><div class="card-title">Batch Parameters</div></div>
+
+      <div style="margin-bottom:14px">
+        <label class="form-label">Payer <span style="color:var(--sage-red)">*</span></label>
+        <select name="payer" class="form-select" required>
+          <option value="">Select payer…</option>
+          {% for p in payers %}
+          <option value="{{ p.pk }}">{{ p.name }} <span style="color:var(--text-3)">({{ p.get_payer_type_display }})</span></option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="row g-3" style="margin-bottom:14px">
+        <div class="col-6">
+          <label class="form-label">Period Start <span style="color:var(--sage-red)">*</span></label>
+          <input type="date" name="period_start" class="form-control"
+                 value="{{ default_start }}" required>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Period End <span style="color:var(--sage-red)">*</span></label>
+          <input type="date" name="period_end" class="form-control"
+                 value="{{ default_end }}" required>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary"><i class="bi bi-check2"></i>Build Batch</button>
+        <a href="{% url 'reports:claims' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

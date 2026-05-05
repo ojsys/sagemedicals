@@ -1,0 +1,34 @@
+<div style="background:rgba(184,58,38,.06);border:1px solid rgba(184,58,38,.25);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <i class="bi bi-exclamation-octagon-fill" style="color:var(--sage-red);font-size:16px"></i>
+    <strong style="color:var(--sage-red);font-size:14px">ALLERGY ALERT — Hard Stop</strong>
+  </div>
+  <p style="font-size:13px;color:var(--sage-ink);margin-bottom:12px">
+    <strong>{{ drug.generic_name }}</strong> conflicts with documented allergy:
+    <strong>{{ allergy.allergen }}</strong>
+    <span class="tag red" style="font-size:10px;margin-left:4px">{{ allergy.get_severity_display }}</span>
+    {% if allergy.reaction %}<br><span style="color:var(--text-3);font-size:12px">Reaction: {{ allergy.reaction }}</span>{% endif %}
+  </p>
+  <form hx-post="{% url 'prescriptions:create' encounter_pk %}"
+        hx-target="#rx-list" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% for key, val in post_data.items %}
+      {% if key != 'csrfmiddlewaretoken' %}
+      <input type="hidden" name="{{ key }}" value="{{ val }}">
+      {% endif %}
+    {% endfor %}
+    <input type="hidden" name="allergy_override" value="1">
+    <div style="margin-bottom:10px">
+      <label class="form-label" style="font-size:12px;font-weight:600">Override reason (required):</label>
+      <input name="allergy_override_reason" class="form-control" required
+             placeholder="Clinical justification for overriding allergy…">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary" style="background:var(--sage-red);border-color:var(--sage-red)">
+        <i class="bi bi-exclamation-triangle"></i>Override & Prescribe Anyway
+      </button>
+      <button type="button" class="btn btn-ghost"
+              onclick="document.getElementById('rx-form-body').innerHTML = ''">Cancel</button>
+    </div>
+  </form>
+</div>

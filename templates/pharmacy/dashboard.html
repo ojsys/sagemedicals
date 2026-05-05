@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Pharmacy{% endblock %}
+
+{% block extra_css %}
+.rx-queue-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 1.4fr auto auto 100px;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background .12s;
+  font-size: 13px;
+}
+.rx-queue-row:last-child { border-bottom: none; }
+.rx-queue-row:hover { background: var(--bg-2); }
+.qnum {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  width: 28px; height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.drug-list-mini {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Pharmacy · {% if store %}{{ store.name }}{% endif %}</div>
+    <h1 class="page-title">Dispensing <em>queue</em></h1>
+    <p class="page-sub">
+      {{ pending_dispenses|length }} prescription{{ pending_dispenses|length|pluralize }} awaiting dispense
+      {% if low_stock %} · <span style="color:var(--sage-amber)">{{ low_stock|length }} low stock alert{{ low_stock|length|pluralize }}</span>{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:inline">
+      <select name="store" class="form-select" style="min-width:180px;display:inline-block" onchange="this.form.submit()">
+        {% for s in stores %}
+        <option value="{{ s.pk }}" {% if store and store.pk == s.pk %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <a href="{% url 'pharmacy:receive' %}" class="btn btn-ghost"><i class="bi bi-box-arrow-in-down"></i>Receive Stock</a>
+    <a href="{% url 'pharmacy:stock' %}" class="btn btn-primary"><i class="bi bi-boxes"></i>Inventory</a>
+  </div>
+</div>
+
+{% if store %}
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-bag-check"></i></div>
+    <div class="stat-label">Awaiting Dispense</div>
+    <div class="stat-value num">{{ pending_dispenses|length }}</div>
+    <div class="stat-meta"><span class="delta {% if pending_dispenses %}amber{% else %}flat{% endif %}">{% if pending_dispenses %}Action needed{% else %}Queue clear{% endif %}</span></div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-exclamation-triangle"></i></div>
+    <div class="stat-label">Expiry Alerts</div>
+    <div class="stat-value num" {% if expiry_alerts %}style="color:var(--sage-amber)"{% endif %}>{{ expiry_alerts|length }}</div>
+    <div class="stat-meta">Within 90 days</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-red-soft);color:var(--sage-red)"><i class="bi bi-arrow-down-circle"></i></div>
+    <div class="stat-label">Low Stock</div>
+    <div class="stat-value num" {% if low_stock %}style="color:var(--sage-red)"{% endif %}>{{ low_stock|length }}</div>
+    <div class="stat-meta">Below reorder level</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-label">Active Store</div>
+    <div class="stat-value" style="font-size:16px;font-weight:500">{{ store.name }}</div>
+    <div class="stat-meta">Dispensing active</div>
+  </div>
+</div>
+
+<!-- Dispensing queue card -->
+<div class="queue-card" style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;margin-bottom:16px">
+  <div class="table-head" style="padding:14px 20px">
+    <div>
+      <div class="card-title">Today's prescriptions</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">Pending dispense</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <span class="chip on">All</span>
+      <span class="chip">OPD</span>
+      <span class="chip">Inpatient</span>
+    </div>
+  </div>
+
+  {% if pending_dispenses %}
+  {% for d in pending_dispenses %}
+  <div class="rx-queue-row">
+    <div class="qnum">{{ forloop.counter|stringformat:"02d" }}</div>
+
+    <div>
+      <div style="font-weight:500;color:var(--sage-ink)">{{ d.prescription.patient.full_name }}</div>
+      <div style="font-size:11.5px;color:var(--text-3);font-family:var(--mono);margin-top:2px">
+        {{ d.prescription.patient.hospital_number }}
+        {% if d.prescription.prescriber %} · Dr. {{ d.prescription.prescriber.last_name }}{% endif %}
+        · {{ d.prescription.created_at|time:"H:i" }}
+      </div>
+    </div>
+
+    <div class="drug-list-mini">
+      {{ d.prescription.drug }} {{ d.prescription.dose }}
+      × {{ d.prescription.quantity }}
+      — {{ d.prescription.get_frequency_display }}
+    </div>
+
+    <div>
+      {% if d.prescription.patient.payer_type == 'nhia' %}
+        <span class="tag teal" style="font-size:11px">NHIA</span>
+      {% elif d.prescription.patient.payer_type == 'private_hmo' %}
+        <span class="tag blue" style="font-size:11px">HMO · {{ d.prescription.patient.hmo_name|truncatechars:10 }}</span>
+      {% elif d.prescription.patient.payer_type == 'corporate' %}
+        <span class="tag blue" style="font-size:11px">Corporate</span>
+      {% else %}
+        <span class="tag gray" style="font-size:11px">Self-pay</span>
+      {% endif %}
+    </div>
+
+    <div class="num" style="font-weight:500;font-size:13px"></div>
+
+    <div style="text-align:right">
+      <a href="{% url 'pharmacy:dispense' d.prescription.pk %}" class="btn btn-teal btn-sm">Dispense</a>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div style="text-align:center;padding:48px;color:var(--text-3)">
+    <i class="bi bi-check-circle" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage-green);opacity:.5"></i>
+    <div style="font-size:13px">No prescriptions pending dispense.</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Two-col: expiry + low stock alerts -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+  <div class="table-wrap">
+    <div class="table-head">
+      <div class="card-title" style="color:var(--sage-amber)"><i class="bi bi-exclamation-triangle" style="margin-right:6px"></i>Expiring &lt;90 Days</div>
+    </div>
+    {% if expiry_alerts %}
+    <table class="data">
+      <thead><tr><th>Drug</th><th>Batch</th><th>Expiry</th><th style="text-align:right">Qty</th></tr></thead>
+      <tbody>
+        {% for b in expiry_alerts %}
+        <tr>
+          <td style="font-weight:500">{{ b.drug }}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--text-3)">{{ b.batch_number }}</td>
+          <td>
+            <span {% if b.expiry_date <= today %}style="color:var(--sage-red);font-weight:500"{% else %}style="color:var(--sage-amber)"{% endif %}>
+              {{ b.expiry_date|date:"d M Y" }}
+            </span>
+          </td>
+          <td class="num" style="text-align:right">{{ b.quantity_remaining }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:28px;color:var(--text-3);font-size:13px">No expiry alerts.</div>
+    {% endif %}
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-head">
+      <div class="card-title" style="color:var(--sage-red)"><i class="bi bi-arrow-down-circle" style="margin-right:6px"></i>Low Stock</div>
+    </div>
+    {% if low_stock %}
+    <table class="data">
+      <thead><tr><th>Drug</th><th style="text-align:right">On Hand</th><th style="text-align:right">Reorder</th></tr></thead>
+      <tbody>
+        {% for sl in low_stock %}
+        <tr>
+          <td style="font-weight:500">{{ sl.drug }}</td>
+          <td class="num" style="text-align:right;color:var(--sage-red)">{{ sl.quantity_on_hand }}</td>
+          <td class="num" style="text-align:right;color:var(--text-3)">{{ sl.reorder_level }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:28px;color:var(--text-3);font-size:13px">All stock levels adequate.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endif %}
+{% endblock %}

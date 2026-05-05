@@ -1,0 +1,55 @@
+{% extends "portal/base_portal.html" %}
+{% block title %}Lab Results{% endblock %}
+{% block nav_results %}active{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:20px">
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:4px">Laboratory</div>
+  <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:400;color:var(--sage-ink)">Lab Results</div>
+</div>
+
+{% for order in results %}
+<div class="portal-card" style="margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div>
+      <div style="font-weight:600;font-size:14px;color:var(--sage-ink)">{{ order.test.name }}</div>
+      <div style="color:var(--text-3);font-size:12px">{{ order.created_at|date:"d M Y" }}</div>
+    </div>
+    <span class="portal-tag portal-tag-green">Released</span>
+  </div>
+
+  {% if order.result %}
+  <div style="background:var(--bg);border-radius:var(--radius);padding:12px">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px">
+      <div>
+        <span style="color:var(--text-3)">Result:</span>
+        <strong style="margin-left:6px;{% if order.result.abnormal_flag in 'critical_low,critical_high' %}color:var(--sage-red){% elif order.result.abnormal_flag != 'normal' %}color:var(--sage-amber){% endif %}">
+          {{ order.result.value }} {{ order.result.unit }}
+        </strong>
+        {% if order.result.abnormal_flag != 'normal' %}
+        <span class="portal-tag portal-tag-amber" style="font-size:10px;margin-left:4px">{{ order.result.get_abnormal_flag_display }}</span>
+        {% endif %}
+      </div>
+      {% if order.result.reference_low or order.result.reference_high %}
+      <div>
+        <span style="color:var(--text-3)">Reference:</span>
+        <span style="margin-left:6px">{{ order.result.reference_low|default:"" }} – {{ order.result.reference_high|default:"" }}</span>
+      </div>
+      {% endif %}
+    </div>
+    {% if order.result.is_critical %}
+    <div style="margin-top:10px;background:var(--sage-red-soft);border:1px solid rgba(184,58,38,.2);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--sage-red)">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      Critical result — please contact your doctor immediately.
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% empty %}
+<div class="portal-card" style="text-align:center;padding:40px;color:var(--text-3)">
+  <i class="bi bi-flask" style="font-size:32px;display:block;margin-bottom:10px"></i>
+  No released lab results on file.
+</div>
+{% endfor %}
+{% endblock %}

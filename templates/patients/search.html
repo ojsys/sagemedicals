@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Patients{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Patient Master Index</div>
+    <h1 class="page-title">All <em>patients</em></h1>
+    {% if total_count %}
+    <p class="page-sub">{{ total_count|floatformat:"0" }} active records</p>
+    {% endif %}
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'patients:register' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i>Register Patient
+    </a>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div class="table-head">
+    <form method="get" action="{% url 'patients:search' %}" autocomplete="off" style="flex:1;max-width:420px">
+      <input type="hidden" name="filter" value="{{ filter_type }}">
+      <div style="position:relative">
+        <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:14px"></i>
+        <input type="text" name="q" value="{{ request.GET.q }}"
+               placeholder="Name, hospital number, phone, or NHIA ID…"
+               hx-get="{% url 'patients:search' %}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#search-results"
+               hx-include="closest form">
+      </div>
+    </form>
+    <div class="filters">
+      <a href="?filter=all{% if query %}&q={{ query }}{% endif %}"   class="chip {% if filter_type == 'all' %}on{% endif %}">All <span class="num">{{ total_count }}</span></a>
+      <a href="?filter=outpatient{% if query %}&q={{ query }}{% endif %}" class="chip {% if filter_type == 'outpatient' %}on{% endif %}">Outpatient</a>
+      <a href="?filter=inpatient{% if query %}&q={{ query }}{% endif %}" class="chip {% if filter_type == 'inpatient' %}on{% endif %}">Inpatient <span class="num">{{ inpatient_count }}</span></a>
+      <a href="?filter=ae{% if query %}&q={{ query }}{% endif %}"    class="chip {% if filter_type == 'ae' %}on{% endif %}">A&amp;E <span class="num">{{ ae_count }}</span></a>
+    </div>
+  </div>
+
+  <div id="search-results">
+    {% include "patients/partials/search_results.html" %}
+  </div>
+</div>
+{% endblock %}

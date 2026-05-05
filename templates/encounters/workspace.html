@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}Encounter — {{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow"><a href="{% url 'patients:detail' patient.pk %}" style="color:var(--text-3);text-decoration:none">{{ patient.full_name }}</a> / Encounter</div>
+    <h1 class="page-title">Active <em>encounter</em></h1>
+    <p class="page-sub">{{ encounter.get_encounter_type_display }} · {{ encounter.date_time|date:"d M Y, H:i" }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="#" class="btn btn-ghost"><i class="bi bi-printer"></i>Print</a>
+    {% if encounter.status == 'draft' %}
+    <form method="post" action="{% url 'encounters:sign' encounter.pk %}" style="display:inline"
+          onsubmit="return confirm('Sign and lock this encounter? This cannot be undone.')">
+      {% csrf_token %}
+      <button class="btn btn-teal"><i class="bi bi-check-lg"></i>Sign &amp; Close</button>
+    </form>
+    {% else %}
+    <span class="tag green"><span class="dot"></span>Signed</span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Patient header -->
+<div class="patient-header-card" style="margin-bottom:16px">
+  <div class="ph-grid">
+    <div class="patient-avatar">{{ patient.first_name.0 }}{{ patient.last_name.0 }}</div>
+    <div>
+      <div class="ph-name">{{ patient.full_name }}</div>
+      <div class="ph-id">{{ patient.hospital_number }} · {{ patient.age_display }} · {{ patient.get_sex_display }}</div>
+      <div class="ph-meta">
+        {% if patient.payer_type == 'nhia' %}<div class="ph-meta-item"><strong>NHIA</strong>{% if patient.nhia_number %} · {{ patient.nhia_number }}{% endif %}</div>{% endif %}
+        <div class="ph-meta-item">📞 {{ patient.phone }}</div>
+      </div>
+    </div>
+    <div class="ph-actions">
+      <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-sm" style="background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.15)">Full record</a>
+    </div>
+  </div>
+  {% if allergies %}
+  <div class="allergy-banner">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div><strong>Allergies:</strong> {% for a in allergies %}{{ a.allergen }}{% if a.reaction %} ({{ a.reaction }}){% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Vitals strip -->
+<div class="vitals">
+  {% if encounter.vitals %}
+  {% with v=encounter.vitals %}
+  {% if v.bp_systolic %}
+  <div class="vital {% if v.bp_systolic > 140 or v.bp_diastolic > 90 %}abnormal{% endif %}">
+    <div class="vital-label">BP</div>
+    <div class="vital-value num">{{ v.bp_systolic }}<span class="vital-unit">/{{ v.bp_diastolic }}</span></div>
+  </div>
+  {% endif %}
+  {% if v.pulse %}
+  <div class="vital {% if v.pulse > 100 or v.pulse < 60 %}abnormal{% endif %}">
+    <div class="vital-label">Pulse</div>
+    <div class="vital-value num">{{ v.pulse }}<span class="vital-unit">bpm</span></div>
+  </div>
+  {% endif %}
+  {% if v.temperature %}
+  <div class="vital {% if v.temperature > 37.5 %}abnormal{% endif %}">
+    <div class="vital-label">Temp</div>
+    <div class="vital-value num">{{ v.temperature }}<span class="vital-unit">°C</span></div>
+  </div>
+  {% endif %}
+  {% if v.spo2 %}
+  <div class="vital {% if v.spo2 < 95 %}abnormal{% endif %}">
+    <div class="vital-label">SpO₂</div>
+    <div class="vital-value num">{{ v.spo2 }}<span class="vital-unit">%</span></div>
+  </div>
+  {% endif %}
+  {% if v.weight %}
+  <div class="vital">
+    <div class="vital-label">Weight</div>
+    <div class="vital-value num">{{ v.weight }}<span class="vital-unit">kg</span></div>
+  </div>
+  {% endif %}
+  {% if v.bmi %}
+  <div class="vital">
+    <div class="vital-label">BMI</div>
+    <div class="vital-value num">{{ v.bmi }}</div>
+  </div>
+  {% endif %}
+  {% endwith %}
+  {% else %}
+  <div class="vital" style="grid-column:1/-1;text-align:center;color:var(--text-3);font-size:13px;padding:20px">
+    No vitals recorded yet
+    {% if encounter.status == 'draft' %}
+    — <a href="#vitals-form-collapse" data-bs-toggle="collapse" data-bs-target="#vitals-form-collapse" style="color:var(--sage-primary)">Record now</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% if encounter.status == 'draft' %}
+<div class="collapse" id="vitals-form-collapse" style="margin-bottom:16px">
+  <div class="card">
+    <div class="card-head"><div class="card-title" style="font-size:14px">Record Vitals</div></div>
+    <form hx-post="{% url 'encounters:vitals_save' encounter.pk %}"
+          hx-target=".vitals" hx-swap="outerHTML">
+      {% csrf_token %}
+      <div class="row g-2">
+        <div class="col-6 col-md-2"><label class="form-label">Temp (°C)</label>{{ vitals_form.temperature }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">BP Sys</label>{{ vitals_form.bp_systolic }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">BP Dia</label>{{ vitals_form.bp_diastolic }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">Pulse</label>{{ vitals_form.pulse }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">SpO₂ (%)</label>{{ vitals_form.spo2 }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">RR (/min)</label>{{ vitals_form.respiratory_rate }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">Weight (kg)</label>{{ vitals_form.weight }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">Height (cm)</label>{{ vitals_form.height }}</div>
+        <div class="col-6 col-md-2"><label class="form-label">Pain (0–10)</label>{{ vitals_form.pain_score }}</div>
+        <div class="col-12"><button type="submit" class="btn btn-primary btn-sm">Save Vitals</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="patient-shell">
+
+  <!-- Left: SOAP + orders -->
+  <div>
+
+    <!-- SOAP notes -->
+    {% if encounter.status == 'draft' %}
+    <form hx-post="{% url 'encounters:workspace' encounter.pk %}"
+          hx-target="#soap-save-indicator" hx-swap="innerHTML">
+      {% csrf_token %}
+      <div class="soap-grid">
+        <div class="soap-card">
+          <h4>Subjective</h4>
+          <textarea name="chief_complaint" class="soap-input" rows="2"
+                    placeholder="Chief complaint…">{{ form.chief_complaint.value|default:'' }}</textarea>
+          <div style="font-size:11px;color:var(--text-3);margin:6px 0 4px">History of presenting illness</div>
+          <textarea name="history_of_presenting_illness" class="soap-input" rows="4"
+                    placeholder="History of presenting illness…">{{ form.history_of_presenting_illness.value|default:'' }}</textarea>
+        </div>
+        <div class="soap-card">
+          <h4>Objective</h4>
+          <textarea name="review_of_systems" class="soap-input" rows="2"
+                    placeholder="Review of systems…" style="margin-bottom:8px">{{ form.review_of_systems.value|default:'' }}</textarea>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:6px">Examination findings</div>
+          <textarea name="examination_findings" class="soap-input" rows="4"
+                    placeholder="Examination findings…">{{ form.examination_findings.value|default:'' }}</textarea>
+        </div>
+        <div class="soap-card">
+          <h4>Assessment</h4>
+          <textarea name="assessment" class="soap-input" rows="6"
+                    placeholder="Working diagnosis / assessment…">{{ form.assessment.value|default:'' }}</textarea>
+        </div>
+        <div class="soap-card">
+          <h4>Plan</h4>
+          <textarea name="plan" class="soap-input" rows="6"
+                    placeholder="Management plan…">{{ form.plan.value|default:'' }}</textarea>
+        </div>
+      </div>
+      <input type="hidden" name="encounter_type" value="{{ encounter.encounter_type }}">
+      <input type="hidden" name="location" value="{{ encounter.location }}">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <button type="submit" class="btn btn-ghost btn-sm"><i class="bi bi-cloud-check"></i>Save Draft</button>
+        <span id="soap-save-indicator" style="font-size:12px;color:var(--text-3)"></span>
+      </div>
+    </form>
+    {% else %}
+    <div class="soap-grid" style="margin-bottom:16px">
+      {% if encounter.chief_complaint %}
+      <div class="soap-card"><h4>Subjective</h4><div style="font-size:13.5px;line-height:1.6">{{ encounter.chief_complaint }}{% if encounter.history_of_presenting_illness %}<br><br>{{ encounter.history_of_presenting_illness }}{% endif %}</div></div>
+      {% endif %}
+      {% if encounter.examination_findings %}
+      <div class="soap-card"><h4>Objective</h4><div style="font-size:13.5px;line-height:1.6">{{ encounter.examination_findings }}</div></div>
+      {% endif %}
+      {% if encounter.assessment %}
+      <div class="soap-card"><h4>Assessment</h4><div style="font-size:13.5px;line-height:1.6">{{ encounter.assessment }}</div></div>
+      {% endif %}
+      {% if encounter.plan %}
+      <div class="soap-card"><h4>Plan</h4><div style="font-size:13.5px;line-height:1.6">{{ encounter.plan }}</div></div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Diagnoses -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head">
+        <div class="card-title" style="font-size:15px"><i class="bi bi-clipboard2-pulse" style="margin-right:8px"></i>Diagnoses</div>
+        {% if encounter.status == 'draft' %}
+        <button class="btn btn-sm btn-ghost" data-bs-toggle="collapse" data-bs-target="#diagnosis-form"><i class="bi bi-plus"></i></button>
+        {% endif %}
+      </div>
+      {% if encounter.status == 'draft' %}
+      <div class="collapse" id="diagnosis-form" style="margin-bottom:12px">
+        <form hx-post="{% url 'encounters:diagnosis_add' encounter.pk %}"
+              hx-target="#diagnosis-list" hx-swap="innerHTML"
+              style="background:var(--surface-warm);border:1px solid var(--line);border-radius:var(--radius);padding:14px">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-md-3"><label class="form-label">ICD-10</label><input name="icd10_code" class="form-control" placeholder="I10"></div>
+            <div class="col-md-6"><label class="form-label">Description *</label><input name="description" class="form-control" placeholder="Essential hypertension" required></div>
+            <div class="col-md-3"><label class="form-label">Type</label><select name="diagnosis_type" class="form-select"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="working">Working</option></select></div>
+            <div class="col-12"><button type="submit" class="btn btn-ghost btn-sm">Add Diagnosis</button></div>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+      <div id="diagnosis-list">
+        {% include "encounters/partials/diagnosis_list.html" %}
+      </div>
+    </div>
+
+    <!-- Prescriptions -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head">
+        <div class="card-title" style="font-size:15px"><i class="bi bi-capsule" style="margin-right:8px"></i>Prescriptions</div>
+        {% if encounter.status == 'draft' %}
+        <button class="btn btn-sm btn-ghost" data-bs-toggle="collapse" data-bs-target="#rx-form"><i class="bi bi-plus"></i></button>
+        {% endif %}
+      </div>
+      {% if encounter.status == 'draft' %}
+      <div class="collapse" id="rx-form" style="margin-bottom:12px">
+        <form hx-post="{% url 'prescriptions:create' encounter.pk %}"
+              hx-target="#rx-list" hx-swap="innerHTML"
+              style="background:var(--surface-warm);border:1px solid var(--line);border-radius:var(--radius);padding:14px">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-md-5">
+              <label class="form-label">Drug *</label>
+              <input name="drug_search" class="form-control" placeholder="Search drug…"
+                     hx-get="{% url 'prescriptions:drug_search' %}" hx-target="#drug-options"
+                     hx-trigger="keyup changed delay:250ms" hx-include="[name='drug_search']" autocomplete="off">
+              <div id="drug-options" style="position:relative;z-index:100"></div>
+              <input type="hidden" name="drug" id="drug-id">
+            </div>
+            <div class="col-md-2"><label class="form-label">Dose</label><input name="dose" class="form-control" placeholder="500mg"></div>
+            <div class="col-md-2"><label class="form-label">Freq.</label>
+              <select name="frequency" class="form-select">
+                <option value="od">OD</option><option value="bd">BD</option><option value="tds">TDS</option>
+                <option value="qid">QID</option><option value="prn">PRN</option><option value="stat">STAT</option>
+              </select>
+            </div>
+            <div class="col-md-1"><label class="form-label">Days</label><input name="duration_days" type="number" class="form-control" min="1" placeholder="7"></div>
+            <div class="col-md-2"><label class="form-label">Qty</label><input name="quantity" type="number" class="form-control" min="1" value="1"></div>
+            <div class="col-12"><input name="instructions" class="form-control" placeholder="Special instructions (optional)"></div>
+            <div class="col-12"><button type="submit" class="btn btn-sm" style="background:var(--sage-primary);color:#fff"><i class="bi bi-capsule"></i>Prescribe</button></div>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+      <div id="rx-list">
+        {% include "prescriptions/partials/prescription_list.html" %}
+      </div>
+    </div>
+
+    <!-- Lab Orders -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title" style="font-size:15px"><i class="bi bi-droplet-half" style="margin-right:8px"></i>Lab Orders</div>
+        {% if encounter.status == 'draft' %}
+        <button class="btn btn-sm btn-ghost" data-bs-toggle="collapse" data-bs-target="#lab-form"><i class="bi bi-plus"></i></button>
+        {% endif %}
+      </div>
+      {% if encounter.status == 'draft' %}
+      <div class="collapse" id="lab-form" style="margin-bottom:12px">
+        <form hx-post="{% url 'laboratory:order_create' encounter.pk %}"
+              hx-target="#lab-order-list" hx-swap="innerHTML"
+              style="background:var(--surface-warm);border:1px solid var(--line);border-radius:var(--radius);padding:14px">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Test *</label>
+              <select name="test" class="form-select">
+                <option value="">— Select test —</option>
+                {% for test in lab_tests %}<option value="{{ test.pk }}">{{ test.name }} ({{ test.panel }})</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Priority</label>
+              <select name="priority" class="form-select">
+                <option value="routine">Routine</option><option value="urgent">Urgent</option><option value="stat">STAT</option>
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button type="submit" class="btn btn-ghost btn-sm w-100">Order</button>
+            </div>
+            <div class="col-12"><input name="clinical_notes" class="form-control" placeholder="Clinical notes (optional)"></div>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+      <div id="lab-order-list">
+        {% include "laboratory/partials/lab_order_list.html" %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right rail -->
+  <div class="rail">
+
+    <!-- Active conditions -->
+    {% if conditions %}
+    <div class="card">
+      <div class="card-title" style="font-size:14px;margin-bottom:12px"><i class="bi bi-journal" style="margin-right:8px"></i>Active Problems</div>
+      <ul class="problem-list">
+        {% for c in conditions %}
+        <li>
+          <div class="problem-name">{{ c.description }}</div>
+          {% if c.icd10_code %}<div class="problem-meta">{{ c.icd10_code }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <!-- Recent labs -->
+    {% if recent_labs %}
+    <div class="card">
+      <div class="card-title" style="font-size:14px;margin-bottom:12px"><i class="bi bi-graph-up" style="margin-right:8px"></i>Recent Labs</div>
+      {% for order in recent_labs %}
+      {% if order.result %}
+      <div class="lab-strip">
+        <div class="lab-name">{{ order.test.name }}</div>
+        <div class="lab-val {% if order.result.abnormal_flag in 'critical_high,high' %}high{% elif order.result.abnormal_flag in 'critical_low,low' %}low{% else %}normal{% endif %}">{{ order.result.value }} {{ order.result.unit }}</div>
+        <div class="lab-time">{{ order.created_at|date:"d M" }}</div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Invoice -->
+    {% for invoice in encounter.invoices.all %}
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title" style="font-size:14px"><i class="bi bi-receipt" style="margin-right:8px"></i>{{ invoice.invoice_number }}</div>
+        <a href="{% url 'billing:invoice' invoice.pk %}" class="btn btn-sm btn-ghost">View</a>
+      </div>
+      {% for item in invoice.items.all %}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line-soft);font-size:13px">
+        <span style="color:var(--text-2)">{{ item.description }}</span>
+        <span class="num">₦{{ item.total|floatformat:0 }}</span>
+      </div>
+      {% endfor %}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:600;border-top:1px solid var(--line)">
+        <span>Total</span>
+        <span class="num">₦{{ invoice.total|floatformat:0 }}</span>
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('htmx:afterSwap', function(e) {
+  if (e.detail.target.id === 'drug-options') {
+    document.querySelectorAll('#drug-options button[data-pk]').forEach(item => {
+      item.addEventListener('click', function() {
+        document.getElementById('drug-id').value = this.dataset.pk;
+        document.querySelector('[name=drug_search]').value = this.textContent.trim();
+        document.getElementById('drug-options').innerHTML = '';
+      });
+    });
+  }
+});
+</script>
+{% endblock %}

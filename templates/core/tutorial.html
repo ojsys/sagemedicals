@@ -1,0 +1,797 @@
+{% extends "base.html" %}
+{% block title %}Staff Tutorial — SAGE EMR{% endblock %}
+
+{% block extra_css %}
+.toc { position: sticky; top: 80px; }
+.toc a { display: block; padding: 5px 10px; font-size: 12.5px; color: var(--text-2); text-decoration: none; border-left: 2px solid var(--line); transition: all .15s; }
+.toc a:hover { color: var(--sage-primary); border-left-color: var(--sage-primary); background: var(--bg); }
+.toc a.active { color: var(--sage-primary); border-left-color: var(--sage-primary); font-weight: 500; }
+.toc-section { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--text-3); font-weight: 600; padding: 14px 10px 4px; }
+
+.tutorial-body { max-width: 820px; }
+.tutorial-body h2 {
+  font-family: var(--display); font-size: 28px; font-weight: 400;
+  letter-spacing: -.02em; color: var(--sage-ink);
+  margin: 48px 0 6px; padding-top: 16px;
+  border-top: 2px solid var(--sage-ink);
+}
+.tutorial-body h2:first-of-type { margin-top: 0; border-top: none; }
+.tutorial-body h3 {
+  font-family: var(--display); font-size: 19px; font-weight: 500;
+  color: var(--sage-ink); margin: 32px 0 10px;
+}
+.tutorial-body h4 {
+  font-size: 13px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-2); margin: 24px 0 8px;
+}
+.tutorial-body p { color: var(--text-2); line-height: 1.7; margin-bottom: 12px; font-size: 14px; }
+.tutorial-body ol, .tutorial-body ul { color: var(--text-2); line-height: 1.7; margin-bottom: 12px; padding-left: 22px; font-size: 14px; }
+.tutorial-body li { margin-bottom: 5px; }
+.tutorial-body strong { color: var(--sage-ink); font-weight: 600; }
+.tutorial-body code { font-family: var(--mono); font-size: 12.5px; background: var(--bg-2); padding: 1px 6px; border-radius: 4px; color: var(--sage-primary); }
+.tutorial-body hr { border: none; border-top: 1px solid var(--line); margin: 32px 0; }
+
+/* Role badge */
+.role-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+}
+.role-badge.reception { background: #E5EEF6; color: var(--sage-primary); }
+.role-badge.nurse     { background: var(--sage-teal-soft); color: var(--sage-teal); }
+.role-badge.doctor    { background: var(--sage-red-soft); color: var(--sage-red); }
+.role-badge.lab       { background: var(--sage-amber-soft); color: var(--sage-amber); }
+.role-badge.pharmacy  { background: var(--sage-green-soft); color: var(--sage-green); }
+.role-badge.billing   { background: #EDE9FE; color: #6D28D9; }
+.role-badge.all       { background: var(--bg-2); color: var(--text-2); }
+
+/* Callout boxes */
+.callout {
+  border-radius: var(--radius); padding: 14px 16px;
+  margin: 16px 0; display: flex; gap: 12px; font-size: 13.5px;
+}
+.callout i { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.callout.tip    { background: var(--sage-teal-soft);  border-left: 4px solid var(--sage-teal);  color: #0d5c52; }
+.callout.warn   { background: var(--sage-amber-soft); border-left: 4px solid var(--sage-amber); color: #6F4612; }
+.callout.alert  { background: var(--sage-red-soft);   border-left: 4px solid var(--sage-red);   color: #7A1F0F; }
+.callout.info   { background: #E5EEF6;                border-left: 4px solid var(--sage-primary); color: #0A3560; }
+
+/* Steps */
+.steps { counter-reset: step; list-style: none; padding: 0; }
+.steps li { counter-increment: step; display: flex; gap: 14px; margin-bottom: 14px; align-items: flex-start; }
+.steps li::before {
+  content: counter(step);
+  min-width: 26px; height: 26px;
+  background: var(--sage-ink); color: #fff;
+  border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; font-family: var(--mono);
+  flex-shrink: 0; margin-top: 1px;
+}
+
+/* Status flow */
+.flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.flow-step { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; background: var(--surface); border: 1px solid var(--line); color: var(--text-2); }
+.flow-step.done { background: var(--sage-green-soft); border-color: #B5D5C2; color: var(--sage-green); }
+.flow-arrow { color: var(--text-3); font-size: 12px; }
+
+/* Quick ref table */
+.quick-ref { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+.quick-ref th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); font-weight: 600; padding: 8px 14px; background: var(--bg); border-bottom: 2px solid var(--line); }
+.quick-ref td { padding: 11px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--text-2); }
+.quick-ref tr:last-child td { border-bottom: none; }
+
+.section-intro { background: var(--surface-warm); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; }
+.section-intro-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:start">
+
+  <!-- Table of Contents -->
+  <nav class="toc" style="padding-top:4px">
+    <div class="toc-section">Getting Started</div>
+    <a href="#start">Overview</a>
+    <a href="#login">Logging In</a>
+    <a href="#dashboard">Dashboard</a>
+
+    <div class="toc-section">Reception</div>
+    <a href="#patient-search">Find a Patient</a>
+    <a href="#register">Register Patient</a>
+    <a href="#book">Book Appointment</a>
+    <a href="#walkin">Walk-In & Check-In</a>
+
+    <div class="toc-section">Nursing</div>
+    <a href="#queue">Clinic Queue</a>
+    <a href="#triage">Triage</a>
+
+    <div class="toc-section">Clinical</div>
+    <a href="#encounter">Start a Consultation</a>
+    <a href="#soap">SOAP Notes</a>
+    <a href="#vitals">Vitals</a>
+    <a href="#diagnose">Diagnoses</a>
+    <a href="#prescribe">Prescribing</a>
+    <a href="#lab-order">Lab Orders</a>
+    <a href="#sign">Signing Off</a>
+    <a href="#admit">Admitting a Patient</a>
+    <a href="#ward">Ward Rounds & eMAR</a>
+    <a href="#discharge">Discharge</a>
+    <a href="#surgery">Surgery Booking</a>
+
+    <div class="toc-section">Laboratory</div>
+    <a href="#lab-worklist">Worklist</a>
+    <a href="#lab-collect">Sample Collection</a>
+    <a href="#lab-result">Entering Results</a>
+    <a href="#lab-verify">Verify & Release</a>
+    <a href="#lab-critical">Critical Values</a>
+
+    <div class="toc-section">Pharmacy</div>
+    <a href="#dispense">Dispensing Queue</a>
+    <a href="#stock">Stock Management</a>
+    <a href="#receive">Goods Receipt</a>
+
+    <div class="toc-section">Billing</div>
+    <a href="#invoice">Invoices</a>
+    <a href="#payment">Recording Payment</a>
+
+    <div class="toc-section">Administration</div>
+    <a href="#reports">Reports</a>
+    <a href="#claims">NHIA Claims</a>
+
+    <div class="toc-section">Patients</div>
+    <a href="#portal">Patient Portal</a>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="tutorial-body">
+
+    <!-- Hero -->
+    <div style="margin-bottom:40px">
+      <div class="eyebrow">Staff Reference Guide</div>
+      <h1 class="page-title" style="font-size:48px">SAGE EMR <em>Tutorial</em></h1>
+      <p class="page-sub" style="font-size:15px;max-width:600px;margin-top:12px">
+        A step-by-step guide to every part of the system — from registering your first patient to generating monthly returns. Find your role below and follow along.
+      </p>
+    </div>
+
+    <!-- Quick role reference -->
+    <div class="card" style="margin-bottom:40px">
+      <div class="card-head"><div class="card-title">Who uses what?</div></div>
+      <table class="quick-ref">
+        <thead><tr><th>Role</th><th>Key Sections</th><th>Daily Starting Point</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="role-badge reception">Receptionist</span></td>
+            <td>Patients, Scheduling, Billing</td>
+            <td>Dashboard → Today's Queue</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge nurse">Nurse</span></td>
+            <td>Queue, Triage, Encounters (vitals), Admissions (eMAR)</td>
+            <td>Scheduling → Queue</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge doctor">Doctor / Resident</span></td>
+            <td>Encounters, Prescriptions, Lab orders, Admissions</td>
+            <td>Dashboard → Clinic Queue</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge lab">Lab Technician</span></td>
+            <td>Laboratory Worklist</td>
+            <td>Laboratory → Worklist</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge pharmacy">Pharmacist</span></td>
+            <td>Pharmacy Queue, Stock, Goods Receipt</td>
+            <td>Pharmacy → Dashboard</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge billing">Billing Officer</span></td>
+            <td>Billing, Reports</td>
+            <td>Billing → Invoice List</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 1 — GETTING STARTED
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="start">Part 1 — Getting Started</h2>
+
+    <h3 id="login">Logging In</h3>
+    <span class="role-badge all">All Staff</span>
+    <ol class="steps" style="margin-top:14px">
+      <li>Open your web browser and go to the SAGE EMR address provided by your IT department.</li>
+      <li>Enter your <strong>email address</strong> and <strong>password</strong>.</li>
+      <li>Click <strong>Sign In</strong>.</li>
+      <li>If your account is protected by two-factor authentication, enter the 6-digit code from your authenticator app.</li>
+    </ol>
+    <div class="callout warn">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>After <strong>5 failed login attempts</strong> your account is locked for 30 minutes. Contact your administrator if this happens.</div>
+    </div>
+    <div class="callout tip">
+      <i class="bi bi-lightbulb"></i>
+      <div>Your session will time out after a period of inactivity. Save your work and log back in if you see the login screen unexpectedly.</div>
+    </div>
+
+    <h3 id="dashboard">The Dashboard</h3>
+    <span class="role-badge all">All Staff</span>
+    <p style="margin-top:10px">The Dashboard is the first screen you see after logging in. It gives you a live snapshot of the hospital right now.</p>
+    <ul>
+      <li><strong>Today's Patients</strong> — new registrations this morning.</li>
+      <li><strong>Active Admissions</strong> — inpatients currently in beds.</li>
+      <li><strong>Queue Today</strong> — patients waiting or in consultation.</li>
+      <li><strong>Pending Labs</strong> — lab orders not yet released.</li>
+    </ul>
+    <p>Below the stats, <strong>Today's Clinic Queue</strong> shows every patient booked for today. Click a patient's row to open their profile. Use the <strong>Waiting / In Progress / Done</strong> filter chips to focus on a specific group.</p>
+    <p>The <strong>Recent Activity</strong> panel on the right shows the latest events across the hospital in real time.</p>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 2 — RECEPTION
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="reception">Part 2 — Reception & Registration</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:#E5EEF6;color:var(--sage-primary)"><i class="bi bi-person-lines-fill"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Receptionists & Records Officers</div>
+        <div style="font-size:13px;color:var(--text-2)">Your job is to get patients into the system quickly and accurately. Every clinical interaction begins here.</div>
+      </div>
+    </div>
+
+    <h3 id="patient-search">Finding a Patient</h3>
+    <span class="role-badge reception">Reception</span>
+    <p style="margin-top:10px">Before registering anyone, always <strong>search first</strong> to avoid duplicate records.</p>
+    <ol class="steps">
+      <li>Click <strong>Patients</strong> in the left sidebar.</li>
+      <li>Type the patient's name, hospital number, phone number, or NHIA ID in the search box. Results appear as you type.</li>
+      <li>Click the patient's name to open their profile.</li>
+    </ol>
+    <p>Use the filter chips at the top of the list — <strong>Inpatient</strong> shows only admitted patients, <strong>A&E</strong> shows today's emergency attendees.</p>
+
+    <h3 id="register">Registering a New Patient</h3>
+    <span class="role-badge reception">Reception</span>
+    <ol class="steps">
+      <li>Go to <strong>Patients → Register Patient</strong> (or click the button on the dashboard).</li>
+      <li>Fill in the patient's details. Fields marked with a red <strong>*</strong> are required.</li>
+      <li>
+        <strong>Payer Type</strong> is important — select the correct one:
+        <ul style="margin-top:6px">
+          <li><strong>NHIA</strong> — National Health Insurance. Enter the NHIA number.</li>
+          <li><strong>Private HMO</strong> — Enter the HMO name and member number.</li>
+          <li><strong>Corporate / Employer</strong> — Company pays.</li>
+          <li><strong>Self Pay</strong> — Patient pays directly.</li>
+        </ul>
+      </li>
+      <li>If the system detects a possible duplicate, it will show a warning. Review the listed patients carefully before continuing.</li>
+      <li>Add <strong>Next of Kin</strong> details at the bottom.</li>
+      <li>Click <strong>Register Patient</strong>. A unique hospital number (<code>SAGE/YYYY/XXXXXX</code>) is automatically generated.</li>
+    </ol>
+    <div class="callout alert">
+      <i class="bi bi-exclamation-circle"></i>
+      <div><strong>Never ignore the duplicate warning.</strong> Two records for the same patient leads to split clinical history. Always check before creating a new record.</div>
+    </div>
+
+    <h3 id="book">Booking an Appointment</h3>
+    <span class="role-badge reception">Reception</span>
+    <ol class="steps">
+      <li>Go to <strong>Scheduling → Book Appointment</strong>.</li>
+      <li>Search for and select the patient.</li>
+      <li>Choose the <strong>Clinic</strong> (e.g., General Outpatient, Cardiology, ANC).</li>
+      <li>Select a <strong>Date</strong> and available <strong>Time Slot</strong>.</li>
+      <li>Set the <strong>Visit Type</strong>: New Patient, Follow-up, Procedure, or Review.</li>
+      <li>Add a brief <strong>Reason for Visit</strong> (optional but helpful for the doctor).</li>
+      <li>Click <strong>Book Appointment</strong>.</li>
+    </ol>
+
+    <h3 id="walkin">Walk-In Patients & Check-In</h3>
+    <span class="role-badge reception">Reception</span>
+    <h4>Walk-In (no prior appointment)</h4>
+    <ol class="steps">
+      <li>Go to <strong>Scheduling → Walk-In</strong>.</li>
+      <li>Search for the patient or register them if new.</li>
+      <li>Select the clinic and add the patient to today's queue.</li>
+    </ol>
+    <h4>Checking In (patient with an appointment)</h4>
+    <ol class="steps">
+      <li>Go to <strong>Scheduling → Appointments</strong> or the daily queue.</li>
+      <li>Find the patient's appointment.</li>
+      <li>Click <strong>Check In</strong>. This marks them as arrived and moves them to the active queue.</li>
+    </ol>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 3 — NURSING
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="nursing">Part 3 — Nursing & Triage</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:var(--sage-teal-soft);color:var(--sage-teal)"><i class="bi bi-heart-pulse"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Nurses</div>
+        <div style="font-size:13px;color:var(--text-2)">You manage patient flow through the clinic — triage, vital signs, and ensuring the queue moves smoothly.</div>
+      </div>
+    </div>
+
+    <h3 id="queue">The Clinic Queue</h3>
+    <span class="role-badge nurse">Nurse</span>
+    <p style="margin-top:10px">The queue is your central screen. Go to <strong>Scheduling → Queue</strong>.</p>
+    <ul>
+      <li>Patients are listed in arrival order.</li>
+      <li>The coloured bar on the left of each row is the triage priority: <span style="color:var(--sage-red)">■ Red</span> (immediate), <span style="color:var(--sage-amber)">■ Amber</span> (urgent), <span style="color:var(--sage-green)">■ Green</span> (non-urgent).</li>
+      <li>Filter by <strong>Waiting</strong>, <strong>In Progress</strong>, or <strong>Done</strong> using the chips at the top.</li>
+    </ul>
+
+    <h3 id="triage">Triaging a Patient</h3>
+    <span class="role-badge nurse">Nurse</span>
+    <ol class="steps">
+      <li>Find the patient in the queue and click their row.</li>
+      <li>Click <strong>Triage</strong>.</li>
+      <li>
+        Assign a <strong>Priority Level</strong>:
+        <ul style="margin-top:6px">
+          <li><span style="color:var(--sage-red);font-weight:600">🔴 Red — Immediate:</span> Life-threatening. Resuscitation required now.</li>
+          <li><span style="color:var(--sage-amber);font-weight:600">🟡 Amber — Urgent:</span> Serious condition. See within 30 minutes.</li>
+          <li><span style="color:var(--sage-green);font-weight:600">🟢 Green — Non-Urgent:</span> Stable. Can wait for routine consultation.</li>
+        </ul>
+      </li>
+      <li>Add any triage notes (e.g., "Patient looks pale, complaining of chest pain").</li>
+      <li>Save. The queue will re-order accordingly.</li>
+    </ol>
+    <div class="callout tip">
+      <i class="bi bi-lightbulb"></i>
+      <div>Vitals are recorded inside the encounter workspace. A doctor or nurse can enter them once the encounter is opened.</div>
+    </div>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 4 — CLINICAL
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="clinical">Part 4 — Clinical Workflow (Doctors & Residents)</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:var(--sage-red-soft);color:var(--sage-red)"><i class="bi bi-stethoscope"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Doctors & Residents</div>
+        <div style="font-size:13px;color:var(--text-2)">The encounter is your digital consultation note. Everything — diagnoses, prescriptions, lab orders — flows from here.</div>
+      </div>
+    </div>
+
+    <h3 id="encounter">Starting a Consultation (Encounter)</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>From the Dashboard or Queue, click the patient's name to open their profile.</li>
+      <li>Click <strong>Start Encounter</strong> on the patient's profile page.</li>
+      <li>Select the <strong>Encounter Type</strong>: OPD, A&E, IPD Ward Round, Procedure, or Telemedicine.</li>
+      <li>The encounter workspace opens. You are now the attending clinician on record.</li>
+    </ol>
+    <div class="callout info">
+      <i class="bi bi-info-circle"></i>
+      <div>Starting an encounter automatically moves the patient's queue status from <strong>Waiting</strong> to <strong>With Doctor</strong> and generates a consultation invoice.</div>
+    </div>
+
+    <h3 id="soap">Writing SOAP Notes</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <p style="margin-top:10px">The encounter workspace is organised using the standard SOAP format.</p>
+    <table class="quick-ref" style="margin:0 0 16px">
+      <thead><tr><th style="width:120px">Section</th><th>What to write</th></tr></thead>
+      <tbody>
+        <tr><td><strong>S — Subjective</strong></td><td><strong>Chief Complaint</strong> (why they came) and <strong>History of Presenting Illness</strong> (onset, duration, character, associated symptoms).</td></tr>
+        <tr><td><strong>O — Objective</strong></td><td><strong>Review of Systems</strong> and <strong>Examination Findings</strong> (what you found on examination).</td></tr>
+        <tr><td><strong>A — Assessment</strong></td><td>Your clinical <strong>Assessment</strong> — working diagnosis and reasoning.</td></tr>
+        <tr><td><strong>P — Plan</strong></td><td><strong>Management Plan</strong> — what you are going to do: investigations, medications, referrals, follow-up.</td></tr>
+      </tbody>
+    </table>
+    <p>Notes auto-save as you type. You do not need to click a save button.</p>
+
+    <h3 id="vitals">Recording Vital Signs</h3>
+    <span class="role-badge nurse">Nurse</span> <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>In the encounter workspace, find the <strong>Vitals</strong> section.</li>
+      <li>Enter the readings: Temperature, Blood Pressure (systolic / diastolic), Pulse, SpO₂, Respiratory Rate, Weight, Height, Pain Score.</li>
+      <li>Click <strong>Save Vitals</strong>.</li>
+    </ol>
+    <p>Abnormal values are automatically highlighted in red — blood pressure above 140/90, pulse outside 60–100, temperature above 37.5 °C, or SpO₂ below 95%.</p>
+
+    <h3 id="diagnose">Adding Diagnoses</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>In the <strong>Diagnoses</strong> section of the encounter, click <strong>Add Diagnosis</strong>.</li>
+      <li>Enter the <strong>Description</strong> (e.g., "Essential Hypertension").</li>
+      <li>Optionally add the <strong>ICD-10 code</strong> for precision (e.g., I10).</li>
+      <li>Set the type: <strong>Primary</strong>, <strong>Secondary</strong>, or <strong>Working/Provisional</strong>.</li>
+      <li>Click <strong>Add</strong>.</li>
+    </ol>
+    <p>You can add multiple diagnoses per encounter. Primary diagnoses appear first.</p>
+
+    <h3 id="prescribe">Prescribing Medication</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>In the <strong>Prescriptions</strong> section of the encounter, type the drug name to search the formulary.</li>
+      <li>Select the correct drug from the dropdown (generic name and strength are shown).</li>
+      <li>Fill in: <strong>Dose</strong>, <strong>Frequency</strong>, <strong>Route</strong>, <strong>Duration</strong> (days), and <strong>Quantity</strong>.</li>
+      <li>Add any special <strong>Instructions</strong> for the patient.</li>
+      <li>Click <strong>Add Prescription</strong>.</li>
+    </ol>
+    <div class="callout alert">
+      <i class="bi bi-shield-exclamation"></i>
+      <div>
+        <strong>Safety Checks — Pay Attention:</strong>
+        <ul style="margin:6px 0 0">
+          <li><strong>Allergy Alert:</strong> If the drug matches a recorded allergy, a red warning appears. You must document a reason to override.</li>
+          <li><strong>Drug Interaction:</strong> If there is a known interaction with another active prescription, an amber warning appears. Review and acknowledge before proceeding.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p><strong>Frequency codes:</strong></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <code>OD</code> — Once daily &nbsp;
+      <code>BD</code> — Twice daily &nbsp;
+      <code>TDS</code> — Three times daily &nbsp;
+      <code>QID</code> — Four times daily &nbsp;
+      <code>PRN</code> — As needed &nbsp;
+      <code>STAT</code> — Immediately, once
+    </div>
+
+    <h3 id="lab-order">Ordering Lab Tests</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>In the <strong>Lab Orders</strong> section of the encounter, search for the test by name or panel.</li>
+      <li>Select the test (e.g., FBC, LFT, Malaria RDT).</li>
+      <li>Set the <strong>Priority</strong>: Routine, Urgent, or STAT.</li>
+      <li>Add <strong>Clinical Notes</strong> for the lab (optional but useful for unusual requests).</li>
+      <li>Click <strong>Order Test</strong>.</li>
+    </ol>
+    <div class="callout tip">
+      <i class="bi bi-lightbulb"></i>
+      <div>Set priority to <strong>STAT</strong> for critical patients — this moves the order to the top of the lab worklist immediately.</div>
+    </div>
+
+    <h3 id="sign">Signing Off an Encounter</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <p style="margin-top:10px">When you are finished with the consultation, you must <strong>sign the encounter</strong>. This is the equivalent of completing and filing the patient's notes.</p>
+    <ol class="steps">
+      <li>Review all sections — SOAP notes, vitals, diagnoses, prescriptions, and lab orders.</li>
+      <li>Click <strong>Sign &amp; Close</strong> at the top of the workspace.</li>
+      <li>Confirm in the dialog that appears.</li>
+    </ol>
+    <div class="callout warn">
+      <i class="bi bi-lock"></i>
+      <div><strong>Signing is permanent.</strong> Once signed, the encounter is locked and cannot be edited. Make sure all information is correct before signing.</div>
+    </div>
+    <p>After signing, the patient's queue status changes to <strong>Done</strong>, and their prescriptions become visible in the pharmacy queue.</p>
+
+    <h3 id="admit">Admitting a Patient</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>Open the patient's profile.</li>
+      <li>Click <strong>Admit Patient</strong>.</li>
+      <li>Select the <strong>Ward</strong> and an <strong>Available Bed</strong> from the bed map.</li>
+      <li>Enter the <strong>Admitting Diagnosis</strong> and any admission notes.</li>
+      <li>Confirm. The patient is now an inpatient — their bed shows as occupied on the ward map.</li>
+    </ol>
+
+    <h3 id="ward">Ward Rounds & Medication Administration (eMAR)</h3>
+    <span class="role-badge nurse">Nurse</span> <span class="role-badge doctor">Doctor</span>
+    <h4>Adding a Ward Round Note</h4>
+    <ol class="steps">
+      <li>Go to <strong>Admissions</strong> and click the patient.</li>
+      <li>Click <strong>Add Round Note</strong>.</li>
+      <li>Document the patient's current status, any changes to the plan, and your name.</li>
+    </ol>
+    <h4>Medication Administration Record (eMAR)</h4>
+    <ol class="steps">
+      <li>In the patient's admission detail, find the <strong>eMAR</strong> section.</li>
+      <li>Click the medication that was due.</li>
+      <li>Set the outcome: <strong>Given</strong>, <strong>Held</strong>, <strong>Refused by Patient</strong>, or <strong>Not Available</strong>.</li>
+      <li>Note the actual dose if it differed, and add any administration notes.</li>
+      <li>Save.</li>
+    </ol>
+
+    <h3 id="discharge">Discharging a Patient</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>Go to <strong>Admissions</strong>, open the patient's admission record.</li>
+      <li>Click <strong>Discharge</strong>.</li>
+      <li>Select the <strong>Discharge Type</strong>: Routine, Self-discharge (Against Medical Advice), Transferred Out, or Deceased.</li>
+      <li>Write a <strong>Discharge Summary</strong> — this is the clinical document sent with the patient.</li>
+      <li>Confirm. The bed is released and shown as available on the ward map.</li>
+    </ol>
+
+    <h3 id="surgery">Booking a Surgery</h3>
+    <span class="role-badge doctor">Doctor</span>
+    <ol class="steps">
+      <li>Go to <strong>Operating Theatre</strong> in the sidebar.</li>
+      <li>Click <strong>Book Surgery</strong>.</li>
+      <li>Select the patient, theatre, lead surgeon, and anaesthetist.</li>
+      <li>Enter the procedure name, scheduled date/time, and estimated duration.</li>
+      <li>Set the priority: <strong>Elective</strong>, <strong>Urgent</strong>, or <strong>Emergency</strong>.</li>
+      <li>Add pre-operative notes and assign team members if needed.</li>
+      <li>Save. The booking status will show as <strong>Scheduled</strong>.</li>
+    </ol>
+    <div class="flow">
+      <span class="flow-step">Scheduled</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Confirmed</span><span class="flow-arrow">→</span>
+      <span class="flow-step">In Progress</span><span class="flow-arrow">→</span>
+      <span class="flow-step done">Completed</span>
+    </div>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 5 — LABORATORY
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="laboratory">Part 5 — Laboratory</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-droplet-half"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Lab Technicians & Scientists</div>
+        <div style="font-size:13px;color:var(--text-2)">Every test goes through a defined workflow — from order to verified result. Follow each step carefully.</div>
+      </div>
+    </div>
+
+    <div class="flow" style="margin-bottom:24px">
+      <span class="flow-step">Ordered</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Sample Collected</span><span class="flow-arrow">→</span>
+      <span class="flow-step">In Progress</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Resulted</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Verified</span><span class="flow-arrow">→</span>
+      <span class="flow-step done">Released</span>
+    </div>
+
+    <h3 id="lab-worklist">The Lab Worklist</h3>
+    <span class="role-badge lab">Lab Tech</span>
+    <p style="margin-top:10px">Go to <strong>Laboratory → Worklist</strong>. This is your main screen for the day.</p>
+    <ul>
+      <li>Orders are sorted by priority: <strong>STAT</strong> first, then Urgent, then Routine.</li>
+      <li>Filter by panel (Haematology, Chemistry, Microbiology, etc.).</li>
+      <li>Each row shows the patient, test name, time ordered, and current status.</li>
+      <li>A progress bar shows where each order is in the workflow.</li>
+    </ul>
+
+    <h3 id="lab-collect">Collecting Samples</h3>
+    <span class="role-badge lab">Lab Tech</span>
+    <ol class="steps">
+      <li>Find the order in the worklist (status: <strong>Ordered</strong>).</li>
+      <li>Click the order to open it.</li>
+      <li>Click <strong>Mark Sample Collected</strong>.</li>
+      <li>The timestamp and your name are recorded automatically.</li>
+    </ol>
+
+    <h3 id="lab-result">Entering Results</h3>
+    <span class="role-badge lab">Lab Tech</span>
+    <ol class="steps">
+      <li>Open the order (status: <strong>Sample Collected</strong> or <strong>In Progress</strong>).</li>
+      <li>Click <strong>Enter Results</strong>.</li>
+      <li>Type the <strong>Value</strong> and confirm the <strong>Unit</strong>.</li>
+      <li>Set the <strong>Flag</strong>: Normal, Low, High, Critical Low, Critical High, or Qualitative Abnormal.</li>
+      <li>Save. Status moves to <strong>Resulted</strong>.</li>
+    </ol>
+
+    <h3 id="lab-verify">Verifying & Releasing Results</h3>
+    <span class="role-badge lab">Lab Tech</span>
+    <ol class="steps">
+      <li>Open a resulted order.</li>
+      <li>Review the value and flag for accuracy.</li>
+      <li>Click <strong>Verify &amp; Release</strong>.</li>
+      <li>The result is now visible to the requesting clinician and in the patient's record.</li>
+    </ol>
+
+    <h3 id="lab-critical">Critical Values</h3>
+    <span class="role-badge lab">Lab Tech</span>
+    <div class="callout alert">
+      <i class="bi bi-exclamation-circle"></i>
+      <div>
+        <strong>A Critical Value requires immediate action.</strong> When you flag a result as <strong>Critical Low</strong> or <strong>Critical High</strong>, the system automatically sends a notification to the requesting clinician.
+        <ul style="margin-top:8px">
+          <li>The result will appear in red on the clinician's screen.</li>
+          <li>The clinician must click <strong>Acknowledge</strong> to confirm they have seen it.</li>
+          <li>Do not wait for acknowledgement — also call the clinician directly for life-threatening values.</li>
+        </ul>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 6 — PHARMACY
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="pharmacy">Part 6 — Pharmacy</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-capsule"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Pharmacists</div>
+        <div style="font-size:13px;color:var(--text-2)">Your queue fills automatically as doctors sign encounters. Dispense in order, track stock, and flag any shortages.</div>
+      </div>
+    </div>
+
+    <h3 id="dispense">Dispensing a Prescription</h3>
+    <span class="role-badge pharmacy">Pharmacist</span>
+    <ol class="steps">
+      <li>Go to <strong>Pharmacy</strong>. The dashboard shows today's pending prescriptions.</li>
+      <li>Click <strong>Dispense</strong> next to a prescription.</li>
+      <li>The system suggests the best batch to use (FEFO — First Expiry, First Out). Confirm or select a different batch.</li>
+      <li>Enter the <strong>Quantity Dispensed</strong> if different from prescribed.</li>
+      <li>Click <strong>Confirm Dispense</strong>. Stock is deducted automatically.</li>
+    </ol>
+    <div class="callout tip">
+      <i class="bi bi-lightbulb"></i>
+      <div>FEFO ensures older stock is used first, reducing waste from expired drugs.</div>
+    </div>
+
+    <h3 id="stock">Checking Stock Levels</h3>
+    <span class="role-badge pharmacy">Pharmacist</span>
+    <p style="margin-top:10px">Go to <strong>Pharmacy → Stock</strong>.</p>
+    <ul>
+      <li>Drugs highlighted in <span style="color:var(--sage-red);font-weight:600">red</span> are at or below the reorder level — action required.</li>
+      <li>Drugs highlighted in <span style="color:var(--sage-amber);font-weight:600">amber</span> have a batch expiring within 90 days.</li>
+      <li>Click a drug to see all batches, quantities, and expiry dates.</li>
+    </ul>
+
+    <h3 id="receive">Receiving New Stock (Goods Receipt)</h3>
+    <span class="role-badge pharmacy">Pharmacist</span>
+    <ol class="steps">
+      <li>Go to <strong>Pharmacy → Goods Receipt</strong>.</li>
+      <li>Select the drug from the formulary.</li>
+      <li>Enter the <strong>Batch Number</strong>, <strong>Expiry Date</strong>, <strong>Quantity Received</strong>, <strong>Unit Cost</strong>, and <strong>Supplier</strong>.</li>
+      <li>Click <strong>Receive</strong>. Stock is added to inventory immediately.</li>
+    </ol>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 7 — BILLING
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="billing">Part 7 — Billing</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:#EDE9FE;color:#6D28D9"><i class="bi bi-receipt"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Billing Officers</div>
+        <div style="font-size:13px;color:var(--text-2)">Invoices are created automatically as clinical services are used. Your job is to collect payment and reconcile.</div>
+      </div>
+    </div>
+
+    <h3 id="invoice">Finding and Reading an Invoice</h3>
+    <span class="role-badge billing">Billing</span>
+    <ol class="steps">
+      <li>Go to <strong>Billing</strong> in the sidebar.</li>
+      <li>Search by patient name or hospital number, or filter by status (Draft, Issued, Partial, Paid).</li>
+      <li>Click an invoice to open it.</li>
+    </ol>
+    <p>The invoice shows:</p>
+    <ul>
+      <li><strong>Line Items</strong> — each service rendered (consultation, lab test, drugs, bed fees).</li>
+      <li><strong>Subtotal</strong>, any <strong>Discount</strong>, and the final <strong>Total</strong>.</li>
+      <li><strong>Amount Paid</strong> and <strong>Balance Due</strong>.</li>
+      <li><strong>Payment History</strong> — every payment received, with mode and reference.</li>
+    </ul>
+    <div class="flow">
+      <span class="flow-step">Draft</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Issued</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Partial</span><span class="flow-arrow">→</span>
+      <span class="flow-step done">Paid</span>
+    </div>
+
+    <h3 id="payment">Recording a Payment</h3>
+    <span class="role-badge billing">Billing</span>
+    <ol class="steps">
+      <li>Open the invoice.</li>
+      <li>Click <strong>Record Payment</strong>.</li>
+      <li>Enter the <strong>Amount</strong>.</li>
+      <li>Select the <strong>Payment Mode</strong>: Cash, POS/Card, Bank Transfer, NHIA, or Waiver.</li>
+      <li>Add a <strong>Reference Number</strong> (e.g., POS receipt, bank transfer reference).</li>
+      <li>Click <strong>Save Payment</strong>. The balance updates automatically. If the balance reaches zero, the invoice status changes to <strong>Paid</strong>.</li>
+    </ol>
+    <div class="callout info">
+      <i class="bi bi-globe"></i>
+      <div>For <strong>online payments</strong>, click <strong>Pay via Paystack</strong> on the invoice. The patient or cashier is redirected to the Paystack secure page. Payment confirmation happens automatically via webhook.</div>
+    </div>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 8 — ADMINISTRATION & REPORTS
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="administration">Part 8 — Administration & Reports</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:#E5EEF6;color:var(--sage-primary)"><i class="bi bi-bar-chart-line"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Hospital Administrators & Managers</div>
+        <div style="font-size:13px;color:var(--text-2)">Dashboards, regulatory returns, and claims processing.</div>
+      </div>
+    </div>
+
+    <h3 id="reports">Reading the Dashboards</h3>
+    <p style="margin-top:10px">Go to <strong>Reports</strong> in the sidebar. Three dashboards are available:</p>
+    <ul>
+      <li><strong>Operational</strong> — live bed occupancy, today's patient volume, queue stats, admissions and discharges.</li>
+      <li><strong>Financial</strong> — revenue collected, outstanding receivables, payment mode breakdown.</li>
+      <li><strong>Clinical</strong> — encounter types, top diagnoses, lab trends, dispensing statistics.</li>
+    </ul>
+
+    <h3 id="claims">Monthly Return & NHIA Claims</h3>
+    <span class="role-badge billing">Billing</span>
+    <h4>Monthly Return</h4>
+    <ol class="steps">
+      <li>Go to <strong>Reports → Monthly Return</strong>.</li>
+      <li>Select the <strong>Year</strong> and <strong>Month</strong> from the dropdowns.</li>
+      <li>The NHMIS statistics are compiled automatically from patient and encounter records.</li>
+      <li>Review and submit.</li>
+    </ol>
+    <h4>NHIA Claims</h4>
+    <ol class="steps">
+      <li>Go to <strong>Reports → NHIA Claims</strong>.</li>
+      <li>Click <strong>New Claim Batch</strong>.</li>
+      <li>Add the relevant invoices to the batch.</li>
+      <li>Click <strong>Submit Batch</strong> to send to the insurer.</li>
+      <li>Track claim status (Submitted → Queried → Approved → Paid).</li>
+    </ol>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         PART 9 — PATIENT PORTAL
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="portal">Part 9 — Patient Portal</h2>
+    <div class="section-intro">
+      <div class="section-intro-icon" style="background:var(--bg-2);color:var(--text-2)"><i class="bi bi-phone"></i></div>
+      <div>
+        <div style="font-weight:600;color:var(--sage-ink)">For Patients</div>
+        <div style="font-size:13px;color:var(--text-2)">Patients can view their appointments, results, and bills from their phone — no need to come to the counter for routine enquiries.</div>
+      </div>
+    </div>
+    <p>Direct patients to the <strong>Patient Portal</strong> link. They log in using their <strong>phone number</strong> and a <strong>one-time code</strong> sent by SMS.</p>
+    <p>From the portal, patients can:</p>
+    <ul>
+      <li>View upcoming and past appointments.</li>
+      <li>See released lab results.</li>
+      <li>Check outstanding bills and payment history.</li>
+      <li>Submit feedback on their consultation.</li>
+    </ul>
+    <div class="callout tip">
+      <i class="bi bi-lightbulb"></i>
+      <div>Encourage patients to save the portal link on their phone's home screen for easy access.</div>
+    </div>
+
+    <hr>
+
+    <!-- Footer -->
+    <div style="background:var(--sage-ink);border-radius:var(--radius-lg);padding:28px 32px;color:rgba(244,245,242,.8);margin-top:40px">
+      <div style="font-family:var(--display);font-size:22px;color:#fff;margin-bottom:8px">Need help?</div>
+      <p style="margin:0;font-size:13.5px">Contact your <strong style="color:#fff">system administrator</strong> for account issues, access problems, or to report a bug. For clinical questions about using the system, refer to your departmental lead.</p>
+      <div style="margin-top:16px;font-family:var(--mono);font-size:11px;color:rgba(244,245,242,.4)">SAGE Medical Center — EMR Staff Reference Guide</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Highlight active TOC item on scroll
+  (function () {
+    const headings = document.querySelectorAll('.tutorial-body h2[id], .tutorial-body h3[id]');
+    const links = document.querySelectorAll('.toc a');
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          const a = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+          if (a) a.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    headings.forEach(h => obs.observe(h));
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Claims Management{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Insurance · Claims</div>
+    <h1 class="page-title">NHIA / HMO <em>claims</em></h1>
+    {% if payer %}<p class="page-sub">{{ payer.name }} · {{ payer.get_payer_type_display }}</p>{% endif %}
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:inline">
+      <select name="payer" class="form-select" style="min-width:200px;display:inline-block" onchange="this.form.submit()">
+        <option value="">Select payer…</option>
+        {% for p in payers %}
+        <option value="{{ p.pk }}" {% if payer and payer.pk == p.pk %}selected{% endif %}>{{ p.name }} ({{ p.get_payer_type_display }})</option>
+        {% endfor %}
+      </select>
+    </form>
+    <a href="{% url 'reports:claim_batch_new' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Build Batch</a>
+  </div>
+</div>
+
+{% if payer %}
+{% if batches %}
+
+{% for batch in batches %}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head">
+    <div>
+      <div class="card-title" style="font-size:15px">
+        {{ batch.period_start|date:"d M Y" }} – {{ batch.period_end|date:"d M Y" }}
+      </div>
+      <div style="margin-top:6px;display:flex;align-items:center;gap:10px">
+        {% if batch.status == 'draft' %}<span class="tag gray"><span class="dot"></span>Draft</span>
+        {% elif batch.status == 'submitted' %}<span class="tag blue"><span class="dot"></span>Submitted</span>
+        {% elif batch.status == 'acknowledged' %}<span class="tag amber"><span class="dot"></span>Acknowledged</span>
+        {% elif batch.status == 'approved' %}<span class="tag teal"><span class="dot"></span>Approved</span>
+        {% elif batch.status == 'paid' %}<span class="tag green"><span class="dot"></span>Paid</span>
+        {% elif batch.status == 'rejected' %}<span class="tag red"><span class="dot"></span>Rejected</span>
+        {% endif %}
+        <span style="font-size:12px;color:var(--text-3)">{{ batch.claims.count }} claim{{ batch.claims.count|pluralize }}</span>
+        <span style="font-size:12.5px;color:var(--text-2)">Claimed: <strong class="num">₦{{ batch.total_claimed|floatformat:0 }}</strong></span>
+        {% if batch.total_approved %}
+        <span style="font-size:12.5px;color:var(--sage-green)">Approved: <strong class="num">₦{{ batch.total_approved|floatformat:0 }}</strong></span>
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      {% if batch.status == 'draft' %}
+      <form method="post" action="{% url 'reports:claim_batch_submit' batch.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-primary"><i class="bi bi-send"></i>Submit Batch</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <table class="data" style="margin-top:-4px">
+    <thead>
+      <tr><th>Patient</th><th>Invoice</th><th style="text-align:right">Claimed</th><th style="text-align:right">Approved</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for claim in batch.claims.all|slice:":15" %}
+      <tr>
+        <td>
+          <div class="pname">{{ claim.patient.full_name }}</div>
+          <div class="pmeta">{{ claim.patient.hospital_number }}</div>
+        </td>
+        <td class="mono" style="font-size:12px;color:var(--text-2)">{{ claim.invoice.invoice_number }}</td>
+        <td class="num" style="text-align:right">₦{{ claim.claimed_amount|floatformat:0 }}</td>
+        <td class="num" style="text-align:right;color:{% if claim.approved_amount %}var(--sage-green){% else %}var(--text-3){% endif %}">
+          {% if claim.approved_amount %}₦{{ claim.approved_amount|floatformat:0 }}{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if claim.status == 'pending' %}<span class="tag gray"><span class="dot"></span>Pending</span>
+          {% elif claim.status == 'queried' %}<span class="tag amber"><span class="dot"></span>Queried</span>
+          {% elif claim.status == 'approved' %}<span class="tag teal"><span class="dot"></span>Approved</span>
+          {% elif claim.status == 'paid' %}<span class="tag green"><span class="dot"></span>Paid</span>
+          {% elif claim.status == 'rejected' %}<span class="tag red"><span class="dot"></span>Rejected</span>
+          {% else %}<span class="tag gray">{{ claim.get_status_display }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if batch.claims.count > 15 %}
+      <tr><td colspan="5" style="text-align:center;padding:12px;color:var(--text-3);font-size:12px">… and {{ batch.claims.count|add:"-15" }} more claims</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+{% else %}
+<div style="text-align:center;padding:60px;color:var(--text-3)">
+  <i class="bi bi-shield-check" style="font-size:48px;display:block;margin-bottom:16px;opacity:.2"></i>
+  No claim batches for {{ payer.name }}.
+  <div style="margin-top:16px"><a href="{% url 'reports:claim_batch_new' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Build First Batch</a></div>
+</div>
+{% endif %}
+
+{% else %}
+<div style="text-align:center;padding:80px;color:var(--text-3)">
+  <i class="bi bi-shield-check" style="font-size:48px;display:block;margin-bottom:16px;opacity:.2"></i>
+  Select a payer to view claim batches.
+</div>
+{% endif %}
+{% endblock %}

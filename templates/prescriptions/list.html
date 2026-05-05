@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}e-Prescribing{% endblock %}
+
+{% block extra_css %}
+.rx-row {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 120px 140px 100px 90px;
+  gap: 16px;
+  align-items: center;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background .12s;
+  font-size: 13px;
+  cursor: pointer;
+}
+.rx-row:last-child { border-bottom: none; }
+.rx-row:hover { background: var(--bg-2); }
+.freq-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-2);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  text-transform: uppercase;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Clinical · e-Prescribing</div>
+    <h1 class="page-title">Prescription <em>registry</em></h1>
+    <p class="page-sub">
+      {{ total }} prescription{{ total|pluralize }}
+      {% if pending_count %} · <span style="color:var(--sage-amber)">{{ pending_count }} pending</span>{% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-capsule"></i></div>
+    <div class="stat-label">Total Prescriptions</div>
+    <div class="stat-value num">{{ total }}</div>
+    <div class="stat-meta">All time</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-hourglass-split"></i></div>
+    <div class="stat-label">Pending Dispense</div>
+    <div class="stat-value num" {% if pending_count %}style="color:var(--sage-amber)"{% endif %}>{{ pending_count }}</div>
+    <div class="stat-meta">{% if pending_count %}Awaiting pharmacy{% else %}Queue clear{% endif %}</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-label">Dispensed</div>
+    <div class="stat-value num" style="color:var(--sage-green)">{{ dispensed_count }}</div>
+    <div class="stat-meta">Fulfilled by pharmacy</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-red-soft);color:var(--sage-red)"><i class="bi bi-x-circle"></i></div>
+    <div class="stat-label">Cancelled</div>
+    <div class="stat-value num">{{ cancelled_count }}</div>
+    <div class="stat-meta">Voided or superseded</div>
+  </div>
+</div>
+
+<!-- Search + filter -->
+<div class="table-wrap">
+  <div class="table-head" style="flex-wrap:wrap;gap:10px">
+    <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:260px">
+      <div class="search" style="flex:1;max-width:360px">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" value="{{ search }}" placeholder="Patient name, hospital number, drug…">
+      </div>
+      {% if search %}<button type="submit" name="q" value="" class="btn btn-ghost btn-sm">Clear</button>{% endif %}
+    </form>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <a href="?{% if search %}q={{ search }}&{% endif %}"
+         class="chip {% if not status_filter %}on{% endif %}">All</a>
+      <a href="?{% if search %}q={{ search }}&{% endif %}status=pending"
+         class="chip {% if status_filter == 'pending' %}on{% endif %}">
+        Pending <span class="num">{{ pending_count }}</span>
+      </a>
+      <a href="?{% if search %}q={{ search }}&{% endif %}status=dispensed"
+         class="chip {% if status_filter == 'dispensed' %}on{% endif %}">
+        Dispensed <span class="num">{{ dispensed_count }}</span>
+      </a>
+      <a href="?{% if search %}q={{ search }}&{% endif %}status=cancelled"
+         class="chip {% if status_filter == 'cancelled' %}on{% endif %}">Cancelled</a>
+    </div>
+  </div>
+
+  <!-- Column headers -->
+  <div class="rx-row" style="background:var(--bg-2);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);font-weight:600;cursor:default;padding-top:9px;padding-bottom:9px">
+    <div>Patient</div>
+    <div>Drug · Dose · Frequency</div>
+    <div>Status</div>
+    <div>Prescriber</div>
+    <div style="text-align:right">Date</div>
+    <div></div>
+  </div>
+
+  {% for rx in prescriptions %}
+  <div class="rx-row" onclick="location.href='{% url 'encounters:workspace' rx.encounter.pk %}'">
+
+    <!-- Patient -->
+    <div>
+      <div style="font-weight:500;color:var(--sage-ink)">{{ rx.patient.full_name }}</div>
+      <div style="font-size:11.5px;color:var(--text-3);font-family:var(--mono);margin-top:2px">
+        {{ rx.patient.hospital_number }}
+      </div>
+    </div>
+
+    <!-- Drug -->
+    <div>
+      <div style="font-weight:500;color:var(--sage-ink)">
+        {{ rx.drug.generic_name }}
+        {% if rx.drug.strength %} {{ rx.drug.strength }}{% endif %}
+      </div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:3px;display:flex;align-items:center;gap:6px">
+        <span>{{ rx.dose }}</span>
+        <span class="freq-badge">{{ rx.get_frequency_display }}</span>
+        {% if rx.duration_days %}<span style="color:var(--text-3)">× {{ rx.duration_days }}d</span>{% endif %}
+        {% if rx.is_stat %}<span class="tag red" style="font-size:10px">STAT</span>{% endif %}
+        {% if rx.is_prn %}<span class="tag gray" style="font-size:10px">PRN</span>{% endif %}
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div>
+      {% if rx.status == 'pending' %}
+        <span class="tag amber" style="font-size:11px"><span class="dot" style="background:var(--sage-amber)"></span>Pending</span>
+      {% elif rx.status == 'dispensed' %}
+        <span class="tag green" style="font-size:11px"><i class="bi bi-check-circle-fill" style="font-size:9px"></i> Dispensed</span>
+      {% elif rx.status == 'partial' %}
+        <span class="tag blue" style="font-size:11px">Partial</span>
+      {% elif rx.status == 'cancelled' %}
+        <span class="tag gray" style="font-size:11px">Cancelled</span>
+      {% elif rx.status == 'held' %}
+        <span class="tag amber" style="font-size:11px">On Hold</span>
+      {% endif %}
+    </div>
+
+    <!-- Prescriber -->
+    <div style="font-size:12px;color:var(--text-2)">
+      Dr. {{ rx.prescriber.get_full_name }}
+    </div>
+
+    <!-- Date -->
+    <div style="font-family:var(--mono);font-size:11.5px;color:var(--text-3);text-align:right">
+      {{ rx.created_at|date:"d M Y" }}<br>
+      <span style="font-size:10.5px">{{ rx.created_at|time:"H:i" }}</span>
+    </div>
+
+    <!-- Action -->
+    <div style="text-align:right" onclick="event.stopPropagation()">
+      {% if rx.status == 'pending' %}
+        <a href="{% url 'pharmacy:dispense' rx.pk %}" class="btn btn-teal btn-sm">Dispense</a>
+      {% else %}
+        <a href="{% url 'encounters:workspace' rx.encounter.pk %}" class="btn btn-ghost btn-sm">View</a>
+      {% endif %}
+    </div>
+
+  </div>
+  {% empty %}
+  <div style="text-align:center;padding:60px 20px;color:var(--text-3)">
+    <i class="bi bi-capsule" style="font-size:40px;display:block;margin-bottom:12px;opacity:.2"></i>
+    {% if search %}No prescriptions matching "{{ search }}".
+    {% elif status_filter %}No {{ status_filter }} prescriptions.
+    {% else %}No prescriptions found.{% endif %}
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&q={{ search }}{% endif %}"
+       class="btn btn-ghost btn-sm">← Prev</a>
+  {% endif %}
+  <span style="line-height:32px;font-size:12px;color:var(--text-3)">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&q={{ search }}{% endif %}"
+       class="btn btn-ghost btn-sm">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

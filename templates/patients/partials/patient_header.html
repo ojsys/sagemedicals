@@ -1,0 +1,28 @@
+{% if patient %}
+<div style="background:var(--surface);border-bottom:1px solid var(--line);padding:10px 32px;display:flex;align-items:center;gap:14px">
+  <div class="avatar" style="width:36px;height:36px;font-size:12px;flex-shrink:0">
+    {{ patient.first_name.0 }}{{ patient.last_name.0 }}
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <a href="{% url 'patients:detail' patient.pk %}" style="font-weight:500;color:var(--sage-ink);text-decoration:none;font-size:14px">{{ patient.full_name }}</a>
+      <span style="color:var(--text-3);font-size:12px">{{ patient.age_display }} · {{ patient.get_sex_display }}</span>
+      <span class="mono" style="color:var(--text-3);font-size:11.5px">{{ patient.hospital_number }}</span>
+      {% for allergy in patient.active_allergies %}
+      <span class="tag red" style="font-size:10.5px"><i class="bi bi-exclamation-triangle" style="font-size:10px"></i>{{ allergy.allergen }}</span>
+      {% empty %}
+      <span class="tag green" style="font-size:10.5px">NKDA</span>
+      {% endfor %}
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:1px">
+      {{ patient.get_payer_type_display }}
+      {% if patient.hmo_name %} · {{ patient.hmo_name }}{% endif %}
+      {% if patient.outstanding_balance %} · <span style="color:var(--sage-red);font-weight:500">₦{{ patient.outstanding_balance|floatformat:0 }} outstanding</span>{% endif %}
+    </div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-sm btn-ghost"><i class="bi bi-person"></i></a>
+    <a href="{% url 'patients:update' patient.pk %}" class="btn btn-sm btn-ghost"><i class="bi bi-pencil"></i></a>
+  </div>
+</div>
+{% endif %}

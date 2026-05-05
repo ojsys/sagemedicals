@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Dispense — {{ rx.drug }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Pharmacy</div>
+    <h1 class="page-title">Dispense Prescription</h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'encounters:workspace' rx.encounter.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+  </div>
+</div>
+
+<div style="max-width:560px">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title">Prescription Details</div></div>
+    <div style="display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:13px">
+      <span style="color:var(--text-3)">Patient</span>
+      <span style="font-weight:500">{{ rx.patient.full_name }} <span class="mono" style="color:var(--text-3);font-size:11.5px">{{ rx.patient.hospital_number }}</span></span>
+      <span style="color:var(--text-3)">Drug</span>
+      <span style="font-weight:500">{{ rx.drug }}</span>
+      <span style="color:var(--text-3)">Dose / Route</span>
+      <span>{{ rx.dose }} {{ rx.get_route_display }} {{ rx.get_frequency_display }}</span>
+      <span style="color:var(--text-3)">Quantity</span>
+      <span>{{ rx.quantity }}</span>
+      {% if rx.instructions %}
+      <span style="color:var(--text-3)">Instructions</span>
+      <span>{{ rx.instructions }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-head"><div class="card-title">Dispensing Store</div></div>
+      <div style="margin-bottom:16px">
+        <label class="form-label">Store *</label>
+        <select name="store" class="form-select" required>
+          <option value="">Select store…</option>
+          {% for s in stores %}
+          <option value="{{ s.pk }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary"><i class="bi bi-check2"></i>Confirm Dispense</button>
+        <a href="{% url 'encounters:workspace' rx.encounter.pk %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

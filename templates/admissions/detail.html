@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% load tz %}
+{% block title %}{{ patient.full_name }} — Admission{% endblock %}
+
+{% block extra_css %}
+.round-entry {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.round-entry:last-child { border-bottom: none; }
+.round-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.round-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--sage-teal);
+  flex-shrink: 0;
+}
+.vitals-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--text-3); flex-shrink: 0; }
+.info-val { font-weight: 500; color: var(--sage-ink); text-align: right; }
+.timeline-step {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line-soft);
+  font-size: 13px;
+}
+.timeline-step:last-child { border-bottom: none; }
+.tl-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--sage-teal);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+{% endblock %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-head">
+  <div>
+    <div class="eyebrow">
+      Admissions · {{ admission.bed.room.ward.name }} · {{ admission.bed.room.name }} · Bed {{ admission.bed.label }}
+    </div>
+    <h1 class="page-title">
+      {{ patient.full_name }}
+      <span class="tag {% if admission.status == 'active' %}teal{% elif admission.status == 'discharged' %}gray{% else %}amber{% endif %}"
+            style="font-size:12px;margin-left:10px;vertical-align:middle">
+        {{ admission.get_status_display }}
+      </span>
+    </h1>
+    <p class="page-sub">
+      <span class="mono">{{ patient.hospital_number }}</span>
+      · Admitted {{ admission.admitted_at|localtime|date:"d M Y, H:i" }}
+      · <strong>Day {{ days_admitted }}</strong>
+    </p>
+  </div>
+  {% if admission.status == 'active' %}
+  <div class="page-actions">
+    <a href="{% url 'admissions:ward_map' %}" class="btn btn-ghost"><i class="bi bi-grid-3x3-gap"></i>Ward Map</a>
+    <a href="{% url 'admissions:discharge' admission.pk %}"
+       class="btn btn-sm" style="background:var(--sage-red);color:#fff;border-color:var(--sage-red)">
+      <i class="bi bi-box-arrow-right"></i>Discharge
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Patient identity strip -->
+<div style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:20px">
+  <div class="avatar" style="width:44px;height:44px;font-size:14px;flex-shrink:0">
+    {{ patient.first_name.0 }}{{ patient.last_name.0 }}
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:600;color:var(--sage-ink);font-size:14px">{{ patient.full_name }}</div>
+    <div style="font-size:12px;color:var(--text-3);margin-top:2px;display:flex;gap:12px;flex-wrap:wrap">
+      <span>{{ patient.age_display }}</span>
+      <span>{{ patient.get_sex_display }}</span>
+      {% if patient.blood_group %}<span class="mono">{{ patient.blood_group }}</span>{% endif %}
+      {% if patient.payer_type %}
+        <span class="tag {% if patient.payer_type == 'nhia' %}teal{% elif patient.payer_type == 'private_hmo' %}blue{% else %}gray{% endif %}" style="font-size:10px">
+          {% if patient.payer_type == 'nhia' %}NHIA
+          {% elif patient.payer_type == 'private_hmo' %}HMO{% if patient.hmo_name %} · {{ patient.hmo_name }}{% endif %}
+          {% else %}{{ patient.get_payer_type_display }}{% endif %}
+        </span>
+      {% endif %}
+    </div>
+  </div>
+  {% if patient.active_allergies %}
+  <div style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--sage-red-soft);border:1px solid rgba(184,58,38,.25);border-radius:var(--radius);font-size:12px;color:var(--sage-red);flex-shrink:0">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    {% for a in patient.active_allergies %}{{ a.allergen }}{% if not forloop.last %}, {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+  <div style="display:flex;gap:20px;flex-shrink:0;padding-left:16px;border-left:1px solid var(--line)">
+    <div style="text-align:center">
+      <div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--sage-ink);line-height:1">{{ days_admitted }}</div>
+      <div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Days in</div>
+    </div>
+    <div style="text-align:center">
+      <a href="{% url 'patients:detail' patient.pk %}" style="font-size:11.5px;color:var(--sage-primary);text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <i class="bi bi-person-vcard" style="font-size:20px"></i>
+        <span>Patient file</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Main 2-column layout -->
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+
+  <!-- ── Left: clinical documentation ── -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- Ward Rounds -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><i class="bi bi-journal-medical" style="color:var(--sage-teal);margin-right:6px"></i>Ward Rounds</div>
+          {% if ward_rounds %}<div class="card-sub">{{ ward_rounds|length }} note{{ ward_rounds|length|pluralize }}</div>{% endif %}
+        </div>
+      </div>
+
+      {% if admission.status == 'active' %}
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);font-weight:600;margin-bottom:10px">Add Round Note</div>
+        <form method="post" action="{% url 'admissions:round_add' admission.pk %}">
+          {% csrf_token %}
+          <div style="margin-bottom:10px">
+            <label class="form-label">Clinical Note <span style="color:var(--sage-red)">*</span></label>
+            {{ round_form.note }}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Vitals</label>
+              {{ round_form.vitals_note }}
+            </div>
+            <div>
+              <label class="form-label">Plan</label>
+              {{ round_form.plan }}
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i>Add Note</button>
+        </form>
+      </div>
+      {% endif %}
+
+      <div>
+        {% for rnd in ward_rounds %}
+        <div class="round-entry">
+          <div class="round-meta">
+            <div class="round-dot"></div>
+            <span style="font-size:11.5px;font-family:var(--mono);color:var(--text-3)">
+              {{ rnd.round_at|localtime|date:"d M Y, H:i" }}
+            </span>
+            <span style="font-size:12px;color:var(--text-2)">· Dr. {{ rnd.clinician.get_full_name }}</span>
+          </div>
+          <div style="font-size:13.5px;color:var(--sage-ink);line-height:1.6;margin-left:18px">{{ rnd.note }}</div>
+          {% if rnd.vitals_note or rnd.plan %}
+          <div style="margin-top:8px;margin-left:18px;display:flex;flex-wrap:wrap;gap:6px">
+            {% if rnd.vitals_note %}
+            <span class="vitals-pill"><i class="bi bi-heart-pulse" style="color:var(--sage-red)"></i>{{ rnd.vitals_note }}</span>
+            {% endif %}
+            {% if rnd.plan %}
+            <span style="font-size:12px;color:var(--text-2)"><strong style="color:var(--text)">Plan:</strong> {{ rnd.plan }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:32px;color:var(--text-3);font-size:13px">
+          <i class="bi bi-journal" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>
+          No ward round notes yet.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- eMAR -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><i class="bi bi-capsule" style="color:var(--sage-teal);margin-right:6px"></i>Medication Administration</div>
+          <div class="card-sub">eMAR</div>
+        </div>
+      </div>
+
+      {% if admission.status == 'active' %}
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);font-weight:600;margin-bottom:10px">Record Administration</div>
+        <form method="post" action="{% url 'admissions:mar_add' admission.pk %}">
+          {% csrf_token %}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label class="form-label">{{ mar_form.prescription.label }}</label>
+              {{ mar_form.prescription }}
+            </div>
+            <div>
+              <label class="form-label">{{ mar_form.scheduled_at.label }}</label>
+              {{ mar_form.scheduled_at }}
+            </div>
+            <div>
+              <label class="form-label">{{ mar_form.result.label }}</label>
+              {{ mar_form.result }}
+            </div>
+            <div>
+              <label class="form-label">{{ mar_form.dose_given.label }}</label>
+              {{ mar_form.dose_given }}
+            </div>
+            <div style="grid-column:1/-1">
+              <label class="form-label">{{ mar_form.notes.label }}</label>
+              {{ mar_form.notes }}
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm"><i class="bi bi-check2"></i>Record</button>
+        </form>
+      </div>
+      {% endif %}
+
+      <table class="data" style="margin:0">
+        <thead>
+          <tr>
+            <th>Drug</th>
+            <th>Scheduled</th>
+            <th>Result</th>
+            <th>Nurse</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in mar_entries %}
+          <tr>
+            <td style="font-weight:500">{{ entry.prescription.drug }}</td>
+            <td style="font-family:var(--mono);font-size:12px;color:var(--text-3)">
+              {{ entry.scheduled_at|localtime|date:"d M, H:i" }}
+            </td>
+            <td>
+              <span class="tag {% if entry.result == 'given' %}green{% elif entry.result == 'held' %}amber{% elif entry.result == 'refused' %}red{% else %}gray{% endif %}" style="font-size:10.5px">
+                {{ entry.get_result_display }}
+              </span>
+            </td>
+            <td style="color:var(--text-3);font-size:12px">{{ entry.administered_by.get_full_name|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align:center;color:var(--text-3);padding:28px">No medication administrations recorded.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- ── Right rail ── -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- Admission details -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Admission</div>
+        <span class="tag {% if admission.status == 'active' %}teal{% else %}gray{% endif %}" style="font-size:10.5px">
+          {{ admission.get_status_display }}
+        </span>
+      </div>
+      <div>
+        <div class="info-row">
+          <span class="info-label">Ward</span>
+          <span class="info-val">{{ admission.bed.room.ward.name }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Room / Bed</span>
+          <span class="info-val">{{ admission.bed.room.name }} · Bed {{ admission.bed.label }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Admitted</span>
+          <span class="info-val" style="font-family:var(--mono);font-size:12px">{{ admission.admitted_at|localtime|date:"d M Y, H:i" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Length of stay</span>
+          <span class="info-val">
+            <span style="font-family:var(--mono);font-size:15px;font-weight:700">{{ days_admitted }}</span>
+            <span style="color:var(--text-3);font-size:12px;font-weight:400"> day{{ days_admitted|pluralize }}</span>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Doctor</span>
+          <span class="info-val" style="font-size:12.5px">
+            {% if admission.admitting_doctor %}Dr. {{ admission.admitting_doctor.get_full_name }}{% else %}—{% endif %}
+          </span>
+        </div>
+        <div style="padding:10px 0">
+          <div class="info-label" style="font-size:11px;margin-bottom:4px">Diagnosis on admission</div>
+          <div style="font-size:13px;color:var(--sage-ink);line-height:1.5">
+            {{ admission.diagnosis_on_admission|default:"—" }}
+          </div>
+        </div>
+      </div>
+
+      {% if admission.status == 'discharged' %}
+      <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--line)">
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Discharge</div>
+        <div style="font-size:12.5px;color:var(--text-2)">{{ admission.get_discharge_type_display }} · {{ admission.discharged_at|localtime|date:"d M Y" }}</div>
+        {% if admission.discharge_summary %}
+        <div style="font-size:12px;color:var(--text-2);margin-top:4px">{{ admission.discharge_summary }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Transfer bed (active only) -->
+    {% if admission.status == 'active' %}
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><i class="bi bi-arrow-left-right" style="color:var(--sage-teal);margin-right:6px"></i>Transfer Bed</div>
+      </div>
+      <form method="post" action="{% url 'admissions:transfer' admission.pk %}">
+        {% csrf_token %}
+        <div style="margin-bottom:8px">
+          <label class="form-label" style="font-size:12px">New bed</label>
+          <select name="new_bed" class="form-select" style="font-size:13px">
+            <option value="">Select bed…</option>
+            {% for b in available_beds %}
+            <option value="{{ b.pk }}">{{ b.room.ward.name }} / {{ b.room.name }} / {{ b.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="margin-bottom:10px">
+          <label class="form-label" style="font-size:12px">Reason (optional)</label>
+          <textarea name="reason" class="form-control" rows="1" placeholder="Clinical reason for transfer…" style="font-size:13px"></textarea>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="width:100%">
+          <i class="bi bi-arrow-left-right"></i>Transfer
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Bed history / timeline -->
+    <div class="card">
+      <div class="card-head"><div class="card-title">Bed History</div></div>
+      {% for t in transfers %}
+      <div class="timeline-step">
+        <div class="tl-dot"></div>
+        <div>
+          <div style="font-size:11.5px;color:var(--text-3);font-family:var(--mono);margin-bottom:2px">
+            {{ t.transferred_at|localtime|date:"d M Y, H:i" }}
+            {% if t.transferred_by %} · {{ t.transferred_by.get_full_name }}{% endif %}
+          </div>
+          <div style="font-size:13px;color:var(--sage-ink)">
+            {% if t.from_bed %}<span style="color:var(--text-2)">{{ t.from_bed.label }}</span> → {% else %}<span style="color:var(--text-3);font-style:italic">Admitted</span> → {% endif %}
+            <strong>{{ t.to_bed.label }}</strong>
+          </div>
+          {% if t.reason %}
+          <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ t.reason }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div style="color:var(--text-3);font-size:13px;padding:8px 0">No bed transfers recorded.</div>
+      {% endfor %}
+    </div>
+
+    <!-- Quick links -->
+    <div class="card">
+      <div class="card-head"><div class="card-title">Related</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <a href="{% url 'patients:detail' patient.pk %}" style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:13px;color:var(--sage-primary);text-decoration:none;border-bottom:1px solid var(--line-soft)">
+          <i class="bi bi-person-vcard" style="color:var(--text-3)"></i>Patient file
+        </a>
+        <a href="{% url 'laboratory:worklist' %}?patient={{ patient.pk }}" style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:13px;color:var(--sage-primary);text-decoration:none;border-bottom:1px solid var(--line-soft)">
+          <i class="bi bi-droplet-half" style="color:var(--text-3)"></i>Lab orders
+        </a>
+        <a href="{% url 'prescriptions:list' %}?patient={{ patient.pk }}" style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:13px;color:var(--sage-primary);text-decoration:none">
+          <i class="bi bi-capsule" style="color:var(--text-3)"></i>Prescriptions
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /right -->
+
+</div>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Today's Queue{% endblock %}
+
+{% block extra_css %}
+.triage-dot {
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+  flex-shrink: 0; margin-top: 3px;
+}
+.triage-dot.red    { background: var(--sage-red); }
+.triage-dot.yellow { background: var(--sage-amber); }
+.triage-dot.green  { background: var(--sage-green); }
+.queue-row { cursor: pointer; }
+.queue-row:hover td { background: var(--bg-2); }
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Scheduling · {{ today|date:"l" }}</div>
+    <h1 class="page-title">Today's <em>Queue</em></h1>
+    <p class="page-sub">{{ today|date:"d M Y" }}{% if clinic %} · {{ clinic.name }}{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <form method="get" style="display:inline">
+      <select name="clinic" class="form-select" style="min-width:200px;display:inline-block" onchange="this.form.submit()">
+        <option value="">All Clinics</option>
+        {% for c in clinics %}
+        <option value="{{ c.pk }}" {% if clinic and clinic.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <a href="{% url 'scheduling:walkin' %}" class="btn btn-ghost"><i class="bi bi-person-plus"></i>Walk-in</a>
+    <a href="{% url 'scheduling:book' %}" class="btn btn-primary"><i class="bi bi-calendar-plus"></i>Book</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-hourglass-split"></i></div>
+    <div class="stat-label">Waiting</div>
+    <div class="stat-value" style="color:var(--sage-amber)">{{ waiting_count }}</div>
+    <div class="stat-meta">Yet to be seen</div>
+  </div>
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-person-check"></i></div>
+    <div class="stat-label">With Doctor</div>
+    <div class="stat-value" style="color:var(--sage-teal)">{{ with_doctor_count }}</div>
+    <div class="stat-meta">Currently consulting</div>
+  </div>
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-label">Done Today</div>
+    <div class="stat-value" style="color:var(--sage-green)">{{ done_count }}</div>
+    <div class="stat-meta">Seen &amp; closed</div>
+  </div>
+</div>
+
+{% if not queue %}
+<div style="text-align:center;padding:80px 20px;color:var(--text-3)">
+  <i class="bi bi-calendar-check" style="font-size:48px;display:block;margin-bottom:16px;opacity:.2"></i>
+  No patients currently in queue{% if clinic %} for {{ clinic.name }}{% endif %}.
+</div>
+{% else %}
+<div class="table-wrap">
+  <div class="table-head">
+    <div>
+      <div class="card-title">{% if clinic %}{{ clinic.name }}{% else %}All Clinics{% endif %}</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ queue|length }} patient{{ queue|length|pluralize }} in queue</div>
+    </div>
+  </div>
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>Clinic</th>
+        <th>Arrived</th>
+        <th>Reason</th>
+        <th>Payer</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in queue %}
+      <tr class="queue-row" id="queue-row-{{ entry.pk }}" onclick="location.href='{% url 'patients:detail' entry.patient.pk %}'">
+        <td>
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span class="triage-dot {{ entry.triage_level }}" title="{{ entry.get_triage_level_display }}"></span>
+            <div>
+              <div class="pname">{{ entry.patient.full_name }}</div>
+              <div class="pmeta">{{ entry.patient.hospital_number }} · {{ entry.patient.age_display }} · {{ entry.patient.get_sex_display }}</div>
+              {% for al in entry.patient.allergies.all %}{% if al.is_active %}
+              <div style="font-size:11px;color:var(--sage-red);margin-top:2px">
+                <i class="bi bi-shield-exclamation"></i> {{ al.allergen }}
+              </div>
+              {% endif %}{% endfor %}
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--text-2);font-size:12.5px">{{ entry.clinic.name }}</td>
+        <td class="num" style="color:var(--text-2)">{{ entry.arrived_at|time:"H:i" }}</td>
+        <td style="color:var(--text-2);font-size:12.5px;max-width:200px">
+          {% if entry.appointment and entry.appointment.reason_for_visit %}
+            {{ entry.appointment.reason_for_visit|truncatechars:55 }}
+          {% elif entry.is_walk_in %}
+            <em>Walk-in</em>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if entry.patient.payer_type == 'nhia' %}<span class="tag teal" style="font-size:11px">NHIA</span>
+          {% elif entry.patient.payer_type == 'private_hmo' %}<span class="tag blue" style="font-size:11px">HMO</span>
+          {% elif entry.patient.payer_type == 'corporate' %}<span class="tag blue" style="font-size:11px">Corp</span>
+          {% else %}<span class="tag gray" style="font-size:11px">Self-pay</span>{% endif %}
+        </td>
+        <td>
+          {% if entry.status == 'waiting' %}<span class="tag amber"><span class="dot"></span>Waiting</span>
+          {% elif entry.status == 'with_doctor' %}<span class="tag teal"><span class="dot"></span>With Doctor</span>
+          {% else %}<span class="tag gray">{{ entry.get_status_display }}</span>{% endif %}
+        </td>
+        <td onclick="event.stopPropagation()">
+          {% if entry.status == 'waiting' %}
+          <form method="post" action="{% url 'encounters:create' entry.patient.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="queue_entry" value="{{ entry.pk }}">
+            <button class="btn btn-sm btn-primary">See Patient</button>
+          </form>
+          {% elif entry.status == 'with_doctor' %}
+          <span style="font-size:12px;color:var(--text-3)"><i class="bi bi-clock"></i> Consulting</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% block title %}Register Patient{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Patients / New</div>
+    <h1 class="page-title">Register a <em>new patient</em></h1>
+    <div style="font-size:13px;color:var(--text-3);margin-top:2px">A unique hospital number will be generated automatically. Required fields are marked.</div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'patients:search' %}" class="btn btn-ghost">Cancel</a>
+    <button type="submit" form="registration-form" class="btn btn-primary">
+      <i class="bi bi-person-check"></i>Register
+    </button>
+  </div>
+</div>
+
+{% if show_duplicate_modal %}
+<div style="background:rgba(184,58,38,.06);border:1px solid rgba(184,58,38,.25);border-left:4px solid var(--sage-red);border-radius:var(--radius);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;margin-bottom:20px">
+  <i class="bi bi-exclamation-octagon-fill" style="font-size:18px;color:var(--sage-red);flex-shrink:0;margin-top:1px"></i>
+  <div>
+    <strong style="color:var(--sage-red);display:block;margin-bottom:6px">Duplicate record found</strong>
+    <div style="font-size:13px;margin-bottom:10px">The following patient(s) already match this name and date of birth:</div>
+    <ul style="margin:0 0 12px;padding-left:16px;font-size:13px">
+      {% for p in definite_duplicates %}
+      <li><a href="{% url 'patients:detail' p.pk %}" style="color:var(--sage-red);font-weight:500">{{ p.full_name }} — {{ p.hospital_number }}</a> ({{ p.age_display }}, {{ p.phone }})</li>
+      {% endfor %}
+    </ul>
+    <div style="display:flex;gap:8px">
+      <button type="submit" form="registration-form" name="confirm_duplicate" value="1"
+              class="btn btn-primary" style="background:var(--sage-red);border-color:var(--sage-red);font-size:13px">
+        Create new record anyway
+      </button>
+      <a href="{% url 'patients:search' %}" class="btn btn-ghost" style="font-size:13px">Cancel</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<form id="registration-form" method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start">
+
+    <!-- ── LEFT: main form ───────────────────────────────────────── -->
+    <div>
+
+      <!-- Identity -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div class="card-title"><i class="bi bi-person" style="margin-right:8px;color:var(--sage-teal)"></i>Identity</div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">First Name <span style="color:var(--sage-red)">*</span></label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Surname <span style="color:var(--sage-red)">*</span></label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.last_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Middle Name</label>
+            {{ form.middle_name }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Date of Birth <span style="color:var(--sage-red)">*</span></label>
+            {{ form.date_of_birth }}
+            {% if form.date_of_birth.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.date_of_birth.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Sex <span style="color:var(--sage-red)">*</span></label>
+            {{ form.sex }}
+            {% if form.sex.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.sex.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">State of Origin</label>
+            {{ form.state_of_origin }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Preferred Language</label>
+            {{ form.preferred_language }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Religion</label>{{ form.religion }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Marital Status</label>{{ form.marital_status }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">LGA of Origin</label>{{ form.lga_of_origin }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Occupation</label>{{ form.occupation }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div class="card-title"><i class="bi bi-telephone" style="margin-right:8px;color:var(--sage-teal)"></i>Contact</div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Phone <span style="color:var(--sage-red)">*</span></label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.phone.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Alternate Phone</label>{{ form.phone_alt }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Email</label>{{ form.email }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Residential Address</label>{{ form.address }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">State</label>{{ form.address_state }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">LGA</label>{{ form.address_lga }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Next of Kin -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div class="card-title"><i class="bi bi-people" style="margin-right:8px;color:var(--sage-teal)"></i>Next of Kin</div>
+          <span style="font-size:12px;color:var(--text-3)">REQUIRED</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label">Full Name</label>{{ nok_form.full_name }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Relationship</label>{{ nok_form.relationship }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Phone</label>{{ nok_form.phone }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Alternate Phone</label>{{ nok_form.phone_alt }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Address</label>{{ nok_form.address }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Payer Information -->
+      <div class="card" style="margin-bottom:14px" x-data="{ payer: '{{ form.payer_type.value|default:'self_pay' }}' }">
+        <div class="card-head">
+          <div class="card-title"><i class="bi bi-shield-check" style="margin-right:8px;color:var(--sage-teal)"></i>Payer Information</div>
+          <span style="font-size:12px;color:var(--text-3)">FOR BILLING</span>
+        </div>
+
+        <!-- Payer type icon buttons -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+          <label style="cursor:pointer">
+            <input type="radio" name="payer_type" value="nhia" x-model="payer" style="display:none">
+            <div :style="payer==='nhia' ? 'border-color:var(--sage-primary);background:rgba(15,76,129,.06)' : ''"
+                 style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
+                 @click="payer='nhia'">
+              <i class="bi bi-shield-fill-check" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-primary)"></i>
+              <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">NHIA</div>
+            </div>
+          </label>
+          <label style="cursor:pointer">
+            <input type="radio" name="payer_type" value="private_hmo" x-model="payer" style="display:none">
+            <div :style="payer==='private_hmo' ? 'border-color:var(--sage-teal);background:rgba(27,153,139,.06)' : ''"
+                 style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
+                 @click="payer='private_hmo'">
+              <i class="bi bi-hospital" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-teal)"></i>
+              <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">HMO</div>
+            </div>
+          </label>
+          <label style="cursor:pointer">
+            <input type="radio" name="payer_type" value="corporate" x-model="payer" style="display:none">
+            <div :style="payer==='corporate' ? 'border-color:var(--sage-amber);background:rgba(201,131,29,.06)' : ''"
+                 style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
+                 @click="payer='corporate'">
+              <i class="bi bi-briefcase" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-amber)"></i>
+              <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">Corporate</div>
+            </div>
+          </label>
+          <label style="cursor:pointer">
+            <input type="radio" name="payer_type" value="self_pay" x-model="payer" style="display:none">
+            <div :style="payer==='self_pay' ? 'border-color:var(--sage-ink);background:rgba(11,30,45,.04)' : ''"
+                 style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
+                 @click="payer='self_pay'">
+              <i class="bi bi-person-fill" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-ink)"></i>
+              <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">Self Pay</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="row g-3">
+          <!-- NHIA fields -->
+          <div class="col-md-6" x-show="payer === 'nhia'" x-cloak>
+            <label class="form-label">NHIA Enrollee ID <span style="color:var(--sage-red)">*</span></label>
+            {{ form.nhia_number }}
+            {% if form.nhia_number.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.nhia_number.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6" x-show="payer === 'nhia'" x-cloak>
+            <label class="form-label">HMO Name</label>{{ form.hmo_name }}
+          </div>
+          <div class="col-md-6" x-show="payer === 'nhia'" x-cloak>
+            <label class="form-label">HMO Plan</label>{{ form.hmo_plan }}
+          </div>
+
+          <!-- Private HMO fields -->
+          <div class="col-md-6" x-show="payer === 'private_hmo'" x-cloak>
+            <label class="form-label">HMO Name <span style="color:var(--sage-red)">*</span></label>
+            {{ form.hmo_name }}
+            {% if form.hmo_name.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.hmo_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6" x-show="payer === 'private_hmo'" x-cloak>
+            <label class="form-label">HMO Member Number</label>
+            {{ form.hmo_number }}
+          </div>
+          <div class="col-md-6" x-show="payer === 'private_hmo'" x-cloak>
+            <label class="form-label">HMO Plan / Package</label>{{ form.hmo_plan }}
+          </div>
+
+          <!-- Corporate fields -->
+          <div class="col-md-6" x-show="payer === 'corporate'" x-cloak>
+            <label class="form-label">Employer / Company <span style="color:var(--sage-red)">*</span></label>
+            {{ form.corporate_employer }}
+            {% if form.corporate_employer.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.corporate_employer.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Clinical Baseline -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div class="card-title"><i class="bi bi-heart-pulse" style="margin-right:8px;color:var(--sage-teal)"></i>Clinical Baseline</div>
+          <span style="font-size:12px;color:var(--text-3)">OPTIONAL — CAN UPDATE LATER</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Blood Group</label>{{ form.blood_group }}
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- ── RIGHT: sidebar ────────────────────────────────────────── -->
+    <div style="position:sticky;top:80px">
+
+      <!-- Hospital Number -->
+      <div style="background:linear-gradient(135deg,var(--sage-ink),var(--sage-ink-soft));border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px;color:#fff">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:8px">Hospital Number</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:22px;font-weight:600;letter-spacing:.04em;color:#fff">SAGE/{% now "Y" %}/——————</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:6px">Assigned automatically on registration</div>
+      </div>
+
+      <!-- Duplicate Check -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-head">
+          <div class="card-title" style="font-size:12px">Duplicate Check</div>
+          <span id="dup-status" style="font-size:11px;color:var(--text-3)">LIVE</span>
+        </div>
+        <div id="duplicate-check-result">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sage-green);padding:4px 0">
+            <i class="bi bi-check-circle-fill" style="font-size:14px"></i>
+            No matches found.
+          </div>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div class="card" style="margin-bottom:12px" x-data="docUploads()">
+        <div class="card-head">
+          <div class="card-title" style="font-size:12px">Documents</div>
+          <span style="font-size:11px;color:var(--text-3)">OPTIONAL</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+
+          <!-- Passport Photo -->
+          <div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:5px">
+              <i class="bi bi-image" style="margin-right:5px"></i>Passport Photo
+            </div>
+            <label style="display:block;cursor:pointer">
+              {{ form.photo }}
+              <div @click="$el.previousElementSibling.click()"
+                   :style="files.photo ? 'border-color:var(--sage-teal);background:rgba(27,153,139,.04)' : ''"
+                   style="border:1.5px dashed var(--line);border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px;transition:all .15s;font-size:12.5px">
+                <i class="bi bi-cloud-arrow-up" style="font-size:18px;color:var(--text-3);flex-shrink:0"></i>
+                <div style="flex:1;min-width:0">
+                  <div x-text="files.photo || 'Click to upload (JPG / PNG)'" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+                       :style="files.photo ? 'color:var(--sage-teal);font-weight:500' : 'color:var(--text-3)'"></div>
+                  <div style="font-size:11px;color:var(--text-3);margin-top:1px">Max 5 MB</div>
+                </div>
+                <template x-if="files.photo">
+                  <i class="bi bi-check-circle-fill" style="color:var(--sage-teal);font-size:14px;flex-shrink:0"></i>
+                </template>
+              </div>
+            </label>
+            {% if form.photo.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:3px">{{ form.photo.errors.0 }}</div>{% endif %}
+          </div>
+
+          <!-- National ID / Passport Document -->
+          <div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:5px">
+              <i class="bi bi-card-text" style="margin-right:5px"></i>National ID / Passport
+            </div>
+            <label style="display:block;cursor:pointer">
+              {{ form.id_document }}
+              <div @click="$el.previousElementSibling.click()"
+                   :style="files.id_document ? 'border-color:var(--sage-teal);background:rgba(27,153,139,.04)' : ''"
+                   style="border:1.5px dashed var(--line);border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px;transition:all .15s;font-size:12.5px">
+                <i class="bi bi-cloud-arrow-up" style="font-size:18px;color:var(--text-3);flex-shrink:0"></i>
+                <div style="flex:1;min-width:0">
+                  <div x-text="files.id_document || 'Click to upload (JPG / PDF)'" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+                       :style="files.id_document ? 'color:var(--sage-teal);font-weight:500' : 'color:var(--text-3)'"></div>
+                  <div style="font-size:11px;color:var(--text-3);margin-top:1px">Max 10 MB</div>
+                </div>
+                <template x-if="files.id_document">
+                  <i class="bi bi-check-circle-fill" style="color:var(--sage-teal);font-size:14px;flex-shrink:0"></i>
+                </template>
+              </div>
+            </label>
+            {% if form.id_document.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:3px">{{ form.id_document.errors.0 }}</div>{% endif %}
+          </div>
+
+          <!-- HMO Card -->
+          <div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:5px">
+              <i class="bi bi-credit-card" style="margin-right:5px"></i>HMO Card / Insurance
+            </div>
+            <label style="display:block;cursor:pointer">
+              {{ form.hmo_card }}
+              <div @click="$el.previousElementSibling.click()"
+                   :style="files.hmo_card ? 'border-color:var(--sage-teal);background:rgba(27,153,139,.04)' : ''"
+                   style="border:1.5px dashed var(--line);border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px;transition:all .15s;font-size:12.5px">
+                <i class="bi bi-cloud-arrow-up" style="font-size:18px;color:var(--text-3);flex-shrink:0"></i>
+                <div style="flex:1;min-width:0">
+                  <div x-text="files.hmo_card || 'Click to upload (JPG / PDF)'" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+                       :style="files.hmo_card ? 'color:var(--sage-teal);font-weight:500' : 'color:var(--text-3)'"></div>
+                  <div style="font-size:11px;color:var(--text-3);margin-top:1px">Max 10 MB</div>
+                </div>
+                <template x-if="files.hmo_card">
+                  <i class="bi bi-check-circle-fill" style="color:var(--sage-teal);font-size:14px;flex-shrink:0"></i>
+                </template>
+              </div>
+            </label>
+            {% if form.hmo_card.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:3px">{{ form.hmo_card.errors.0 }}</div>{% endif %}
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tip -->
+      <div style="background:var(--sage-ink);border-radius:var(--radius);padding:14px 16px;color:rgba(255,255,255,.75);font-size:12px;line-height:1.6">
+        <div style="font-weight:600;color:#fff;margin-bottom:4px">TIP</div>
+        Press <kbd style="background:rgba(255,255,255,.15);border-radius:4px;padding:1px 6px;font-family:'Geist Mono',monospace;font-size:11px">Tab</kbd>
+        through fields. The system checks for duplicates as you type.
+      </div>
+
+    </div><!-- /sidebar -->
+
+  </div><!-- /grid -->
+</form>
+
+<style>
+  /* Hide Django's default file inputs — our styled labels wrap them */
+  #id_photo, #id_id_document, #id_hmo_card {
+    position: absolute;
+    width: 1px; height: 1px;
+    opacity: 0; pointer-events: none;
+  }
+</style>
+
+<script>
+function docUploads() {
+  return {
+    files: { photo: '', id_document: '', hmo_card: '' },
+    init() {
+      ['photo', 'id_document', 'hmo_card'].forEach(name => {
+        const input = document.getElementById('id_' + name);
+        if (input) {
+          input.addEventListener('change', () => {
+            this.files[name] = input.files[0]?.name || '';
+          });
+        }
+      });
+    },
+  };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const fields = ['id_first_name','id_last_name','id_date_of_birth'];
+
+  function runCheck() {
+    const params = new URLSearchParams({
+      first_name:    document.querySelector('[name=first_name]')?.value  || '',
+      last_name:     document.querySelector('[name=last_name]')?.value   || '',
+      date_of_birth: document.querySelector('[name=date_of_birth]')?.value || '',
+      phone:         document.querySelector('[name=phone]')?.value       || '',
+    });
+    if (!params.get('first_name') && !params.get('last_name')) return;
+    htmx.ajax('GET', '/patients/check-duplicate/?' + params, {
+      target: '#duplicate-check-result', swap: 'innerHTML'
+    });
+  }
+
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', runCheck);
+  });
+});
+</script>
+{% endblock %}

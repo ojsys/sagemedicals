@@ -1,0 +1,73 @@
+{% if patients %}
+<table class="data">
+  <thead>
+    <tr>
+      <th style="width:36px"></th>
+      <th>Patient</th>
+      <th>Hospital No.</th>
+      <th>Age / Sex</th>
+      <th>Phone</th>
+      <th>Payer</th>
+      <th>Flags</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for patient in patients %}
+    <tr onclick="location.href='{% url 'patients:detail' patient.pk %}'" class="patient-row">
+      <td>
+        <div class="avatar" style="width:32px;height:32px;font-size:11px">
+          {{ patient.first_name.0 }}{{ patient.last_name.0 }}
+        </div>
+      </td>
+      <td>
+        <div class="pname">{{ patient.full_name }}</div>
+        <div class="pmeta">{{ patient.occupation }}</div>
+      </td>
+      <td><span class="num" style="color:var(--text-2);font-size:12px">{{ patient.hospital_number }}</span></td>
+      <td>{{ patient.age_display }} · {{ patient.get_sex_display }}</td>
+      <td class="num">{{ patient.phone }}</td>
+      <td>
+        {% if patient.payer_type == 'nhia' %}<span class="tag teal">NHIA</span>
+        {% elif patient.payer_type == 'private_hmo' %}<span class="tag blue">HMO{% if patient.hmo_name %} · {{ patient.hmo_name }}{% endif %}</span>
+        {% elif patient.payer_type == 'corporate' %}<span class="tag blue">{{ patient.corporate_employer|default:patient.get_payer_type_display|truncatechars:14 }}</span>
+        {% else %}<span class="tag gray">Self-pay</span>{% endif %}
+      </td>
+      <td>
+        {% for allergy in patient.allergies.all %}{% if allergy.is_active %}
+        <span class="tag red"><i class="bi bi-shield-exclamation" style="font-size:10px"></i>{{ allergy.allergen|truncatechars:10 }}</span>
+        {% endif %}{% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if page_obj.has_other_pages %}
+<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--line);font-size:13px;color:var(--text-2)">
+  <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  <div style="display:flex;gap:6px">
+    {% if page_obj.has_previous %}
+    <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}" class="btn btn-ghost btn-sm">
+      <i class="bi bi-chevron-left"></i> Prev
+    </a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?q={{ query }}&page={{ page_obj.next_page_number }}" class="btn btn-ghost btn-sm">
+      Next <i class="bi bi-chevron-right"></i>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% elif query %}
+<div style="text-align:center;padding:48px 20px;color:var(--text-3)">
+  <i class="bi bi-search" style="font-size:32px;display:block;margin-bottom:12px;opacity:.35"></i>
+  No patients found for <strong style="color:var(--text)">"{{ query }}"</strong>
+  <div style="margin-top:16px">
+    <a href="{% url 'patients:register' %}" class="btn btn-primary">
+      <i class="bi bi-person-plus"></i>Register new patient
+    </a>
+  </div>
+</div>
+{% endif %}

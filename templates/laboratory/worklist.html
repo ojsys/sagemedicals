@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Lab Worklist{% endblock %}
+
+{% block extra_css %}
+.queue-card { background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;margin-top:20px }
+.queue-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 1fr 160px 80px 120px;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background .12s;
+}
+.queue-row:last-child { border-bottom: none; }
+.queue-row:hover { background: var(--bg-2); }
+.qstat {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qstat.stat  { border-color: var(--sage-red);   color: var(--sage-red); }
+.qstat.urgent{ border-color: var(--sage-amber);  color: var(--sage-amber); }
+.progress { height: 4px; background: var(--line); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--sage-teal); border-radius: 2px; transition: width .3s; }
+.chip-active { background: var(--sage-ink); color: #fff; }
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Laboratory</div>
+    <h1 class="page-title">Active <em>Worklist</em></h1>
+    <p class="page-sub">
+      {{ stats.pending_collection }} pending collection
+      · {{ stats.in_progress }} in progress
+      · {{ stats.awaiting_verify }} awaiting verify
+      {% if stats.critical %}<span style="color:var(--sage-red);font-weight:600"> · {{ stats.critical }} critical</span>{% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-droplet"></i></div>
+    <div class="stat-label">Pending Collection</div>
+    <div class="stat-value num">{{ stats.pending_collection }}</div>
+    <div class="stat-meta">Ordered, not yet collected</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-teal-soft);color:var(--sage-teal)"><i class="bi bi-arrow-repeat"></i></div>
+    <div class="stat-label">In Progress</div>
+    <div class="stat-value num" style="color:var(--sage-teal)">{{ stats.in_progress }}</div>
+    <div class="stat-meta">Sample collected or running</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-shield-check"></i></div>
+    <div class="stat-label">Awaiting Verify</div>
+    <div class="stat-value num" style="color:var(--sage-amber)">{{ stats.awaiting_verify }}</div>
+    <div class="stat-meta">Results entered, not verified</div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-red-soft);color:var(--sage-red)"><i class="bi bi-exclamation-octagon"></i></div>
+    <div class="stat-label">Critical</div>
+    <div class="stat-value num" style="color:var(--sage-red)">{{ stats.critical }}</div>
+    <div class="stat-meta">Unacknowledged critical values</div>
+  </div>
+</div>
+
+<!-- Queue card -->
+<div class="queue-card">
+  <div class="table-head" style="padding:14px 20px">
+    <div>
+      <div class="card-title">Sample Queue</div>
+      {% if orders %}
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ orders|length }} active order{{ orders|length|pluralize }}</div>
+      {% endif %}
+    </div>
+    <!-- Panel filter chips -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <a href="?{% if priority_filter %}priority={{ priority_filter }}{% endif %}"
+         class="chip {% if not panel_filter %}chip-active{% endif %}">All</a>
+      {% for p in panels %}
+      <a href="?panel={{ p }}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}"
+         class="chip {% if panel_filter == p %}chip-active{% endif %}" style="font-size:11.5px">{{ p }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Priority filter row -->
+  <div style="padding:0 20px 12px;display:flex;gap:6px">
+    <a href="?{% if panel_filter %}panel={{ panel_filter }}{% endif %}"
+       class="chip {% if not priority_filter %}on{% endif %}" style="font-size:11.5px">All priorities</a>
+    <a href="?priority=stat{% if panel_filter %}&panel={{ panel_filter }}{% endif %}"
+       class="chip {% if priority_filter == 'stat' %}on{% endif %}" style="font-size:11.5px;color:var(--sage-red)">STAT</a>
+    <a href="?priority=urgent{% if panel_filter %}&panel={{ panel_filter }}{% endif %}"
+       class="chip {% if priority_filter == 'urgent' %}on{% endif %}" style="font-size:11.5px;color:var(--sage-amber)">Urgent</a>
+    <a href="?priority=routine{% if panel_filter %}&panel={{ panel_filter }}{% endif %}"
+       class="chip {% if priority_filter == 'routine' %}on{% endif %}" style="font-size:11.5px">Routine</a>
+  </div>
+
+  {% if orders %}
+  {% for order in orders %}
+  {% with result=order.result %}
+  <div class="queue-row" style="cursor:pointer" onclick="location.href='{% url 'laboratory:order_detail' order.pk %}'">
+
+    <!-- Position / priority indicator -->
+    <div class="qstat {% if order.priority == 'stat' %}stat{% elif order.priority == 'urgent' %}urgent{% endif %}">
+      {{ forloop.counter|stringformat:"02d" }}
+    </div>
+
+    <!-- Patient -->
+    <div>
+      <div style="font-weight:500;color:var(--sage-ink);font-size:13px">{{ order.patient.full_name }}</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;font-family:var(--mono)">
+        {{ order.patient.hospital_number }} · {{ order.barcode }}
+      </div>
+    </div>
+
+    <!-- Test info -->
+    <div>
+      <div style="font-size:13px;color:var(--text-2);font-weight:500">{{ order.test.name }}</div>
+      <div style="margin-top:5px">
+        {% if order.priority == 'stat' %}
+          <span class="tag red" style="font-size:10.5px">STAT</span>
+        {% elif order.priority == 'urgent' %}
+          <span class="tag amber" style="font-size:10.5px"><span class="dot"></span>Urgent</span>
+        {% endif %}
+        {% if result and result.is_critical and not result.critical_acknowledged_at %}
+          <span class="tag red" style="font-size:10.5px"><i class="bi bi-exclamation-octagon-fill" style="font-size:9px"></i> Critical</span>
+        {% endif %}
+        <span class="tag gray" style="font-size:10.5px">{{ order.test.panel }}</span>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div>
+      {% if order.status == 'ordered' %}
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Pending collection</div>
+        <div class="progress"><div class="progress-bar" style="width:5%;background:var(--line)"></div></div>
+      {% elif order.status == 'sample_collected' %}
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Sample received</div>
+        <div class="progress"><div class="progress-bar" style="width:30%"></div></div>
+      {% elif order.status == 'in_progress' %}
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Running</div>
+        <div class="progress"><div class="progress-bar" style="width:60%"></div></div>
+      {% elif order.status == 'resulted' %}
+        <div style="font-size:11px;color:var(--sage-amber);margin-bottom:4px">Awaiting verify</div>
+        <div class="progress"><div class="progress-bar" style="width:85%;background:var(--sage-amber)"></div></div>
+      {% elif order.status == 'verified' %}
+        <div style="font-size:11px;color:var(--sage-green);margin-bottom:4px">Verified</div>
+        <div class="progress"><div class="progress-bar" style="width:100%;background:var(--sage-green)"></div></div>
+      {% endif %}
+    </div>
+
+    <!-- Time -->
+    <div style="font-family:var(--mono);font-size:11.5px;color:var(--text-3);text-align:right">
+      {{ order.created_at|time:"H:i" }}<br>
+      <span style="font-size:10px">{{ order.created_at|timesince }} ago</span>
+    </div>
+
+    <!-- Action -->
+    <div style="text-align:right" onclick="event.stopPropagation()">
+      {% if order.status == 'ordered' %}
+        <form method="post" action="{% url 'laboratory:collect' order.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button class="btn btn-ghost btn-sm">Collect →</button>
+        </form>
+      {% elif order.status == 'sample_collected' or order.status == 'in_progress' %}
+        <a href="{% url 'laboratory:result_entry' order.pk %}" class="btn btn-sm btn-primary">Enter Results</a>
+      {% elif order.status == 'resulted' %}
+        <form method="post" action="{% url 'laboratory:result_verify' order.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-teal">Verify &amp; Release</button>
+        </form>
+      {% elif order.status == 'verified' %}
+        <a href="{% url 'laboratory:order_detail' order.pk %}" class="btn btn-ghost btn-sm">View</a>
+      {% endif %}
+    </div>
+
+  </div>
+  {% endwith %}
+  {% endfor %}
+
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;color:var(--text-3)">
+    <i class="bi bi-check-circle" style="font-size:40px;display:block;margin-bottom:12px;opacity:.2"></i>
+    No active lab orders{% if panel_filter %} in {{ panel_filter }}{% endif %}.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

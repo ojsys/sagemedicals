@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Edit — {{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Patients / Edit</div>
+    <h1 class="page-title">Edit <em>{{ patient.full_name }}</em></h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back to Profile</a>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title"><i class="bi bi-person" style="margin-right:8px;color:var(--sage-teal)"></i>Personal Information</div></div>
+    <div>
+      <div class="row g-3">
+        <div class="col-md-4"><label class="form-label">First Name *</label>{{ form.first_name }}</div>
+        <div class="col-md-3"><label class="form-label">Middle Name</label>{{ form.middle_name }}</div>
+        <div class="col-md-5"><label class="form-label">Last Name *</label>{{ form.last_name }}</div>
+        <div class="col-md-3"><label class="form-label">Date of Birth *</label>{{ form.date_of_birth }}</div>
+        <div class="col-md-2"><label class="form-label">Sex *</label>{{ form.sex }}</div>
+        <div class="col-md-3"><label class="form-label">Marital Status</label>{{ form.marital_status }}</div>
+        <div class="col-md-4"><label class="form-label">Occupation</label>{{ form.occupation }}</div>
+        <div class="col-md-3"><label class="form-label">Blood Group</label>{{ form.blood_group }}</div>
+        <div class="col-md-3"><label class="form-label">Religion</label>{{ form.religion }}</div>
+        <div class="col-md-3"><label class="form-label">State of Origin</label>{{ form.state_of_origin }}</div>
+        <div class="col-md-3"><label class="form-label">LGA of Origin</label>{{ form.lga_of_origin }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title"><i class="bi bi-telephone" style="margin-right:8px;color:var(--sage-teal)"></i>Contact Details</div></div>
+    <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Phone *</label>{{ form.phone }}
+          {% if form.phone.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.phone.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="col-md-4"><label class="form-label">Alt. Phone</label>{{ form.phone_alt }}</div>
+        <div class="col-md-4"><label class="form-label">Email</label>{{ form.email }}</div>
+        <div class="col-12"><label class="form-label">Address</label>{{ form.address }}</div>
+        <div class="col-md-4"><label class="form-label">State</label>{{ form.address_state }}</div>
+        <div class="col-md-4"><label class="form-label">LGA</label>{{ form.address_lga }}</div>
+      </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title"><i class="bi bi-shield-check" style="margin-right:8px;color:var(--sage-teal)"></i>Insurance / Payer</div></div>
+    <div x-data="{ payer: '{{ form.payer_type.value }}' }">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Payer Type *</label>
+          <select name="payer_type" class="form-select" x-model="payer">
+            {% for val, label in form.fields.payer_type.choices %}
+            <option value="{{ val }}" {% if form.payer_type.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
+          <label class="form-label">NHIA Enrollee ID</label>{{ form.nhia_number }}
+        </div>
+        <div class="col-md-4" x-show="payer === 'nhia' || payer === 'private_hmo'" x-cloak>
+          <label class="form-label">HMO Name</label>{{ form.hmo_name }}
+        </div>
+        <div class="col-md-4" x-show="payer === 'corporate'" x-cloak>
+          <label class="form-label">Employer</label>{{ form.corporate_employer }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title"><i class="bi bi-people" style="margin-right:8px;color:var(--sage-teal)"></i>Next of Kin</div></div>
+    <div class="row g-3">
+        <div class="col-md-5"><label class="form-label">Full Name</label>{{ nok_form.full_name }}</div>
+        <div class="col-md-3"><label class="form-label">Relationship</label>{{ nok_form.relationship }}</div>
+        <div class="col-md-4"><label class="form-label">Phone</label>{{ nok_form.phone }}</div>
+        <div class="col-md-4"><label class="form-label">Alt. Phone</label>{{ nok_form.phone_alt }}</div>
+        <div class="col-md-8"><label class="form-label">Address</label>{{ nok_form.address }}</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <a href="{% url 'patients:detail' patient.pk %}" class="btn btn-ghost">Cancel</a>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i>Save Changes</button>
+  </div>
+</form>
+{% endblock %}

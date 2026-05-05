@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Walk-in Registration{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Scheduling</div>
+    <h1 class="page-title">Walk-in Registration</h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'scheduling:queue' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back to Queue</a>
+  </div>
+</div>
+
+<div style="max-width:500px">
+  <form method="post"
+        hx-get="{% url 'patients:search' %}"
+        hx-trigger="none">
+    {% csrf_token %}
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">Patient & Clinic</div></div>
+
+      <div style="margin-bottom:14px">
+        <label class="form-label">Patient <span style="color:var(--sage-red)">*</span></label>
+        <input type="text" id="patient-search" class="form-control" placeholder="Search by name or hospital number…"
+               hx-get="{% url 'patients:search' %}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#patient-results"
+               hx-include="[name='q']"
+               name="q" autocomplete="off">
+        <div id="patient-results" style="border:1px solid var(--line);border-radius:var(--radius);margin-top:4px;overflow:hidden;display:none"></div>
+        <input type="hidden" name="patient" id="patient-pk">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label class="form-label">Clinic <span style="color:var(--sage-red)">*</span></label>
+        <select name="clinic" class="form-select" required>
+          <option value="">Select clinic…</option>
+          {% for c in clinics %}
+          <option value="{{ c.pk }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label class="form-label">Triage Level</label>
+        <select name="priority" class="form-select">
+          <option value="green">Green — Non-urgent</option>
+          <option value="yellow">Yellow — Semi-urgent</option>
+          <option value="red">Red — Urgent</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary"><i class="bi bi-check2"></i>Add to Queue</button>
+        <a href="{% url 'scheduling:queue' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.getElementById('patient-results').addEventListener('click', function(e) {
+    const item = e.target.closest('[data-pk]');
+    if (!item) return;
+    document.getElementById('patient-pk').value = item.dataset.pk;
+    document.getElementById('patient-search').value = item.textContent.trim();
+    document.getElementById('patient-results').innerHTML = '';
+    document.getElementById('patient-results').style.display = 'none';
+  });
+  document.getElementById('patient-search').addEventListener('keyup', function() {
+    document.getElementById('patient-results').style.display = this.value ? 'block' : 'none';
+  });
+</script>
+{% endblock %}

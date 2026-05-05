@@ -1,0 +1,48 @@
+<div id="interaction-warning" style="background:rgba(201,131,29,.06);border:1px solid rgba(201,131,29,.25);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <i class="bi bi-exclamation-triangle-fill" style="color:var(--sage-amber);font-size:16px"></i>
+    <strong style="color:var(--sage-amber);font-size:14px">Drug Interaction Warning</strong>
+  </div>
+  <p style="font-size:13px;color:var(--sage-ink);margin-bottom:8px">
+    <strong>{{ drug }}</strong> interacts with the following active prescriptions:
+  </p>
+  <ul style="font-size:13px;padding-left:18px;margin-bottom:12px">
+    {% for rx, interaction in interactions %}
+    <li style="margin-bottom:6px">
+      <strong>{{ rx.drug }}</strong>
+      <span class="tag {% if interaction.severity == 'contraindicated' %}red{% else %}amber{% endif %}" style="font-size:10px;margin-left:4px">
+        {{ interaction.get_severity_display }}
+      </span>
+      <br>
+      <span style="color:var(--text-3);font-size:12px">{{ interaction.description }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <form method="post" action="{% url 'prescriptions:add' encounter_pk %}"
+        hx-post="{% url 'prescriptions:add' encounter_pk %}"
+        hx-target="#rx-list"
+        hx-swap="innerHTML">
+    {% csrf_token %}
+    {% for key, value in post_data.items %}
+      {% if key != 'csrfmiddlewaretoken' %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endif %}
+    {% endfor %}
+    <input type="hidden" name="interaction_override" value="1">
+    <div style="margin-bottom:10px">
+      <label class="form-label" style="font-size:12px;font-weight:600">Override reason (required)</label>
+      <input type="text" name="interaction_override_reason" class="form-control"
+             placeholder="Clinical justification…" required>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="background:var(--sage-amber);border-color:var(--sage-amber);color:#fff">
+        <i class="bi bi-exclamation-triangle"></i>Override & Prescribe Anyway
+      </button>
+      <button type="button" class="btn btn-ghost"
+              onclick="document.getElementById('interaction-warning').remove()">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

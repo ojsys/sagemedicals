@@ -1,0 +1,14 @@
+{% if vitals %}
+<div class="vitals">
+  {% if vitals.temperature %}<div class="vital"><div class="vital-label">Temp</div><div class="vital-value">{{ vitals.temperature }}°C</div></div>{% endif %}
+  {% if vitals.bp_systolic %}<div class="vital"><div class="vital-label">BP</div><div class="vital-value">{{ vitals.bp_display }}</div></div>{% endif %}
+  {% if vitals.pulse %}<div class="vital"><div class="vital-label">Pulse</div><div class="vital-value">{{ vitals.pulse }} <span style="font-size:11px;font-weight:400">bpm</span></div></div>{% endif %}
+  {% if vitals.spo2 %}<div class="vital"><div class="vital-label">SpO₂</div><div class="vital-value">{{ vitals.spo2 }}%</div></div>{% endif %}
+  {% if vitals.weight %}<div class="vital"><div class="vital-label">Weight</div><div class="vital-value">{{ vitals.weight }} <span style="font-size:11px;font-weight:400">kg</span></div></div>{% endif %}
+  {% if vitals.height %}<div class="vital"><div class="vital-label">Height</div><div class="vital-value">{{ vitals.height }} <span style="font-size:11px;font-weight:400">cm</span></div></div>{% endif %}
+  {% if vitals.bmi %}<div class="vital"><div class="vital-label">BMI</div><div class="vital-value">{{ vitals.bmi }}</div></div>{% endif %}
+  {% if vitals.pain_score is not None %}<div class="vital"><div class="vital-label">Pain</div><div class="vital-value">{{ vitals.pain_score }}/10</div></div>{% endif %}
+</div>
+{% else %}
+<div style="color:var(--text-3);font-size:13px;padding:8px 0">No vitals recorded.</div>
+{% endif %}
