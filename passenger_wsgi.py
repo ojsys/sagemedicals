@@ -1,18 +1,13 @@
 import os
 import sys
 
-try:
-    import pymysql
-    pymysql.install_as_MySQLdb()
-except ImportError:
-    pass
-
 # Absolute path to the project root (same directory as this file).
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# cPanel "Setup Python App" creates a virtualenv at <app_root>/venv.
-# Adjust the python3.x folder to match the Python version cPanel assigned.
-PYTHON_VERSION = "python3.14"
+# cPanel "Setup Python App" manages the virtualenv — its site-packages are
+# already on sys.path via the Passenger wrapper. This block is a fallback
+# for servers where that injection doesn't happen automatically.
+PYTHON_VERSION = "python3.12"
 VENV_SITE_PACKAGES = os.path.join(BASE_DIR, "venv", "lib", PYTHON_VERSION, "site-packages")
 
 if os.path.isdir(VENV_SITE_PACKAGES):
