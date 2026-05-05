@@ -1,37 +1,30 @@
 {% extends "portal/base_portal.html" %}
 {% block title %}Sign In — Patient Portal{% endblock %}
-
-{% block extra_css %}
-<style>
-  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-  .portal-content { width: 100%; max-width: 420px; padding: 0 20px; }
-  .portal-topbar { display: none; }
-</style>
-{% endblock %}
+{% block body_class %}p-auth{% endblock %}
 
 {% block content %}
-<div style="text-align:center;margin-bottom:32px">
-  <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;letter-spacing:-0.04em;color:var(--sage-ink)">
-    SAGE<span style="color:var(--sage-teal)">.</span>
-  </div>
-  <div style="font-size:22px;font-family:'Fraunces',serif;font-weight:400;letter-spacing:-0.02em;color:var(--sage-ink);margin-top:24px">Patient Portal</div>
-  <div style="color:var(--text-2);margin-top:6px;font-size:13.5px">Enter your registered phone number to sign in</div>
+<div class="p-auth-logo">
+  <div class="p-auth-mark">SAGE<em>.</em></div>
+  <h1 class="p-auth-title">Patient Portal</h1>
+  <p class="p-auth-sub">Enter your registered phone number to sign in</p>
 </div>
 
-<div class="portal-card">
+<div class="p-card">
   <form method="post">
     {% csrf_token %}
-    <div class="form-field">
+    <div class="p-field">
       <label>Phone Number</label>
       {{ form.phone }}
-      {% if form.phone.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.phone.errors.0 }}</div>{% endif %}
+      {% if form.phone.errors %}
+      <div class="p-field-err">{{ form.phone.errors.0 }}</div>
+      {% endif %}
     </div>
-    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px">
+    <button type="submit" class="p-btn p-btn-primary p-btn-full p-btn-full-pad">
       <i class="bi bi-phone"></i>Send Verification Code
     </button>
   </form>
-  <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--text-3)">
-    New patient? <a href="{% url 'portal:register' %}" style="color:var(--sage-primary)">Create account</a>
+  <div class="p-auth-foot">
+    New patient? <a href="{% url 'portal:register' %}">Create account</a>
   </div>
 </div>
 {% endblock %}

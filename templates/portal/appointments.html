@@ -1,55 +1,57 @@
 {% extends "portal/base_portal.html" %}
 {% block title %}Appointments{% endblock %}
-{% block nav_appointments %}active{% endblock %}
 
 {% block content %}
-<div style="margin-bottom:20px">
-  <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:4px">Appointments</div>
-  <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:400;color:var(--sage-ink)">Book &amp; Manage</div>
+<div class="p-page-h">
+  <div class="p-eyebrow">Appointments</div>
+  <h1 class="p-page-title">Book &amp; Manage</h1>
 </div>
 
-<div class="portal-card" style="margin-bottom:20px">
-  <div style="font-size:15px;font-weight:600;color:var(--sage-ink);margin-bottom:14px">Request an Appointment</div>
+<!-- Booking form -->
+<div class="p-card" style="margin-bottom:20px">
+  <div class="card-title">Request an Appointment</div>
   <form method="post">
     {% csrf_token %}
     {% for f in form %}
-    <div style="margin-bottom:12px">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:5px">
-        {{ f.label }}{% if f.field.required %} <span style="color:var(--sage-red)">*</span>{% endif %}
-      </label>
+    <div class="p-field">
+      <label>{{ f.label }}{% if f.field.required %}<span class="p-field-req"> *</span>{% endif %}</label>
       {{ f }}
-      {% if f.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ f.errors }}</div>{% endif %}
+      {% if f.errors %}<div class="p-field-err">{{ f.errors.0 }}</div>{% endif %}
     </div>
     {% endfor %}
-    <button class="portal-btn" style="margin-top:4px">
+    <button type="submit" class="p-btn p-btn-teal">
       <i class="bi bi-send"></i>Submit Request
     </button>
   </form>
 </div>
 
-<div style="font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:10px">My Requests</div>
+<!-- Request list -->
+<div class="p-section-h">My Requests</div>
+
 {% for r in requests %}
-<div class="portal-card" style="margin-bottom:10px">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div>
-      <div style="font-weight:600;font-size:13px;color:var(--sage-ink)">
+<div class="p-card">
+  <div class="p-row" style="align-items:flex-start">
+    <div class="p-row-body">
+      <div class="p-row-title">
         {{ r.preferred_date|date:"d M Y" }}{% if r.preferred_time %} at {{ r.preferred_time|time:"H:i" }}{% endif %}
       </div>
-      <div style="color:var(--text-3);font-size:12px">{{ r.clinic }}</div>
-      <div style="font-size:13px;margin-top:4px">{{ r.reason|truncatechars:80 }}</div>
+      <div class="p-row-sub">{{ r.clinic }}</div>
+      <div style="font-size:13px;color:var(--t2);margin-top:5px">{{ r.reason|truncatechars:80 }}</div>
+      {% if r.decline_reason %}
+      <div style="color:var(--red);font-size:12px;margin-top:5px">{{ r.decline_reason }}</div>
+      {% endif %}
     </div>
-    <span class="portal-tag {% if r.status == 'booked' %}portal-tag-green{% elif r.status == 'declined' %}portal-tag-red{% else %}portal-tag-gray{% endif %}">
+    <span class="p-tag {% if r.status == 'booked' %}p-tag-green{% elif r.status == 'declined' %}p-tag-red{% else %}p-tag-gray{% endif %}">
       {{ r.get_status_display }}
     </span>
   </div>
-  {% if r.decline_reason %}
-  <div style="color:var(--sage-red);font-size:12px;margin-top:8px">{{ r.decline_reason }}</div>
-  {% endif %}
 </div>
 {% empty %}
-<div class="portal-card" style="text-align:center;padding:32px;color:var(--text-3)">
-  <i class="bi bi-calendar" style="font-size:28px;display:block;margin-bottom:8px"></i>
-  No appointment requests yet.
+<div class="p-card">
+  <div class="p-empty">
+    <i class="bi bi-calendar"></i>
+    <p>No appointment requests yet.</p>
+  </div>
 </div>
 {% endfor %}
 {% endblock %}

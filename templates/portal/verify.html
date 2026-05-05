@@ -1,32 +1,30 @@
 {% extends "portal/base_portal.html" %}
-{% block title %}Verify OTP{% endblock %}
+{% block title %}Verify Code — Patient Portal{% endblock %}
+{% block body_class %}p-auth{% endblock %}
 
 {% block content %}
-<div style="text-align:center;margin-bottom:24px">
-  <i class="bi bi-shield-lock" style="font-size:36px;color:var(--sage-teal);display:block;margin-bottom:10px"></i>
-  <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:400;color:var(--sage-ink)">Enter Verification Code</div>
-  <div style="font-size:13px;color:var(--text-3);margin-top:4px">A 6-digit code was sent to your phone. It expires in 10 minutes.</div>
+<div class="p-auth-logo">
+  <div class="p-auth-mark">SAGE<em>.</em></div>
+  <h1 class="p-auth-title">Verify Your Code</h1>
+  <p class="p-auth-sub">A 6-digit code was sent to your phone. It expires in 10 minutes.</p>
 </div>
 
-<div class="portal-card">
+<div class="p-card">
   <form method="post">
     {% csrf_token %}
-    <div style="margin-bottom:16px">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:5px">Verification Code</label>
+    <div class="p-field p-otp">
+      <label>Verification Code</label>
       {{ form.code }}
       {% if form.code.errors %}
-      <div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.code.errors }}</div>
+      <div class="p-field-err">{{ form.code.errors.0 }}</div>
       {% endif %}
     </div>
-    <button class="portal-btn" style="width:100%;justify-content:center;padding:12px;background:var(--sage-teal)">
-      <i class="bi bi-check2-circle"></i>Verify
+    <button type="submit" class="p-btn p-btn-teal p-btn-full p-btn-full-pad">
+      <i class="bi bi-check2-circle"></i>Verify &amp; Sign In
     </button>
   </form>
-
-  <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft)">
-    <a href="{% url 'portal:login' %}" style="font-size:13px;color:var(--text-3);text-decoration:none">
-      <i class="bi bi-arrow-left"></i> Use a different number
-    </a>
+  <div class="p-auth-foot">
+    <a href="{% url 'portal:login' %}"><i class="bi bi-arrow-left"></i> Use a different number</a>
   </div>
 </div>
 {% endblock %}
