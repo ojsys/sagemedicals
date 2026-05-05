@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.utils import timezone
 
 PORTAL_SESSION_COOKIE = "portal_token"
@@ -94,14 +94,28 @@ def self_register(first_name, last_name, date_of_birth, sex, phone, email=""):
     if existing:
         return existing, False
 
-    hospital_number = generate_hospital_number()
-    patient = Patient.objects.create(
-        hospital_number=hospital_number,
-        first_name=first_name.strip().title(),
-        last_name=last_name.strip().title(),
-        date_of_birth=date_of_birth,
-        sex=sex,
-        phone=phone,
-        payer_type="self_pay",
-    )
-    return patient, True
+    MAX_RETRIES = 5
+    for _ in range(MAX_RETRIES):
+        try:
+            hospital_number = generate_hospital_number()
+            patient = Patient.objects.create(
+                hospital_number=hospital_number,
+                first_name=first_name.strip().title(),
+                last_name=last_name.strip().title(),
+                date_of_birth=date_of_birth,
+                sex=sex,
+                phone=phone,
+                payer_type="self_pay",
+            )
+            return patient, True
+        except IntegrityError as e:
+            # Check if the error is specifically due to duplicate hospital_number
+            # This check might need refinement depending on the database backend and error message format
+            if "hospital_number" in str(e):
+                # Log the retry attempt (optional, but good for debugging)
+                # logger.warning(f"Duplicate hospital number '{hospital_number}' detected, retrying...")
+                continue
+            else:
+                # Re-raise if it's a different IntegrityError
+                raise
+    raise IntegrityError("Failed to create patient after multiple retries due to duplicate hospital number.")
