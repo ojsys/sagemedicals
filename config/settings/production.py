@@ -44,9 +44,12 @@ DATABASES = {
 }
 
 # ── Static & media ────────────────────────────────────────────────────────────
-# cPanel serves public_html/ directly; collectstatic writes here.
-STATIC_ROOT = config("STATIC_ROOT", default=str(BASE_DIR / "public_html" / "static"))  # noqa: F405
-MEDIA_ROOT = config("MEDIA_ROOT", default=str(BASE_DIR / "uploads"))  # noqa: F405
+# Paths are derived from BASE_DIR — no env var needed.
+# cPanel serves public_html/ as the document root, so static assets land at
+# https://www.sagemedicals.com/static/ without any extra web-server config.
+STATIC_ROOT = BASE_DIR / "public_html" / "static"  # noqa: F405
+STATICFILES_DIRS = []  # source 'static/' dir doesn't need to exist in production  # noqa: F405
+MEDIA_ROOT = BASE_DIR / "uploads"  # noqa: F405
 
 # ── Email (cPanel SMTP) ───────────────────────────────────────────────────────
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
