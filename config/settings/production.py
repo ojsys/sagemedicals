@@ -5,6 +5,10 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 
+# Email verification is set to "optional" until SMTP is confirmed working.
+# Change back to "mandatory" once noreply@sagemedicals.com is verified in cPanel.
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+
 ALLOWED_HOSTS = [
     "sagemedicals.com",
     "www.sagemedicals.com",

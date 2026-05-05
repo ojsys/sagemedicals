@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Email — SAGE EMR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sage-ink:      #0B1E2D;
+      --sage-ink-soft: #1B3A52;
+      --sage-primary:  #0F4C81;
+      --sage-teal:     #1B998B;
+      --sage-red:      #B83A26;
+      --sage-amber:    #C9831D;
+      --sage-amber-soft: #FBF1E0;
+      --bg:            #F4F5F2;
+      --surface:       #FFFFFF;
+      --line:          #DCDFD7;
+      --text:          #0B1E2D;
+      --text-2:        #3D4D58;
+      --text-3:        #6E7A82;
+      --radius:        10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: 'Geist', system-ui, sans-serif;
+      background: var(--bg);
+      font-size: 14px;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    .wrap { width: 100%; max-width: 440px; text-align: center; }
+    .brand {
+      font-family: 'Fraunces', serif;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      color: var(--sage-ink);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 40px;
+    }
+    .brand .dot { color: var(--sage-teal); }
+    .icon-wrap {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon-wrap.success { background: rgba(27,153,139,.1); }
+    .icon-wrap.warning { background: var(--sage-amber-soft); }
+    .icon-wrap svg { width: 32px; height: 32px; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-wrap.success svg { stroke: var(--sage-teal); }
+    .icon-wrap.warning svg { stroke: var(--sage-amber); }
+    .title {
+      font-family: 'Fraunces', serif;
+      font-size: 30px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .sub {
+      color: var(--text-3);
+      font-size: 13.5px;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .email-badge {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: 28px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      background: var(--sage-ink);
+      color: #fff;
+      padding: 13px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Geist', sans-serif;
+      transition: background .15s;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .btn:hover { background: var(--sage-ink-soft); }
+    .back-link { color: var(--sage-primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    .alert {
+      background: var(--sage-amber-soft);
+      border: 1px solid #edc97a;
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      text-align: left;
+      font-size: 13px;
+      color: #7a4f00;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .alert strong { display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a href="{% url 'account_login' %}" class="brand">SAGE<span class="dot">.</span></a>
+
+  {% if confirmation %}
+
+    <div class="icon-wrap success">
+      <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+    </div>
+    <div class="title">Confirm your email</div>
+    <p class="sub">Please confirm that this is your email address.</p>
+    <div class="email-badge">{{ confirmation.email_address.email }}</div>
+
+    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+      {% csrf_token %}
+      <button type="submit" class="btn">Confirm email address →</button>
+    </form>
+    <a href="{% url 'account_login' %}" class="back-link">← Back to sign in</a>
+
+  {% else %}
+
+    <div class="icon-wrap warning">
+      <svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    </div>
+    <div class="title">Link expired</div>
+    <div class="alert">
+      <strong>This confirmation link is no longer valid.</strong>
+      Confirmation links expire after 3 days. Request a new one by signing in — a fresh link will be sent automatically.
+    </div>
+    <a href="{% url 'account_login' %}" class="btn">Go to sign in</a>
+
+  {% endif %}
+</div>
+</body>
+</html>
