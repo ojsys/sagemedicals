@@ -845,7 +845,7 @@
 
     /* Flash messages */
     .flash-wrap { padding: 12px 32px 0; }
-    .alert { border-radius: var(--radius) !important; font-size: 13px !important; }
+    .alert { border-radius: var(--radius) !important; font-size: 13px !important; transition: opacity .4s ease; }
 
     /* Rx / Drug */
     .rx-alert {
@@ -973,6 +973,17 @@
 {% block extra_js %}{% endblock %}
 
 <script>
+// Auto-dismiss flash messages after 8 seconds
+(function () {
+  function dismissAlert(el) {
+    el.style.opacity = '0';
+    setTimeout(function () { el.remove(); }, 400);
+  }
+  document.querySelectorAll('.flash-wrap .alert').forEach(function (el) {
+    setTimeout(function () { dismissAlert(el); }, 8000);
+  });
+})();
+
 // Bell alert count polling
 (function() {
   function pollBell() {
