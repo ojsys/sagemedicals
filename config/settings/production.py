@@ -52,16 +52,18 @@ STATICFILES_DIRS = []  # source 'static/' dir doesn't need to exist in productio
 MEDIA_ROOT = BASE_DIR / "uploads"  # noqa: F405
 
 # ── Email (cPanel SMTP) ───────────────────────────────────────────────────────
-# Create noreply@sagemedicals.com in cPanel > Email Accounts first.
-# The FROM address must exactly match EMAIL_HOST_USER — cPanel rejects mismatches.
+# cPanel's SMTP server enforces that the MAIL FROM address matches the
+# authenticated account. EMAIL_HOST_USER and DEFAULT_FROM_EMAIL must use
+# the same email address, or the server returns 550 Unauthenticated.
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = config("EMAIL_HOST", default="mail.sagemedicals.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="noreply@sagemedicals.com")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
-DEFAULT_FROM_EMAIL = f"SAGE Medical Center <{config('EMAIL_HOST_USER', default='noreply@sagemedicals.com')}>"  # noqa: F405
-SERVER_EMAIL = DEFAULT_FROM_EMAIL
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="SAGE Medical Center <noreply@sagemedicals.com>")  # noqa: F405
+SERVER_EMAIL = EMAIL_HOST_USER  # server alerts use bare address, no display name
 
 # ── Hospital identity ─────────────────────────────────────────────────────────
 HOSPITAL_NAME = "SAGE Medical Center"  # noqa: F405

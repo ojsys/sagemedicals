@@ -113,11 +113,16 @@ DB_PASSWORD=<db-password>
 DB_HOST=localhost
 DB_PORT=3306
 
-# Email (cPanel SMTP)
+# Email — cPanel SMTP
+# Create noreply@sagemedicals.com in cPanel > Email Accounts first.
+# EMAIL_HOST_USER and the address inside DEFAULT_FROM_EMAIL must be identical —
+# cPanel rejects any MAIL FROM that doesn't match the authenticated account.
 EMAIL_HOST=mail.sagemedicals.com
 EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_USE_SSL=False
 EMAIL_HOST_USER=noreply@sagemedicals.com
-EMAIL_HOST_PASSWORD=<email-password>
+EMAIL_HOST_PASSWORD=<cpanel-email-password>
 DEFAULT_FROM_EMAIL=SAGE Medical Center <noreply@sagemedicals.com>
 
 # Hospital
