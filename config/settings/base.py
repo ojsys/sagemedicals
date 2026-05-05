@@ -143,6 +143,9 @@ REST_FRAMEWORK = {
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@sagemedical.ng")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
+# django-otp — issuer name shown in authenticator apps (e.g. Google Authenticator)
+OTP_TOTP_ISSUER = "SAGE Medical Center"
+
 # Session timeout (seconds) — overridden per role in middleware
 SESSION_COOKIE_AGE = 900  # 15 min default for clinical roles
 PATIENT_PORTAL_SESSION_AGE = 3600  # 60 min for patients

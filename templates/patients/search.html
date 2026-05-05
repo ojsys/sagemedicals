@@ -21,8 +21,8 @@
   <div class="table-head">
     <form method="get" action="{% url 'patients:search' %}" autocomplete="off" style="flex:1;max-width:420px">
       <input type="hidden" name="filter" value="{{ filter_type }}">
-      <div style="position:relative">
-        <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:14px"></i>
+      <div class="search">
+        <i class="bi bi-search"></i>
         <input type="text" name="q" value="{{ request.GET.q }}"
                placeholder="Name, hospital number, phone, or NHIA ID…"
                hx-get="{% url 'patients:search' %}"

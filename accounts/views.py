@@ -49,7 +49,7 @@ class TwoFactorSetupView(View):
         from django_otp.plugins.otp_totp.models import TOTPDevice
         TOTPDevice.objects.filter(user=request.user, confirmed=False).delete()
         device = TOTPDevice.objects.create(
-            user=request.user, name="authenticator", confirmed=False,
+            user=request.user, name=request.user.email, confirmed=False,
         )
         return render(request, self.template_name, {
             "device": device,
