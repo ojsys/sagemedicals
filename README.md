@@ -70,13 +70,92 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 
 ---
 
-## Production (cPanel)
+## Production (cPanel — sagemedicals.com)
 
-- Entry point: `passenger_wsgi.py`
-- Set `DJANGO_SETTINGS_MODULE=config.settings.production`
-- Database: add `DATABASE_URL` or individual `DB_*` vars; PyMySQL is used (no `mysqlclient`)
-- Static files: `python manage.py collectstatic` → `public_html/static/`
-- Media uploads: `uploads/`
+**Domain**: `https://www.sagemedicals.com`  
+**Entry point**: `passenger_wsgi.py` (Phusion Passenger)
+
+### Deploy steps
+
+```bash
+# 1. In cPanel > Setup Python App — create app, note the Python version (3.14)
+# 2. SSH into the server, activate the cPanel-managed venv:
+source /home/<cpanel_user>/virtualenv/<app_path>/bin/activate
+
+# 3. Install production deps
+pip install -r requirements/production.txt
+
+# 4. Create .env in the project root (see below)
+
+# 5. Collect static files into public_html/static/
+python manage.py collectstatic --noinput
+
+# 6. Run migrations
+python manage.py migrate
+
+# 7. Create superuser
+python manage.py createsuperuser
+
+# 8. Restart app in cPanel > Setup Python App > Restart
+```
+
+### Production `.env`
+
+```
+SECRET_KEY=<long-random-string>
+DEBUG=False
+ALLOWED_HOSTS=sagemedicals.com,www.sagemedicals.com
+
+# Database (cPanel MySQL)
+DB_NAME=<cpanel_user>_sageemr
+DB_USER=<cpanel_user>_sagedb
+DB_PASSWORD=<db-password>
+DB_HOST=localhost
+DB_PORT=3306
+
+# Email (cPanel SMTP)
+EMAIL_HOST=mail.sagemedicals.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=noreply@sagemedicals.com
+EMAIL_HOST_PASSWORD=<email-password>
+DEFAULT_FROM_EMAIL=SAGE Medical Center <noreply@sagemedicals.com>
+
+# Hospital
+HOSPITAL_PHONE=+234-XXX-XXXX
+HOSPITAL_ADDRESS=Lagos, Nigeria
+
+# Payments
+PAYSTACK_SECRET_KEY=sk_live_...
+PAYSTACK_PUBLIC_KEY=pk_live_...
+
+# SMS (Termii)
+SMS_API_KEY=
+SMS_SENDER_ID=SAGE
+
+# NHIA
+NHIA_API_BASE_URL=
+NHIA_API_KEY=
+
+# Sentry (optional — leave blank to disable)
+SENTRY_DSN=
+```
+
+### Static & media paths
+
+| Purpose | Path on server |
+|---|---|
+| Static files (CSS/JS) | `public_html/static/` |
+| Media uploads | `uploads/` |
+
+> cPanel serves `public_html/` directly, so static assets are available at `https://www.sagemedicals.com/static/` without a separate web server config.
+
+### cPanel cron — background tasks (django-q2)
+
+Add in cPanel > Cron Jobs (run every minute):
+
+```
+* * * * * /home/<cpanel_user>/virtualenv/<app_path>/bin/python /home/<cpanel_user>/<app_path>/manage.py qcluster >> /home/<cpanel_user>/logs/qcluster.log 2>&1
+```
 
 ---
 
