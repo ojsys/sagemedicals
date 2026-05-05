@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bad Request — SAGE EMR</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #F4F5F2;
+      color: #0B1E2D;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 4px rgba(11,30,45,.06), 0 8px 24px rgba(11,30,45,.06);
+      padding: 48px 56px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .brand {
+      font-family: Georgia, serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      color: #0B1E2D;
+      margin-bottom: 32px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .brand span { color: #1B998B; }
+    .code {
+      font-size: 72px;
+      font-weight: 700;
+      color: #DCDFD7;
+      line-height: 1;
+      font-family: ui-monospace, monospace;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+    p { font-size: 14px; color: #6E7A82; line-height: 1.6; margin-bottom: 32px; }
+    .btn {
+      display: inline-block;
+      background: #0F4C81;
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      margin: 4px;
+    }
+    .btn:hover { background: #1565A8; }
+    .btn-ghost {
+      background: transparent;
+      color: #0F4C81;
+      border: 1px solid #DCDFD7;
+    }
+    .btn-ghost:hover { background: #F4F5F2; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a class="brand" href="/">SAGE<span>.</span></a>
+    <div class="code">400</div>
+    <h1>Bad request</h1>
+    <p>The server couldn't understand the request. This may be a session or form issue — try going back and reloading.</p>
+    <a href="/" class="btn">Go to Dashboard</a>
+    <a href="javascript:history.back()" class="btn btn-ghost">Go Back</a>
+  </div>
+</body>
+</html>

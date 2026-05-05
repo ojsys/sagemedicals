@@ -52,13 +52,15 @@ STATICFILES_DIRS = []  # source 'static/' dir doesn't need to exist in productio
 MEDIA_ROOT = BASE_DIR / "uploads"  # noqa: F405
 
 # ── Email (cPanel SMTP) ───────────────────────────────────────────────────────
+# Create noreply@sagemedicals.com in cPanel > Email Accounts first.
+# The FROM address must exactly match EMAIL_HOST_USER — cPanel rejects mismatches.
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = config("EMAIL_HOST", default="mail.sagemedicals.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="noreply@sagemedicals.com")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="SAGE Medical Center <noreply@sagemedicals.com>")  # noqa: F405
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = f"SAGE Medical Center <{config('EMAIL_HOST_USER', default='noreply@sagemedicals.com')}>"  # noqa: F405
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # ── Hospital identity ─────────────────────────────────────────────────────────
@@ -76,6 +78,63 @@ Q_CLUSTER = {
 }
 
 INSTALLED_APPS += ["django_q"]  # noqa: F405
+
+# ── Logging — rotating file logs under logs/ ─────────────────────────────────
+LOGS_DIR = BASE_DIR / "logs"  # noqa: F405
+LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "error.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 10,
+            "formatter": "verbose",
+            "level": "ERROR",
+        },
+        "app_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "sage.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 10,
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console", "error_file"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console", "error_file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["error_file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "sage": {
+            "handlers": ["console", "app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 # ── Sentry error tracking (optional — leave DSN blank to disable) ─────────────
 sentry_sdk.init(
