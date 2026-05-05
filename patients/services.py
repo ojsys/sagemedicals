@@ -8,7 +8,7 @@ from django.utils import timezone
 def generate_hospital_number():
     """Generate the next SAGE/YYYY/NNNNNN number. Race-safe via SELECT FOR UPDATE."""
     from patients.models import HospitalNumberSequence, Patient
-    from django.db import transaction
+    from django.db import transaction, models
 
     year = timezone.localdate().year
     with transaction.atomic():
