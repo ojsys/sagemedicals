@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}SAGE Medical Center{% endblock %} — EMR</title>
+  <title>{% block title %}{{ site_settings.hospital_name }}{% endblock %} — EMR</title>
+  {% if site_settings.favicon %}<link rel="icon" type="image/png" href="{{ site_settings.favicon.url }}">{% endif %}
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -120,6 +121,13 @@
       letter-spacing: 0.18em;
       color: rgba(244,245,242,.5);
       margin-left: auto;
+    }
+    .brand-logo {
+      height: 36px;
+      max-width: 150px;
+      object-fit: contain;
+      object-position: left center;
+      display: block;
     }
 
     .nav-section-label {
@@ -893,8 +901,12 @@
   <!-- ====== SIDEBAR ====== -->
   <aside class="sidebar">
     <a class="brand" href="/">
-      <span class="brand-mark">SAGE<span class="dot">.</span></span>
-      <span class="brand-sub">EMR</span>
+      {% if site_settings.logo %}
+      <img class="brand-logo" src="{{ site_settings.logo.url }}" alt="{{ site_settings.hospital_name }}">
+      {% else %}
+      <span class="brand-mark">{{ site_settings.short_name }}<span class="dot">.</span></span>
+      <span class="brand-sub">{{ site_settings.tagline|default:"EMR" }}</span>
+      {% endif %}
     </a>
     {% include "base/_sidebar_nav.html" %}
     <div class="sidebar-footer">

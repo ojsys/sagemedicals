@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Patient Portal{% endblock %} — SAGE Medical</title>
+  <title>{% block title %}Patient Portal{% endblock %} — {{ site_settings.hospital_name }}</title>
+  {% if site_settings.favicon %}<link rel="icon" type="image/png" href="{{ site_settings.favicon.url }}">{% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -62,8 +63,17 @@
       font-weight: 600;
       letter-spacing: -0.04em;
       color: #fff;
+      display: inline-flex;
+      align-items: center;
     }
     .p-brand em { color: var(--teal); font-style: normal; }
+    .p-brand-logo {
+      height: 32px;
+      max-width: 130px;
+      object-fit: contain;
+      object-position: left center;
+      display: block;
+    }
     .p-topnav { display: flex; gap: 2px; align-items: center; }
     .p-topnav a {
       padding: 6px 11px;
@@ -527,7 +537,13 @@
 
 {% if request.portal_patient %}
 <header class="p-topbar">
-  <a class="p-brand" href="{% url 'portal:dashboard' %}">SAGE<em>.</em></a>
+  <a class="p-brand" href="{% url 'portal:dashboard' %}">
+    {% if site_settings.logo %}
+    <img class="p-brand-logo" src="{{ site_settings.logo.url }}" alt="{{ site_settings.hospital_name }}">
+    {% else %}
+    {{ site_settings.short_name }}<em>.</em>
+    {% endif %}
+  </a>
   <nav class="p-topnav">
     <a href="{% url 'portal:dashboard' %}"
        class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">

@@ -4,7 +4,11 @@
 
 {% block content %}
 <div class="p-auth-logo">
-  <div class="p-auth-mark">SAGE<em>.</em></div>
+  {% if site_settings.logo %}
+  <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.hospital_name }}" style="height:40px;max-width:180px;object-fit:contain;margin-bottom:8px">
+  {% else %}
+  <div class="p-auth-mark">{{ site_settings.short_name }}<em>.</em></div>
+  {% endif %}
   <h1 class="p-auth-title">Patient Portal</h1>
   <p class="p-auth-sub">Enter your registered phone number to sign in</p>
 </div>
