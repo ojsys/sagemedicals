@@ -10,21 +10,28 @@
   <div class="p-auth-mark">{{ site_settings.short_name }}<em>.</em></div>
   {% endif %}
   <h1 class="p-auth-title">Patient Portal</h1>
-  <p class="p-auth-sub">Enter your registered phone number to sign in</p>
+  <p class="p-auth-sub">Enter your email and password to sign in</p>
 </div>
 
 <div class="p-card">
   <form method="post">
     {% csrf_token %}
     <div class="p-field">
-      <label>Phone Number</label>
-      {{ form.phone }}
-      {% if form.phone.errors %}
-      <div class="p-field-err">{{ form.phone.errors.0 }}</div>
+      <label>Email Address</label>
+      {{ form.email }}
+      {% if form.email.errors %}
+      <div class="p-field-err">{{ form.email.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="p-field">
+      <label>Password</label>
+      {{ form.password }}
+      {% if form.password.errors %}
+      <div class="p-field-err">{{ form.password.errors.0 }}</div>
       {% endif %}
     </div>
     <button type="submit" class="p-btn p-btn-primary p-btn-full p-btn-full-pad">
-      <i class="bi bi-phone"></i>Send Verification Code
+      <i class="bi bi-box-arrow-in-right"></i>Sign In
     </button>
   </form>
   <div class="p-auth-foot">
