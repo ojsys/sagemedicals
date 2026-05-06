@@ -103,6 +103,8 @@ class ANCVisit(BaseModel):
     urine_protein = models.CharField(max_length=10, blank=True, choices=URINE_PROTEIN)
     urine_glucose = models.CharField(max_length=10, blank=True, choices=URINE_GLUCOSE)
     next_visit_date = models.DateField(null=True, blank=True)
+    diagnosis = models.TextField("Diagnosis", blank=True)
+    plan = models.TextField("Management plan", blank=True)
     notes = models.TextField(blank=True)
 
     class Meta:
@@ -117,4 +119,62 @@ class ANCVisit(BaseModel):
     def bp_display(self):
         if self.bp_systolic and self.bp_diastolic:
             return f"{self.bp_systolic}/{self.bp_diastolic}"
+        return "—"
+
+
+class ObstetricScan(BaseModel):
+    """Ultrasound scan report linked to an ANC pregnancy record."""
+
+    AMNIOTIC_FLUID_CHOICES = [
+        ("normal", "Normal"),
+        ("oligohydramnios", "Oligohydramnios"),
+        ("polyhydramnios", "Polyhydramnios"),
+    ]
+    PLACENTA_CHOICES = [
+        ("anterior", "Anterior"),
+        ("posterior", "Posterior"),
+        ("fundal", "Fundal"),
+        ("lateral", "Lateral"),
+        ("previa", "Placenta Praevia"),
+    ]
+
+    record = models.ForeignKey(
+        ANCRecord,
+        on_delete=models.CASCADE,
+        related_name="scans",
+    )
+    scan_date = models.DateField("Scan date")
+    gestational_age_weeks = models.PositiveSmallIntegerField(
+        "GA at scan (weeks)", null=True, blank=True,
+    )
+    gestational_age_days = models.PositiveSmallIntegerField(
+        "GA at scan (days)", null=True, blank=True,
+    )
+    placenta_location = models.CharField(
+        max_length=20, blank=True, choices=PLACENTA_CHOICES,
+    )
+    amniotic_fluid = models.CharField(
+        max_length=20, blank=True, choices=AMNIOTIC_FLUID_CHOICES,
+    )
+    findings = models.TextField("Findings", blank=True)
+    impression = models.TextField("Impression / conclusion", blank=True)
+    report_file = models.FileField(
+        "Scan report (PDF/image)", upload_to="antenatal/scans/",
+        null=True, blank=True,
+    )
+
+    class Meta:
+        ordering = ["-scan_date"]
+        verbose_name = "Obstetric Scan"
+        verbose_name_plural = "Obstetric Scans"
+
+    def __str__(self):
+        ga = f"{self.gestational_age_weeks}wks" if self.gestational_age_weeks else ""
+        return f"Scan {self.scan_date} {ga}".strip()
+
+    @property
+    def ga_display(self):
+        if self.gestational_age_weeks is not None:
+            days = self.gestational_age_days or 0
+            return f"{self.gestational_age_weeks}+{days} wks"
         return "—"

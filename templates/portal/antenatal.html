@@ -246,10 +246,27 @@
           <td>{% if v.fundal_height_cm %}{{ v.fundal_height_cm }} cm{% else %}<span class="muted">—</span>{% endif %}</td>
           <td>{% if v.presentation %}{{ v.presentation }}{% else %}<span class="muted">—</span>{% endif %}</td>
         </tr>
-        {% if v.notes %}
+        {% if v.diagnosis or v.plan or v.notes %}
         <tr>
-          <td colspan="7" style="padding-top:0; padding-bottom:12px;">
-            <span style="font-size:12px; color:var(--t3)">{{ v.notes }}</span>
+          <td colspan="7" style="padding-top:0;padding-bottom:14px;">
+            {% if v.diagnosis %}
+            <div style="margin-bottom:5px;">
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);">Diagnosis</span>
+              <div style="font-size:12.5px;color:var(--ink);margin-top:2px;">{{ v.diagnosis }}</div>
+            </div>
+            {% endif %}
+            {% if v.plan %}
+            <div style="margin-bottom:5px;">
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);">Plan</span>
+              <div style="font-size:12.5px;color:var(--ink);margin-top:2px;">{{ v.plan }}</div>
+            </div>
+            {% endif %}
+            {% if v.notes %}
+            <div>
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);">Notes</span>
+              <div style="font-size:12px;color:var(--t3);margin-top:2px;">{{ v.notes }}</div>
+            </div>
+            {% endif %}
           </td>
         </tr>
         {% endif %}
@@ -262,6 +279,55 @@
     <div class="p-empty">
       <i class="bi bi-clipboard2-pulse"></i>
       <p>No visits recorded yet. Your first ANC visit details will appear here.</p>
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {# ── Ultrasound scans ── #}
+  {% with scans=record.scans.all %}
+  <div class="p-section-h" style="margin-top: 28px;">
+    Obstetric Ultrasound Scans
+    <span>{{ scans|length }} scan{{ scans|length|pluralize }}</span>
+  </div>
+
+  {% if scans %}
+  {% for scan in scans %}
+  <div class="p-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--ink);">{{ scan.scan_date|date:"j F Y" }}</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:2px;">
+          {% if scan.gestational_age_weeks %}GA {{ scan.ga_display }}{% endif %}
+          {% if scan.placenta_location %}&nbsp;·&nbsp;Placenta: {{ scan.get_placenta_location_display }}{% endif %}
+          {% if scan.amniotic_fluid %}&nbsp;·&nbsp;Liquor: {{ scan.get_amniotic_fluid_display }}{% endif %}
+        </div>
+      </div>
+      {% if scan.report_file %}
+      <a href="{{ scan.report_file.url }}" target="_blank" class="p-btn p-btn-ghost p-btn-sm">
+        <i class="bi bi-file-earmark-pdf"></i> Report
+      </a>
+      {% endif %}
+    </div>
+    {% if scan.findings %}
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:3px;">Findings</div>
+      <div style="font-size:13px;color:var(--ink);">{{ scan.findings }}</div>
+    </div>
+    {% endif %}
+    {% if scan.impression %}
+    <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:3px;">Impression</div>
+      <div style="font-size:13px;font-weight:500;color:var(--ink);">{{ scan.impression }}</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="p-card">
+    <div class="p-empty">
+      <i class="bi bi-activity"></i>
+      <p>No ultrasound scans recorded yet.</p>
     </div>
   </div>
   {% endif %}

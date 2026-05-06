@@ -108,11 +108,14 @@ class TutorialView(View):
 class DashboardView(AccessMixin, View):
     template_name = "core/dashboard.html"
 
+    # Roles that are allowed to access the staff EMR dashboard
+    _STAFF_ROLES = frozenset(Role) - {Role.PATIENT}
+
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
 
-        if request.user.role == Role.PATIENT:
+        if getattr(request.user, "role", None) not in self._STAFF_ROLES:
             return redirect(reverse("portal:dashboard"))
 
         return super().dispatch(request, *args, **kwargs)

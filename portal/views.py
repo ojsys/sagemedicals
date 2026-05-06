@@ -222,10 +222,12 @@ def portal_dashboard(request):
     recent_encounters = Encounter.objects.filter(
         patient=patient, status="signed"
     ).order_by("-date_time")[:5]
+    anc_record = patient.active_anc_record
     return render(request, "portal/dashboard.html", {
         "patient": patient,
         "upcoming_appointments": upcoming,
         "recent_encounters": recent_encounters,
+        "anc_record": anc_record,
     })
 
 
