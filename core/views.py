@@ -2,11 +2,13 @@ import json
 import time
 from datetime import date
 
+from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.db.models import Count, Sum
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
@@ -55,6 +57,40 @@ def health_check(request):
         {"status": "ok" if overall_ok else "degraded", "checks": checks},
         status=status,
     )
+
+
+class LandingView(View):
+    """Public landing page. Handles staff sign-in; redirects authenticated users to the dashboard."""
+
+    template_name = "core/landing.html"
+
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect(reverse("core:dashboard"))
+        return render(request, self.template_name)
+
+    def post(self, request):
+        if request.user.is_authenticated:
+            return redirect(reverse("core:dashboard"))
+
+        email = request.POST.get("login", "").strip()
+        password = request.POST.get("password", "")
+
+        # ModelBackend resolves username → User.USERNAME_FIELD (email)
+        user = authenticate(request, username=email, password=password)
+
+        if user is not None and user.is_active:
+            auth_login(request, user)
+            # Honour 2FA — send to verify if a confirmed device exists
+            from django_otp.plugins.otp_totp.models import TOTPDevice
+            if TOTPDevice.objects.filter(user=user, confirmed=True).exists():
+                return redirect(reverse("accounts:2fa_verify"))
+            return redirect(reverse("core:dashboard"))
+
+        return render(request, self.template_name, {
+            "login_error": True,
+            "login_email": email,
+        })
 
 
 @method_decorator(login_required, name="dispatch")

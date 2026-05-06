@@ -900,7 +900,7 @@
 
   <!-- ====== SIDEBAR ====== -->
   <aside class="sidebar">
-    <a class="brand" href="/">
+    <a class="brand" href="{% url 'core:dashboard' %}">
       {% if site_settings.logo %}
       <img class="brand-logo" src="{{ site_settings.logo.url }}" alt="{{ site_settings.hospital_name }}">
       {% else %}

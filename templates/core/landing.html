@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ site_settings.hospital_name }}</title>
+  {% if site_settings.favicon %}<link rel="icon" type="image/png" href="{{ site_settings.favicon.url }}">{% endif %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,300;9..144,0,400;9..144,0,500;9..144,1,300;9..144,1,400&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    /* ── Tokens ───────────────────────────────────────────────── */
+    :root {
+      --ink:      #0B1E2D;
+      --blue:     #0F4C81;
+      --teal:     #1B998B;
+      --teal-bg:  rgba(27,153,139,.08);
+      --teal-bd:  rgba(27,153,139,.22);
+      --blue-bg:  rgba(15,76,129,.1);
+      --blue-bd:  rgba(15,76,129,.28);
+      --line:     rgba(255,255,255,.07);
+      --line-md:  rgba(255,255,255,.11);
+      --t1:       #ffffff;
+      --t2:       rgba(255,255,255,.72);
+      --t3:       rgba(255,255,255,.45);
+      --t4:       rgba(255,255,255,.28);
+      --r:        12px;
+      --r-lg:     16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; -webkit-font-smoothing: antialiased; }
+    body {
+      height: 100vh;
+      overflow: hidden;
+      background: var(--ink);
+      color: var(--t1);
+      font-family: 'Geist', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input { font-family: inherit; }
+
+    /* ── Decorative background ───────────────────────────────── */
+    .l-bg {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .l-bg::before {
+      content: '';
+      position: absolute;
+      width: 800px; height: 800px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(15,76,129,.2) 0%, transparent 68%);
+      bottom: -260px; right: -180px;
+    }
+    .l-bg::after {
+      content: '';
+      position: absolute;
+      width: 560px; height: 560px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(27,153,139,.13) 0%, transparent 68%);
+      top: -120px; left: -140px;
+    }
+    .l-bg-ring {
+      position: absolute; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.032);
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+    }
+
+    /* ── Top nav ──────────────────────────────────────────────── */
+    .l-nav {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 44px;
+      height: 58px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+    .l-brand { display: flex; align-items: center; gap: 14px; }
+    .l-brand-logo { height: 30px; object-fit: contain; display: block; }
+    .l-brand-mark {
+      font-family: 'Fraunces', serif;
+      font-size: 22px; font-weight: 600; letter-spacing: -0.04em;
+    }
+    .l-brand-mark em { color: var(--teal); font-style: normal; }
+    .l-brand-sep { width: 1px; height: 18px; background: var(--line-md); }
+    .l-brand-name { font-size: 13px; color: var(--t3); letter-spacing: 0.01em; }
+    .l-nav-status {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11.5px; color: var(--t4);
+    }
+    .l-status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 3px rgba(27,153,139,.18);
+    }
+
+    /* ── Main grid ────────────────────────────────────────────── */
+    .l-main {
+      flex: 1; min-height: 0;
+      position: relative; z-index: 10;
+      display: grid;
+      grid-template-columns: 320px 1fr 1fr;
+    }
+    .l-col {
+      padding: 36px 40px 32px;
+      display: flex; flex-direction: column;
+    }
+    .l-col + .l-col { border-left: 1px solid var(--line); }
+    .l-col-info  { background: transparent; }
+    .l-col-patient { background: var(--teal-bg); }
+    .l-col-staff   { background: var(--blue-bg); }
+
+    /* ── Info column ──────────────────────────────────────────── */
+    .l-eyebrow {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.2em;
+      color: var(--teal); margin-bottom: 20px;
+    }
+    .l-headline {
+      font-family: 'Fraunces', serif;
+      font-size: 30px; font-weight: 300; line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--t1); margin-bottom: 16px;
+    }
+    .l-headline em { color: var(--teal); font-style: italic; }
+    .l-desc {
+      font-size: 13px; line-height: 1.65;
+      color: var(--t3); margin-bottom: 28px;
+    }
+    .l-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .l-feature {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12.5px; color: var(--t2);
+    }
+    .l-feature-pip {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--teal); flex-shrink: 0;
+    }
+    .l-spacer { flex: 1; }
+    .l-contact { border-top: 1px solid var(--line); padding-top: 20px; }
+    .l-contact-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--t4); margin-bottom: 7px;
+    }
+    .l-contact-row i { color: var(--teal); font-size: 13px; flex-shrink: 0; }
+
+    /* ── Panel chrome (shared) ────────────────────────────────── */
+    .l-panel-badge {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.2em;
+      margin-bottom: 16px;
+    }
+    .l-panel-badge-teal { color: var(--teal); }
+    .l-panel-badge-blue { color: #7bafd4; }
+    .l-icon-box {
+      width: 48px; height: 48px; border-radius: 13px;
+      display: grid; place-items: center;
+      font-size: 22px; margin-bottom: 18px; flex-shrink: 0;
+    }
+    .l-icon-teal { background: var(--teal-bg); border: 1px solid var(--teal-bd); color: var(--teal); }
+    .l-icon-blue { background: var(--blue-bg); border: 1px solid var(--blue-bd); color: #7bafd4; }
+    .l-panel-title {
+      font-family: 'Fraunces', serif;
+      font-size: 24px; font-weight: 400;
+      letter-spacing: -0.02em; line-height: 1.15;
+      margin-bottom: 8px;
+    }
+    .l-panel-sub {
+      font-size: 13px; color: var(--t3);
+      line-height: 1.55; margin-bottom: 28px;
+    }
+
+    /* ── Patient portal column ────────────────────────────────── */
+    .l-portal-btns { display: flex; flex-direction: column; gap: 10px; }
+    .l-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 11px 20px; border-radius: var(--r);
+      font-size: 13.5px; font-weight: 500;
+      border: 1px solid transparent; cursor: pointer;
+      transition: all .15s; white-space: nowrap;
+    }
+    .l-btn-teal { background: var(--teal); color: #fff; }
+    .l-btn-teal:hover { background: #178a7e; }
+    .l-btn-outline-teal {
+      background: transparent;
+      color: rgba(255,255,255,.75);
+      border-color: var(--teal-bd);
+    }
+    .l-btn-outline-teal:hover { background: var(--teal-bg); color: #fff; border-color: rgba(27,153,139,.4); }
+    .l-btn-white { background: #fff; color: var(--ink); }
+    .l-btn-white:hover { background: rgba(255,255,255,.92); }
+    .l-btn-full { width: 100%; }
+    .l-portal-note {
+      margin-top: 18px; font-size: 11.5px;
+      color: var(--t4); text-align: center;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+
+    /* ── Staff sign-in column ─────────────────────────────────── */
+    .l-field { margin-bottom: 12px; }
+    .l-field label {
+      display: block; font-size: 10.5px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--t3); margin-bottom: 5px;
+    }
+    .l-field input {
+      width: 100%; padding: 10px 13px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--line-md);
+      border-radius: var(--r); font-size: 14px; color: #fff;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+      -webkit-appearance: none;
+    }
+    .l-field input::placeholder { color: var(--t4); }
+    .l-field input:focus {
+      outline: none;
+      border-color: rgba(15,76,129,.7);
+      background: rgba(255,255,255,.08);
+      box-shadow: 0 0 0 3px rgba(15,76,129,.2);
+    }
+
+    .l-error {
+      background: rgba(184,58,38,.12);
+      border: 1px solid rgba(184,58,38,.28);
+      border-radius: var(--r);
+      padding: 10px 13px; margin-bottom: 14px;
+      font-size: 12.5px; color: #f4978e;
+      display: flex; align-items: center; gap: 7px;
+    }
+
+    .l-submit-row { margin-top: 16px; }
+
+    .l-staff-foot {
+      margin-top: 13px; text-align: center;
+    }
+    .l-staff-foot a {
+      font-size: 12.5px; color: var(--t4);
+      transition: color .15s;
+    }
+    .l-staff-foot a:hover { color: var(--t2); }
+
+    .l-audit-note {
+      font-size: 11px; color: var(--t4);
+      text-align: center; line-height: 1.5; margin-top: 4px;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    .l-footer {
+      position: relative; z-index: 10;
+      height: 40px; flex-shrink: 0;
+      border-top: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center;
+      gap: 20px; padding: 0 44px;
+    }
+    .l-footer-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--t4);
+    }
+    .l-footer-sep {
+      width: 3px; height: 3px; border-radius: 50%;
+      background: rgba(255,255,255,.14);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      body { overflow: auto; height: auto; min-height: 100vh; }
+      .l-main { grid-template-columns: 1fr; }
+      .l-col + .l-col { border-left: none; border-top: 1px solid var(--line); }
+      .l-col-info { display: none; }
+      .l-nav { padding: 0 24px; }
+      .l-col { padding: 28px 24px 24px; }
+      .l-footer { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="l-bg" aria-hidden="true">
+  <div class="l-bg-ring" style="width:560px;height:560px"></div>
+  <div class="l-bg-ring" style="width:900px;height:900px"></div>
+  <div class="l-bg-ring" style="width:1240px;height:1240px"></div>
+</div>
+
+<!-- ── Nav ── -->
+<nav class="l-nav">
+  <div class="l-brand">
+    {% if site_settings.logo %}
+    <img class="l-brand-logo" src="{{ site_settings.logo.url }}" alt="{{ site_settings.hospital_name }}">
+    {% else %}
+    <span class="l-brand-mark">{{ site_settings.short_name }}<em>.</em></span>
+    {% endif %}
+    <span class="l-brand-sep"></span>
+    <span class="l-brand-name">{{ site_settings.hospital_name }}</span>
+  </div>
+  <div class="l-nav-status">
+    <span class="l-status-dot"></span>
+    Secure access &nbsp;·&nbsp; {% now "Y" %}
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<div class="l-main">
+
+  <!-- ── Column 1: About ── -->
+  <div class="l-col l-col-info">
+    <div class="l-eyebrow">{{ site_settings.hospital_name }}</div>
+    <h1 class="l-headline">
+      Where every patient receives <em>exceptional</em> care.
+    </h1>
+    <p class="l-desc">
+      A modern, integrated healthcare platform connecting patients and
+      clinicians — built to deliver safer, smarter, and more compassionate
+      care across every department.
+    </p>
+    <ul class="l-features">
+      <li class="l-feature"><span class="l-feature-pip"></span>Comprehensive electronic health records</li>
+      <li class="l-feature"><span class="l-feature-pip"></span>Real-time lab results &amp; diagnostics</li>
+      <li class="l-feature"><span class="l-feature-pip"></span>Online appointments &amp; patient portal</li>
+      <li class="l-feature"><span class="l-feature-pip"></span>Integrated billing &amp; insurance claims</li>
+      <li class="l-feature"><span class="l-feature-pip"></span>Pharmacy, admissions &amp; theatre management</li>
+    </ul>
+    <div class="l-spacer"></div>
+    <div class="l-contact">
+      {% if site_settings.address %}
+      <div class="l-contact-row"><i class="bi bi-geo-alt-fill"></i>{{ site_settings.address }}</div>
+      {% endif %}
+      {% if site_settings.phone %}
+      <div class="l-contact-row"><i class="bi bi-telephone-fill"></i>{{ site_settings.phone }}</div>
+      {% endif %}
+      {% if site_settings.email %}
+      <div class="l-contact-row"><i class="bi bi-envelope-fill"></i>{{ site_settings.email }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Column 2: Patient Portal ── -->
+  <div class="l-col l-col-patient">
+    <div class="l-panel-badge l-panel-badge-teal">Patient Portal</div>
+    <div class="l-icon-box l-icon-teal"><i class="bi bi-person-heart"></i></div>
+    <h2 class="l-panel-title">Access your health records</h2>
+    <p class="l-panel-sub">
+      View your lab results, upcoming appointments, invoices, and full
+      medical history — securely, from any device, 24&thinsp;/&thinsp;7.
+    </p>
+    <div class="l-portal-btns">
+      <a href="{% url 'portal:login' %}" class="l-btn l-btn-teal l-btn-full">
+        <i class="bi bi-box-arrow-in-right"></i>Patient Sign In
+      </a>
+      <a href="{% url 'portal:register' %}" class="l-btn l-btn-outline-teal l-btn-full">
+        <i class="bi bi-person-plus"></i>Create Account
+      </a>
+    </div>
+    <div class="l-portal-note">
+      <i class="bi bi-shield-lock-fill"></i>
+      Secure &amp; encrypted &nbsp;·&nbsp; 24/7 access
+    </div>
+    <div class="l-spacer"></div>
+  </div>
+
+  <!-- ── Column 3: Staff Sign In ── -->
+  <div class="l-col l-col-staff">
+    <div class="l-panel-badge l-panel-badge-blue">Staff Access</div>
+    <div class="l-icon-box l-icon-blue"><i class="bi bi-hospital"></i></div>
+    <h2 class="l-panel-title">EMR Sign In</h2>
+    <p class="l-panel-sub">
+      For doctors, nurses, administrators, and all authorised clinical and administrative staff.
+    </p>
+
+    {% if login_error %}
+    <div class="l-error">
+      <i class="bi bi-exclamation-circle-fill"></i>
+      Invalid email or password — please try again.
+    </div>
+    {% endif %}
+
+    <form method="post" action="">
+      {% csrf_token %}
+      <div class="l-field">
+        <label for="id_login">Email Address</label>
+        <input type="email" id="id_login" name="login"
+               value="{{ login_email|default:'' }}"
+               autocomplete="email"
+               placeholder="you@sagemedicals.com"
+               {% if not login_error %}autofocus{% endif %}
+               required>
+      </div>
+      <div class="l-field">
+        <label for="id_password">Password</label>
+        <input type="password" id="id_password" name="password"
+               autocomplete="current-password"
+               placeholder="••••••••"
+               {% if login_error %}autofocus{% endif %}
+               required>
+      </div>
+      <div class="l-submit-row">
+        <button type="submit" class="l-btn l-btn-white l-btn-full">
+          Sign in to EMR &nbsp;<i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </form>
+
+    <div class="l-staff-foot">
+      <a href="{% url 'account_reset_password' %}">Forgot your password?</a>
+    </div>
+
+    <div class="l-spacer"></div>
+
+    <div class="l-audit-note">
+      Authorised personnel only.<br>All access is logged and audited.
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Footer ── -->
+<footer class="l-footer">
+  {% if site_settings.phone %}
+  <span class="l-footer-item"><i class="bi bi-telephone"></i>{{ site_settings.phone }}</span>
+  <span class="l-footer-sep"></span>
+  {% endif %}
+  {% if site_settings.email %}
+  <span class="l-footer-item"><i class="bi bi-envelope"></i>{{ site_settings.email }}</span>
+  <span class="l-footer-sep"></span>
+  {% endif %}
+  {% if site_settings.address %}
+  <span class="l-footer-item"><i class="bi bi-geo-alt"></i>{{ site_settings.address }}</span>
+  <span class="l-footer-sep"></span>
+  {% endif %}
+  <span class="l-footer-item">&copy; {% now "Y" %} {{ site_settings.hospital_name }}</span>
+</footer>
+
+</body>
+</html>

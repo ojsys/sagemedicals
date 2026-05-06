@@ -47,12 +47,20 @@ class RateLimitMiddleware(MiddlewareMixin):
     Default: 20 requests / 60 seconds per IP. Returns 429 on breach.
     """
 
-    RATE_LIMIT_PATHS = ("/accounts/login/", "/portal/", "/portal/verify/")
+    # Exact-match paths use "==" ; prefix-match paths end with "/"
+    # The root "/" is exact so it doesn't accidentally match every URL.
+    RATE_LIMIT_PATHS_EXACT = ("/",)
+    RATE_LIMIT_PATHS_PREFIX = ("/accounts/login/", "/portal/", "/portal/verify/")
     MAX_REQUESTS = 20
     WINDOW_SECONDS = 60
 
     def process_request(self, request):
-        if not any(request.path.startswith(p) for p in self.RATE_LIMIT_PATHS):
+        path = request.path
+        is_limited = (
+            path in self.RATE_LIMIT_PATHS_EXACT
+            or any(path.startswith(p) for p in self.RATE_LIMIT_PATHS_PREFIX)
+        )
+        if not is_limited:
             return
 
         ip = self._get_ip(request)
