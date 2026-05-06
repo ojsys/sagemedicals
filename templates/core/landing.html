@@ -253,6 +253,7 @@
       border-radius: var(--r); font-size: 14px; color: #fff;
       transition: border-color .15s, background .15s, box-shadow .15s;
       -webkit-appearance: none;
+      appearance: none;
     }
     .l-field input::placeholder { color: var(--t4); }
     .l-field input:focus {
@@ -304,15 +305,15 @@
       .l-main { grid-template-columns: 1fr; }
       .l-col + .l-col { border-left: none; border-top: 1px solid var(--line); }
       .l-col-info { display: none; }
-      .l-col-staff { display: none !important; }
-      .l-col-patient { display: flex !important; }
+      .l-col-staff { display: none; }
+      .l-col-patient { display: flex; }
       .l-nav { padding: 0 24px; }
       .l-col { padding: 28px 24px 24px; }
       .l-footer { display: none; }
     }
   </style>
 </head>
-<body>
+<body data-staff-error="{{ login_error|yesno:'1,' }}">
 
 <div class="l-bg" aria-hidden="true">
   <div class="l-bg-ring" style="width:560px;height:560px"></div>
@@ -488,9 +489,7 @@
     document.getElementById('patientPanel').style.display = 'flex';
   }
 
-  {% if login_error %}
-  showStaffPanel();
-  {% endif %}
+  if (document.body.dataset.staffError === '1') showStaffPanel();
 </script>
 
 </body>
