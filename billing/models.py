@@ -57,6 +57,7 @@ class Invoice(BaseModel):
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
 
     class Meta:
         ordering = ["-created_at"]
