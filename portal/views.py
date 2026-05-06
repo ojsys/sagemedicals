@@ -282,6 +282,18 @@ def portal_bills(request):
 
 
 @portal_login_required
+def portal_antenatal(request):
+    patient = request.portal_patient
+    record = patient.active_anc_record
+    past_records = patient.anc_records.filter(is_active=False).order_by("-edd")
+    return render(request, "portal/antenatal.html", {
+        "patient": patient,
+        "record": record,
+        "past_records": past_records,
+    })
+
+
+@portal_login_required
 def portal_feedback(request, encounter_pk):
     from encounters.models import Encounter
     from portal.models import PortalFeedback

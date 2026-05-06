@@ -121,6 +121,10 @@ class Patient(BaseModel):
     def has_critical_allergies(self):
         return self.allergies.filter(is_active=True, severity__in=["severe", "life_threatening"]).exists()
 
+    @property
+    def active_anc_record(self):
+        return self.anc_records.filter(is_active=True).order_by("-edd").first()
+
 
 class NextOfKin(BaseModel):
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name="next_of_kin")

@@ -561,6 +561,12 @@
        class="{% if request.resolver_match.url_name == 'bills' %}active{% endif %}">
       <i class="bi bi-receipt"></i>Bills
     </a>
+    {% if request.portal_patient.active_anc_record %}
+    <a href="{% url 'portal:antenatal' %}"
+       class="{% if request.resolver_match.url_name == 'antenatal' %}active{% endif %}">
+      <i class="bi bi-heart-pulse"></i>Antenatal
+    </a>
+    {% endif %}
     <a href="{% url 'portal:logout' %}" class="p-topnav-logout">
       <i class="bi bi-box-arrow-right"></i>Logout
     </a>
@@ -597,6 +603,12 @@
        class="{% if request.resolver_match.url_name == 'bills' %}active{% endif %}">
       <i class="bi bi-receipt"></i>Bills
     </a>
+    {% if request.portal_patient.active_anc_record %}
+    <a href="{% url 'portal:antenatal' %}"
+       class="{% if request.resolver_match.url_name == 'antenatal' %}active{% endif %}">
+      <i class="bi bi-heart-pulse"></i>ANC
+    </a>
+    {% endif %}
   </div>
 </nav>
 {% endif %}

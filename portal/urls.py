@@ -13,4 +13,5 @@ urlpatterns = [
     path("results/", views.portal_results, name="results"),
     path("bills/", views.portal_bills, name="bills"),
     path("feedback/<int:encounter_pk>/", views.portal_feedback, name="feedback"),
+    path("antenatal/", views.portal_antenatal, name="antenatal"),
 ]

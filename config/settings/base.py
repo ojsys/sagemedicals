@@ -45,6 +45,7 @@ LOCAL_APPS = [
     "admissions",
     "surgery",
     "portal",
+    "antenatal",
     "notifications",
     "reports",
     "integrations",

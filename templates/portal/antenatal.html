@@ -1,0 +1,297 @@
+{% extends "portal/base_portal.html" %}
+
+{% block title %}Antenatal Care{% endblock %}
+
+{% block extra_css %}
+<style>
+  .anc-hero {
+    background: linear-gradient(135deg, #1B4D3E 0%, #1B998B 100%);
+    border-radius: var(--r-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .anc-hero::before {
+    content: '';
+    position: absolute;
+    right: -40px; bottom: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.08), transparent 70%);
+    pointer-events: none;
+  }
+  .anc-hero-body { position: relative; z-index: 1; }
+  .anc-badge {
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.18em;
+    color: rgba(255,255,255,.65);
+    margin-bottom: 10px;
+  }
+  .anc-edd {
+    font-family: 'Fraunces', serif;
+    font-size: 28px; font-weight: 400;
+    letter-spacing: -0.02em; line-height: 1.1;
+  }
+  .anc-edd-label {
+    font-size: 11.5px; color: rgba(255,255,255,.6);
+    margin-top: 3px; margin-bottom: 18px;
+  }
+  .anc-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(255,255,255,.12);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 16px;
+  }
+  .anc-stat {
+    background: rgba(0,0,0,.15);
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .anc-stat-val {
+    font-family: 'Fraunces', serif;
+    font-size: 22px; font-weight: 400; line-height: 1;
+  }
+  .anc-stat-label {
+    font-size: 10px; color: rgba(255,255,255,.6);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-top: 4px;
+  }
+
+  /* Progress bar */
+  .anc-progress-wrap { margin-top: 18px; }
+  .anc-progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: rgba(255,255,255,.55);
+    margin-bottom: 6px;
+  }
+  .anc-progress-bar {
+    height: 5px; border-radius: 99px;
+    background: rgba(255,255,255,.15);
+    overflow: hidden;
+  }
+  .anc-progress-fill {
+    height: 100%; border-radius: 99px;
+    background: rgba(255,255,255,.75);
+    transition: width .4s ease;
+  }
+
+  /* Visit table */
+  .anc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .anc-table th {
+    text-align: left; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--t3); padding: 0 8px 8px 0;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .anc-table td {
+    padding: 10px 8px 10px 0;
+    border-bottom: 1px solid var(--line-s);
+    vertical-align: top;
+    color: var(--t1);
+  }
+  .anc-table tr:last-child td { border-bottom: none; }
+  .anc-table .muted { color: var(--t3); }
+
+  /* Next visit callout */
+  .anc-next {
+    background: #E6F4F1;
+    border: 1px solid rgba(27,153,139,.25);
+    border-radius: var(--r);
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .anc-next-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: var(--teal); color: #fff;
+    display: grid; place-items: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .anc-next-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--teal); }
+  .anc-next-date  { font-size: 15px; font-weight: 600; color: var(--ink); }
+
+  /* Info grid */
+  .anc-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .anc-info-item {
+    background: var(--bg);
+    border-radius: var(--r);
+    padding: 12px;
+  }
+  .anc-info-key {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--t3); margin-bottom: 3px;
+  }
+  .anc-info-val { font-size: 14px; font-weight: 500; color: var(--ink); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="p-page-h">
+  <div class="p-eyebrow">Patient Portal</div>
+  <h1 class="p-page-title">Antenatal Care</h1>
+</div>
+
+{% if record %}
+
+  {# ── Next visit callout ── #}
+  {% with nv=record.visits.all|first %}
+    {% if nv and nv.next_visit_date %}
+    <div class="anc-next">
+      <div class="anc-next-icon"><i class="bi bi-calendar-check"></i></div>
+      <div>
+        <div class="anc-next-label">Next visit</div>
+        <div class="anc-next-date">{{ nv.next_visit_date|date:"l, j F Y" }}</div>
+      </div>
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  {# ── Hero card ── #}
+  <div class="anc-hero">
+    <div class="anc-hero-body">
+      <div class="anc-badge">Current Pregnancy</div>
+      <div class="anc-edd">{{ record.edd|date:"j F Y" }}</div>
+      <div class="anc-edd-label">Expected delivery date</div>
+
+      <div class="anc-stats">
+        <div class="anc-stat">
+          <div class="anc-stat-val">{{ record.gestational_age_weeks }}<sup style="font-size:13px">+{{ record.gestational_age_days }}</sup></div>
+          <div class="anc-stat-label">Weeks GA</div>
+        </div>
+        <div class="anc-stat">
+          <div class="anc-stat-val">{{ record.weeks_to_edd }}</div>
+          <div class="anc-stat-label">Weeks to go</div>
+        </div>
+        <div class="anc-stat">
+          <div class="anc-stat-val">G{{ record.gravida }}P{{ record.para }}</div>
+          <div class="anc-stat-label">Gravida/Para</div>
+        </div>
+      </div>
+
+      <div class="anc-progress-wrap">
+        <div class="anc-progress-label">
+          <span>Booking</span>
+          <span>{{ record.progress_pct }}% complete</span>
+          <span>Term (40wks)</span>
+        </div>
+        <div class="anc-progress-bar">
+          <div class="anc-progress-fill" style="width: {{ record.progress_pct }}%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Info grid ── #}
+  <div class="anc-info-grid">
+    <div class="anc-info-item">
+      <div class="anc-info-key">Booked</div>
+      <div class="anc-info-val">{{ record.booking_date|date:"j M Y" }}</div>
+    </div>
+    {% if record.lmp %}
+    <div class="anc-info-item">
+      <div class="anc-info-key">Last period (LMP)</div>
+      <div class="anc-info-val">{{ record.lmp|date:"j M Y" }}</div>
+    </div>
+    {% endif %}
+    {% if record.blood_group %}
+    <div class="anc-info-item">
+      <div class="anc-info-key">Blood group</div>
+      <div class="anc-info-val">{{ record.blood_group }}{% if record.rhesus %} ({{ record.get_rhesus_display }}){% endif %}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Visit history ── #}
+  {% with visits=record.visits.all %}
+  <div class="p-section-h">
+    ANC Visits
+    <span>{{ visits|length }} visit{{ visits|length|pluralize }}</span>
+  </div>
+
+  {% if visits %}
+  <div class="p-card" style="overflow-x: auto; padding: 0;">
+    <table class="anc-table" style="padding: 16px; display: table; width: 100%; min-width: 460px;">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>GA (wks)</th>
+          <th>Weight</th>
+          <th>BP</th>
+          <th>FHR</th>
+          <th>FH</th>
+          <th>Presentation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in visits %}
+        <tr>
+          <td style="white-space:nowrap">{{ v.visit_date|date:"j M Y" }}</td>
+          <td>{{ v.gestational_age_weeks }}</td>
+          <td>{% if v.weight_kg %}{{ v.weight_kg }} kg{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{{ v.bp_display }}</td>
+          <td>{% if v.fetal_heart_rate %}{{ v.fetal_heart_rate }} bpm{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{% if v.fundal_height_cm %}{{ v.fundal_height_cm }} cm{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{% if v.presentation %}{{ v.presentation }}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+        {% if v.notes %}
+        <tr>
+          <td colspan="7" style="padding-top:0; padding-bottom:12px;">
+            <span style="font-size:12px; color:var(--t3)">{{ v.notes }}</span>
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-card">
+    <div class="p-empty">
+      <i class="bi bi-clipboard2-pulse"></i>
+      <p>No visits recorded yet. Your first ANC visit details will appear here.</p>
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {# ── Past pregnancies ── #}
+  {% if past_records %}
+  <div class="p-section-h" style="margin-top: 28px;">Past Pregnancies</div>
+  {% for pr in past_records %}
+  <div class="p-card">
+    <div class="p-row">
+      <div class="p-row-body">
+        <div class="p-row-title">EDD {{ pr.edd|date:"j F Y" }}</div>
+        <div class="p-row-sub">G{{ pr.gravida }}P{{ pr.para }} &nbsp;·&nbsp; Booked {{ pr.booking_date|date:"M Y" }} &nbsp;·&nbsp; {{ pr.visits.count }} visit{{ pr.visits.count|pluralize }}</div>
+      </div>
+      <span class="p-tag p-tag-gray">Concluded</span>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+{% else %}
+
+  <div class="p-card">
+    <div class="p-empty">
+      <i class="bi bi-heart-pulse"></i>
+      <p>No active antenatal record found. If you are pregnant and attending our clinic, please speak to your midwife or doctor to have your record created.</p>
+    </div>
+  </div>
+
+{% endif %}
+
+{% endblock %}
