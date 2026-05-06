@@ -3,6 +3,7 @@ from django import forms as django_forms
 from django.views import View
 from django.shortcuts import redirect, render
 from django.contrib import messages
+from django.conf import settings
 
 from core.forms import SmartSelectMixin
 from portal.services import (
