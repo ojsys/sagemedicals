@@ -1,48 +1,33 @@
-from datetime import date
-
+from django.contrib.auth import authenticate, login
 from django import forms as django_forms
-from django.contrib import messages
-from django.http import HttpResponse
-from django.shortcuts import redirect, render
 from django.views import View
 
 from core.forms import SmartSelectMixin
 from portal.services import (
     PORTAL_SESSION_COOKIE,
-    complete_otp_login,
     get_portal_session,
     portal_login_required,
     self_register,
-    start_otp_login,
 )
-
 
 # ── Forms ─────────────────────────────────────────────────────
 
-class PhoneForm(django_forms.Form):
-    phone = django_forms.CharField(
-        max_length=20,
-        widget=django_forms.TextInput(attrs={
+class EmailLoginForm(django_forms.Form):
+    email = django_forms.EmailField(
+        widget=django_forms.EmailInput(attrs={
             "class": "form-control form-control-lg",
-            "placeholder": "08012345678",
-            "inputmode": "tel",
+            "placeholder": "email@example.com",
+            "inputmode": "email",
+        }),
+    )
+    password = django_forms.CharField(
+        widget=django_forms.PasswordInput(attrs={
+            "class": "form-control form-control-lg",
+            "placeholder": "Password",
         }),
     )
 
-
-class OTPForm(django_forms.Form):
-    code = django_forms.CharField(
-        max_length=6, min_length=6,
-        widget=django_forms.TextInput(attrs={
-            "class": "form-control form-control-lg text-center",
-            "placeholder": "000000",
-            "inputmode": "numeric",
-            "autocomplete": "one-time-code",
-        }),
-    )
-
-
-class SelfRegisterForm(django_forms.Form):
+class EmailRegisterForm(django_forms.Form):
     first_name = django_forms.CharField(
         widget=django_forms.TextInput(attrs={"class": "form-control"})
     )
@@ -56,6 +41,42 @@ class SelfRegisterForm(django_forms.Form):
         choices=[("M", "Male"), ("F", "Female")],
         widget=django_forms.Select(attrs={"class": "form-select"}),
     )
+    email = django_forms.EmailField(
+        widget=django_forms.EmailInput(attrs={
+            "class": "form-control",
+            "placeholder": "email@example.com",
+        }),
+    )
+    phone = django_forms.CharField(
+        required=False,
+        max_length=20,
+        widget=django_forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "08012345678 (Optional)",
+            "inputmode": "tel",
+        }),
+    )
+    password = django_forms.CharField(
+        widget=django_forms.PasswordInput(attrs={
+            "class": "form-control",
+            "placeholder": "Password",
+        }),
+    )
+    password_confirm = django_forms.CharField(
+        widget=django_forms.PasswordInput(attrs={
+            "class": "form-control",
+            "placeholder": "Confirm Password",
+        }),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        password_confirm = cleaned_data.get("password_confirm")
+
+        if password and password_confirm and password != password_confirm:
+            self.add_error("password_confirm", "Passwords do not match")
+        return cleaned_data
 
 
 class AppointmentRequestForm(SmartSelectMixin, django_forms.Form):
@@ -99,78 +120,59 @@ class PortalLoginView(View):
     def get(self, request):
         if get_portal_session(request):
             return redirect("portal:dashboard")
-        return render(request, self.template_name, {"form": PhoneForm()})
+        return render(request, self.template_name, {"form": EmailLoginForm()})
 
     def post(self, request):
-        form = PhoneForm(request.POST)
+        form = EmailLoginForm(request.POST)
         if form.is_valid():
-            try:
-                phone = start_otp_login(form.cleaned_data["phone"])
-                request.session["portal_otp_phone"] = phone
-                return redirect("portal:verify")
-            except ValueError as e:
-                form.add_error("phone", str(e))
-        return render(request, self.template_name, {"form": form})
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
+            user = authenticate(request, username=email, password=password) # username is email for custom User
 
+            if user is not None and user.is_active:
+                login(request, user)
+                # Now, create a PortalSession for the authenticated user
+                from portal.models import PortalSession
+                from patients.models import Patient
+                from django.utils import timezone
+                from datetime import timedelta
 
-class PortalVerifyView(View):
-    template_name = "portal/verify.html"
+                # Ensure the user has a linked Patient profile
+                try:
+                    patient = Patient.objects.get(user=user, deleted_at__isnull=True)
+                except Patient.DoesNotExist:
+                    messages.error(request, "No patient profile linked to this account. Please contact support.")
+                    return render(request, self.template_name, {"form": form})
 
-    def get(self, request):
-        if "portal_otp_phone" not in request.session:
-            return redirect("portal:login")
-        return render(request, self.template_name, {"form": OTPForm()})
-
-    def post(self, request):
-        phone = request.session.get("portal_otp_phone")
-        if not phone:
-            return redirect("portal:login")
-        form = OTPForm(request.POST)
-        if form.is_valid():
-            try:
-                session = complete_otp_login(
-                    phone,
-                    form.cleaned_data["code"],
-                    ip=request.META.get("REMOTE_ADDR"),
-                    ua=request.META.get("HTTP_USER_AGENT", ""),
+                ttl = getattr(settings, "PATIENT_PORTAL_SESSION_AGE", 3600)
+                session = PortalSession.objects.create(
+                    patient=patient,
+                    expires_at=timezone.now() + timedelta(seconds=ttl),
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                    user_agent=request.META.get("HTTP_USER_AGENT", ""),
                 )
-                del request.session["portal_otp_phone"]
                 response = redirect("portal:dashboard")
                 response.set_cookie(
                     PORTAL_SESSION_COOKIE, session.token,
                     max_age=3600, httponly=True, samesite="Lax",
                 )
                 return response
-            except ValueError as e:
-                form.add_error("code", str(e))
+            else:
+                form.add_error(None, "Invalid login credentials.")
         return render(request, self.template_name, {"form": form})
+
+
+
 
 
 class PortalRegisterView(View):
     template_name = "portal/register.html"
 
     def get(self, request):
-        phone = request.session.get("portal_otp_phone", "")
-        return render(request, self.template_name, {
-            "form": SelfRegisterForm(), "phone": phone,
-        })
+        return render(request, self.template_name, {"form": EmailRegisterForm()})
 
     def post(self, request):
-        phone = request.session.get("portal_otp_phone", "")
-        # Explicitly check if phone is available and valid before proceeding
-        if not phone:
-            messages.error(request, "Your registration session has expired or is invalid. Please start again.")
-            return redirect("portal:login")
-        
-        # Optionally, validate phone format early if not already done by start_otp_login for all cases
-        # from patients.services import validate_nigerian_phone
-        # try:
-        #     phone = validate_nigerian_phone(phone)
-        # except ValueError:
-        #     messages.error(request, "Invalid phone number in session. Please start again.")
-        #     return redirect("portal:login")
-
-        form = SelfRegisterForm(request.POST)
+        form = EmailRegisterForm(request.POST)
         if form.is_valid():
             try:
                 patient, created = self_register(
@@ -178,14 +180,16 @@ class PortalRegisterView(View):
                     last_name=form.cleaned_data["last_name"],
                     date_of_birth=form.cleaned_data["date_of_birth"],
                     sex=form.cleaned_data["sex"],
-                    phone=phone,
+                    email=form.cleaned_data["email"],
+                    password=form.cleaned_data["password"],
+                    phone=form.cleaned_data.get("phone", ""), # Phone is now optional
                 )
-                msg = "Account created." if created else "Welcome back."
+                msg = "Account created. You can now log in." if created else "Welcome back."
                 messages.success(request, msg)
                 return redirect("portal:login")
             except ValueError as e:
                 form.add_error(None, str(e))
-        return render(request, self.template_name, {"form": form, "phone": phone})
+        return render(request, self.template_name, {"form": form})
 
 
 def portal_logout(request):

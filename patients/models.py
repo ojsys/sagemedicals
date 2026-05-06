@@ -48,9 +48,9 @@ class Patient(BaseModel):
     blood_group = models.CharField(max_length=5, choices=BLOOD_GROUPS, blank=True)
 
     # Contact
-    phone = models.CharField(max_length=20)
+    phone = models.CharField(max_length=20, blank=True)
     phone_alt = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(unique=True)
     address = models.TextField(blank=True)
     address_state = models.CharField(max_length=50, choices=NIGERIAN_STATES, blank=True)
     address_lga = models.CharField(max_length=100, blank=True)

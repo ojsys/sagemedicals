@@ -7,42 +7,7 @@ from django.utils import timezone
 PORTAL_SESSION_COOKIE = "portal_token"
 
 
-def start_otp_login(phone):
-    """Normalise phone, find or hint at patient, issue OTP. Returns phone."""
-    from notifications.services import issue_otp
-    from patients.services import normalise_phone, validate_nigerian_phone
 
-    phone = normalise_phone(phone)
-    validate_nigerian_phone(phone)
-    issue_otp(phone)
-    return phone
-
-
-@transaction.atomic
-def complete_otp_login(phone, code, ip=None, ua=""):
-    """
-    Verify OTP and return a PortalSession.
-    Raises ValueError if OTP is wrong/expired or no patient matches phone.
-    """
-    from notifications.services import verify_otp
-    from patients.models import Patient
-    from portal.models import PortalSession
-
-    if not verify_otp(phone, code):
-        raise ValueError("Invalid or expired verification code.")
-
-    patient = Patient.objects.filter(phone=phone, deleted_at__isnull=True).first()
-    if not patient:
-        raise ValueError("No patient account found for this phone number.")
-
-    ttl = getattr(settings, "PATIENT_PORTAL_SESSION_AGE", 3600)
-    session = PortalSession.objects.create(
-        patient=patient,
-        expires_at=timezone.now() + timedelta(seconds=ttl),
-        ip_address=ip,
-        user_agent=ua,
-    )
-    return session
 
 
 def get_portal_session(request):
@@ -80,23 +45,33 @@ def portal_login_required(view_func):
     return wrapper
 
 
-def self_register(first_name, last_name, date_of_birth, sex, phone, email=""):
+from accounts.models import User
+from patients.models import Patient
+from patients.services import generate_hospital_number
+
+def self_register(first_name, last_name, date_of_birth, sex, email, password, phone=""):
     """
-    Register a new patient via the portal (OTP already verified).
+    Register a new patient via the portal.
+    Creates a User account and a Patient profile linked to it.
     Returns (patient, created).
     """
-    from patients.models import Patient
-    from patients.services import generate_hospital_number, normalise_phone
+    # Check if a User with this email already exists
+    if User.objects.filter(email=email).exists():
+        raise ValueError("A user with this email already exists.")
 
-    phone = normalise_phone(phone)
-    existing = Patient.objects.filter(phone=phone, deleted_at__isnull=True).first()
-    if existing:
-        return existing, False
+    # Check if a Patient with this email already exists (even without a linked user)
+    existing_patient = Patient.objects.filter(email=email, deleted_at__isnull=True).first()
+    if existing_patient:
+        raise ValueError("A patient with this email already exists.")
+
+    # Create the User account first
+    user = User.objects.create_user(email=email, password=password, first_name=first_name, last_name=last_name)
+    user.save() # Save the user to ensure first_name and last_name are set
 
     MAX_RETRIES = 5
     for _ in range(MAX_RETRIES):
         try:
-            with transaction.atomic(): # New atomic block for each retry attempt
+            with transaction.atomic():  # New atomic block for each retry attempt
                 hospital_number = generate_hospital_number()
                 patient = Patient.objects.create(
                     hospital_number=hospital_number,
@@ -104,18 +79,18 @@ def self_register(first_name, last_name, date_of_birth, sex, phone, email=""):
                     last_name=last_name.strip().title(),
                     date_of_birth=date_of_birth,
                     sex=sex,
-                    phone=phone,
+                    email=email,  # Set patient email from registration
+                    phone=phone,  # Phone is now optional
+                    user=user,  # Link the created User object
                     payer_type="self_pay",
                 )
                 return patient, True
         except IntegrityError as e:
-            # Check if the error is specifically due to duplicate hospital_number
-            # This check might need refinement depending on the database backend and error message format
             if "hospital_number" in str(e):
-                # Log the retry attempt (optional, but good for debugging)
-                # logger.warning(f"Duplicate hospital number '{hospital_number}' detected, retrying...")
                 continue
             else:
-                # Re-raise if it's a different IntegrityError
+                # If it's another IntegrityError (e.g., email unique constraint for Patient model),
+                # we should re-raise, as it indicates a serious data consistency issue
+                # or a race condition not related to hospital_number generation.
                 raise
     raise IntegrityError("Failed to create patient after multiple retries due to duplicate hospital number.")
