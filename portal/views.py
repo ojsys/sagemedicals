@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login
 from django import forms as django_forms
 from django.views import View
 from django.shortcuts import redirect, render
+from django.contrib import messages
 
 from core.forms import SmartSelectMixin
 from portal.services import (
