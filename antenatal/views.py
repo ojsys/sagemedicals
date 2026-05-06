@@ -80,6 +80,7 @@ class ANCRecordCreateView(View):
         if patient and form.is_valid():
             record = form.save(commit=False)
             record.patient = patient
+            record.is_active = True
             record.save()
             messages.success(request, f"ANC record created for {patient.full_name}.")
             return redirect("antenatal:detail", pk=record.pk)
