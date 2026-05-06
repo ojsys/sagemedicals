@@ -124,6 +124,7 @@ class DashboardView(AccessMixin, View):
         today = date.today()
 
         from admissions.models import Admission
+        from antenatal.models import ANCRecord
         from laboratory.models import LabOrder
         from patients.models import Patient
         from scheduling.models import Appointment, QueueEntry
@@ -171,6 +172,18 @@ class DashboardView(AccessMixin, View):
             .order_by("-admitted_at")[:8]
         )
 
+        from datetime import timedelta
+        active_anc_count = ANCRecord.objects.filter(is_active=True).count()
+        anc_due_soon_count = ANCRecord.objects.filter(
+            is_active=True, edd__lte=today + timedelta(weeks=4)
+        ).count()
+        anc_dashboard_list = (
+            ANCRecord.objects.filter(is_active=True)
+            .select_related("patient")
+            .prefetch_related("visits")
+            .order_by("edd")[:10]
+        )
+
         return render(request, self.template_name, {
             "today": today,
             "patients_today": patients_today,
@@ -181,4 +194,7 @@ class DashboardView(AccessMixin, View):
             "appointments_today": appointments_today,
             "recent_patients": recent_patients,
             "recent_admissions": recent_admissions,
+            "active_anc_count": active_anc_count,
+            "anc_due_soon_count": anc_due_soon_count,
+            "anc_dashboard_list": anc_dashboard_list,
         })

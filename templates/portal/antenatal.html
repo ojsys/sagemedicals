@@ -4,6 +4,7 @@
 
 {% block extra_css %}
 <style>
+  /* ── Hero ──────────────────────────────── */
   .anc-hero {
     background: linear-gradient(135deg, #1B4D3E 0%, #1B998B 100%);
     border-radius: var(--r-lg);
@@ -17,27 +18,23 @@
     content: '';
     position: absolute;
     right: -40px; bottom: -40px;
-    width: 180px; height: 180px;
+    width: 200px; height: 200px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,.08), transparent 70%);
+    background: radial-gradient(circle, rgba(255,255,255,.07), transparent 70%);
     pointer-events: none;
   }
   .anc-hero-body { position: relative; z-index: 1; }
   .anc-badge {
     font-size: 9.5px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.18em;
-    color: rgba(255,255,255,.65);
-    margin-bottom: 10px;
+    color: rgba(255,255,255,.6); margin-bottom: 8px;
   }
   .anc-edd {
     font-family: 'Fraunces', serif;
-    font-size: 28px; font-weight: 400;
+    font-size: 30px; font-weight: 400;
     letter-spacing: -0.02em; line-height: 1.1;
   }
-  .anc-edd-label {
-    font-size: 11.5px; color: rgba(255,255,255,.6);
-    margin-top: 3px; margin-bottom: 18px;
-  }
+  .anc-edd-label { font-size: 11.5px; color: rgba(255,255,255,.55); margin-top: 3px; margin-bottom: 16px; }
   .anc-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -45,95 +42,148 @@
     background: rgba(255,255,255,.12);
     border-radius: 10px;
     overflow: hidden;
-    margin-top: 16px;
   }
-  .anc-stat {
-    background: rgba(0,0,0,.15);
-    padding: 12px 10px;
-    text-align: center;
-  }
-  .anc-stat-val {
-    font-family: 'Fraunces', serif;
-    font-size: 22px; font-weight: 400; line-height: 1;
-  }
-  .anc-stat-label {
-    font-size: 10px; color: rgba(255,255,255,.6);
-    text-transform: uppercase; letter-spacing: 0.1em;
-    margin-top: 4px;
-  }
+  .anc-stat { background: rgba(0,0,0,.15); padding: 12px 8px; text-align: center; }
+  .anc-stat-val { font-family: 'Fraunces', serif; font-size: 22px; line-height: 1; }
+  .anc-stat-label { font-size: 9.5px; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .1em; margin-top: 4px; }
+  .anc-progress-wrap { margin-top: 16px; }
+  .anc-progress-label { display: flex; justify-content: space-between; font-size: 10.5px; color: rgba(255,255,255,.5); margin-bottom: 5px; }
+  .anc-progress-bar { height: 5px; border-radius: 99px; background: rgba(255,255,255,.15); overflow: hidden; }
+  .anc-progress-fill { height: 100%; border-radius: 99px; background: rgba(255,255,255,.75); transition: width .4s ease; }
 
-  /* Progress bar */
-  .anc-progress-wrap { margin-top: 18px; }
-  .anc-progress-label {
-    display: flex; justify-content: space-between;
-    font-size: 11px; color: rgba(255,255,255,.55);
-    margin-bottom: 6px;
-  }
-  .anc-progress-bar {
-    height: 5px; border-radius: 99px;
-    background: rgba(255,255,255,.15);
-    overflow: hidden;
-  }
-  .anc-progress-fill {
-    height: 100%; border-radius: 99px;
-    background: rgba(255,255,255,.75);
-    transition: width .4s ease;
-  }
-
-  /* Visit table */
-  .anc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .anc-table th {
-    text-align: left; font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--t3); padding: 0 8px 8px 0;
-    border-bottom: 1px solid var(--line);
-    white-space: nowrap;
-  }
-  .anc-table td {
-    padding: 10px 8px 10px 0;
-    border-bottom: 1px solid var(--line-s);
-    vertical-align: top;
-    color: var(--t1);
-  }
-  .anc-table tr:last-child td { border-bottom: none; }
-  .anc-table .muted { color: var(--t3); }
-
-  /* Next visit callout */
+  /* ── Next visit callout ─────────────────── */
   .anc-next {
     background: #E6F4F1;
-    border: 1px solid rgba(27,153,139,.25);
+    border: 1px solid rgba(27,153,139,.22);
     border-radius: var(--r);
-    padding: 12px 14px;
+    padding: 13px 16px;
     display: flex; align-items: center; gap: 12px;
     margin-bottom: 12px;
   }
   .anc-next-icon {
-    width: 36px; height: 36px; border-radius: 9px;
+    width: 38px; height: 38px; border-radius: 10px;
     background: var(--teal); color: #fff;
     display: grid; place-items: center;
-    font-size: 17px; flex-shrink: 0;
+    font-size: 18px; flex-shrink: 0;
   }
-  .anc-next-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--teal); }
-  .anc-next-date  { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .anc-next-eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--teal); }
+  .anc-next-date    { font-size: 15px; font-weight: 600; color: var(--ink); margin-top: 1px; }
 
-  /* Info grid */
-  .anc-info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 12px;
+  /* ── Info grid ──────────────────────────── */
+  .anc-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+  .anc-info-item { background: var(--bg); border-radius: var(--r); padding: 12px; }
+  .anc-info-key { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--t3); margin-bottom: 3px; }
+  .anc-info-val { font-size: 14px; font-weight: 500; color: var(--ink); }
+
+  /* ── Schedule timeline ──────────────────── */
+  .anc-schedule { position: relative; padding-left: 28px; }
+  .anc-schedule::before {
+    content: '';
+    position: absolute;
+    left: 9px; top: 10px; bottom: 10px;
+    width: 2px;
+    background: var(--line);
   }
-  .anc-info-item {
+  .anc-milestone {
+    position: relative;
+    padding: 0 0 18px 16px;
+  }
+  .anc-milestone:last-child { padding-bottom: 0; }
+  .anc-milestone-dot {
+    position: absolute;
+    left: -19px; top: 3px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    display: grid; place-items: center;
+    font-size: 9px;
+    z-index: 1;
+  }
+  .anc-milestone.done .anc-milestone-dot   { background: #1B998B; border-color: #1B998B; color: #fff; }
+  .anc-milestone.scheduled .anc-milestone-dot { background: #fff; border-color: var(--primary); color: var(--primary); }
+  .anc-milestone.overdue .anc-milestone-dot { background: #FFF3CD; border-color: #E6A817; color: #9A6E00; }
+  .anc-milestone-ga   { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; }
+  .anc-milestone-label { font-size: 13.5px; font-weight: 500; color: var(--ink); margin: 1px 0 3px; }
+  .anc-milestone-date { font-size: 12px; color: var(--t2); }
+  .anc-milestone.done .anc-milestone-date  { color: #1B998B; }
+  .anc-milestone.scheduled .anc-milestone-date { color: var(--primary); font-weight: 500; }
+  .anc-milestone.overdue .anc-milestone-date { color: #9A6E00; }
+  .anc-milestone-visit-summary {
     background: var(--bg);
     border-radius: var(--r);
-    padding: 12px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px 12px;
   }
-  .anc-info-key {
-    font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--t3); margin-bottom: 3px;
+  .anc-vsub { font-size: 11.5px; color: var(--t2); }
+  .anc-vsub span { color: var(--ink); font-weight: 500; }
+
+  /* ── Visit cards ────────────────────────── */
+  .anc-visit-card { margin-bottom: 10px; }
+  .anc-visit-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; cursor: pointer; padding: 14px 16px;
+    border-bottom: 1px solid var(--line-s);
   }
-  .anc-info-val { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .anc-visit-header:last-child { border-bottom: none; }
+  .anc-visit-date { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .anc-visit-ga-badge {
+    font-size: 11px; font-weight: 600;
+    background: rgba(27,153,139,.12); color: var(--teal);
+    padding: 2px 8px; border-radius: 99px;
+    white-space: nowrap;
+  }
+  .anc-visit-chevron { color: var(--t3); font-size: 13px; transition: transform .2s; flex-shrink: 0; }
+  .anc-visit-body {
+    padding: 0 16px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .3s ease, padding .2s;
+  }
+  .anc-visit-body.open { max-height: 600px; padding: 14px 16px; }
+  .anc-vitals-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .anc-vital { background: var(--bg); border-radius: var(--r); padding: 9px 11px; }
+  .anc-vital-k { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--t3); margin-bottom: 2px; }
+  .anc-vital-v { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .anc-clinical-row { margin-bottom: 8px; }
+  .anc-clinical-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--t3); margin-bottom: 3px; }
+  .anc-clinical-text  { font-size: 13px; color: var(--ink); line-height: 1.5; }
+  .anc-next-visit-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(27,153,139,.1); color: var(--teal);
+    font-size: 11.5px; font-weight: 500; padding: 4px 10px;
+    border-radius: 99px; margin-top: 6px;
+  }
+
+  /* ── Scan cards ─────────────────────────── */
+  .anc-scan-meta { font-size: 12px; color: var(--t3); margin-top: 2px; }
+  .anc-scan-section { margin-bottom: 8px; }
+  .anc-scan-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--t3); margin-bottom: 3px; }
+  .anc-scan-section-text { font-size: 13px; color: var(--ink); line-height: 1.5; }
+  .anc-impression-box { background: var(--bg); border-radius: var(--r); padding: 10px 12px; }
+
+  /* ── Past pregnancy cards ───────────────── */
+  .anc-past-card { margin-bottom: 8px; cursor: pointer; }
+  .anc-past-summary {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 6px;
+  }
+  .anc-past-visits { margin-top: 10px; border-top: 1px solid var(--line-s); padding-top: 10px; display: none; }
+  .anc-past-visits.open { display: block; }
+  .anc-past-visit-row {
+    display: grid; grid-template-columns: auto 1fr 1fr 1fr;
+    gap: 6px 12px; align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line-s);
+    font-size: 12.5px; color: var(--t1);
+  }
+  .anc-past-visit-row:last-child { border-bottom: none; }
 </style>
 {% endblock %}
 
@@ -152,14 +202,14 @@
     <div class="anc-next">
       <div class="anc-next-icon"><i class="bi bi-calendar-check"></i></div>
       <div>
-        <div class="anc-next-label">Next visit</div>
+        <div class="anc-next-eyebrow">Next Scheduled Visit</div>
         <div class="anc-next-date">{{ nv.next_visit_date|date:"l, j F Y" }}</div>
       </div>
     </div>
     {% endif %}
   {% endwith %}
 
-  {# ── Hero card ── #}
+  {# ── Hero ── #}
   <div class="anc-hero">
     <div class="anc-hero-body">
       <div class="anc-badge">Current Pregnancy</div>
@@ -168,16 +218,16 @@
 
       <div class="anc-stats">
         <div class="anc-stat">
-          <div class="anc-stat-val">{{ record.gestational_age_weeks }}<sup style="font-size:13px">+{{ record.gestational_age_days }}</sup></div>
+          <div class="anc-stat-val">{{ record.gestational_age_weeks }}<sup style="font-size:12px">+{{ record.gestational_age_days }}</sup></div>
           <div class="anc-stat-label">Weeks GA</div>
         </div>
         <div class="anc-stat">
           <div class="anc-stat-val">{{ record.weeks_to_edd }}</div>
-          <div class="anc-stat-label">Weeks to go</div>
+          <div class="anc-stat-label">Wks to go</div>
         </div>
         <div class="anc-stat">
           <div class="anc-stat-val">G{{ record.gravida }}P{{ record.para }}</div>
-          <div class="anc-stat-label">Gravida/Para</div>
+          <div class="anc-stat-label">Gravida / Para</div>
         </div>
       </div>
 
@@ -185,95 +235,172 @@
         <div class="anc-progress-label">
           <span>Booking</span>
           <span>{{ record.progress_pct }}% complete</span>
-          <span>Term (40wks)</span>
+          <span>Term (40 wks)</span>
         </div>
         <div class="anc-progress-bar">
-          <div class="anc-progress-fill" style="width: {{ record.progress_pct }}%"></div>
+          <div class="anc-progress-fill" style="width:{{ record.progress_pct }}%"></div>
         </div>
       </div>
     </div>
   </div>
 
-  {# ── Info grid ── #}
-  <div class="anc-info-grid">
-    <div class="anc-info-item">
-      <div class="anc-info-key">Booked</div>
-      <div class="anc-info-val">{{ record.booking_date|date:"j M Y" }}</div>
-    </div>
+  {# ── Key details ── #}
+  <div class="anc-info-grid" style="margin-bottom:16px;">
     {% if record.lmp %}
     <div class="anc-info-item">
-      <div class="anc-info-key">Last period (LMP)</div>
+      <div class="anc-info-key">Last Menstrual Period</div>
       <div class="anc-info-val">{{ record.lmp|date:"j M Y" }}</div>
     </div>
     {% endif %}
+    <div class="anc-info-item">
+      <div class="anc-info-key">Booking Date</div>
+      <div class="anc-info-val">{{ record.booking_date|date:"j M Y" }}</div>
+    </div>
     {% if record.blood_group %}
     <div class="anc-info-item">
-      <div class="anc-info-key">Blood group</div>
+      <div class="anc-info-key">Blood Group</div>
       <div class="anc-info-val">{{ record.blood_group }}{% if record.rhesus %} ({{ record.get_rhesus_display }}){% endif %}</div>
     </div>
     {% endif %}
+    <div class="anc-info-item">
+      <div class="anc-info-key">Visits Attended</div>
+      <div class="anc-info-val">{{ record.visits.count }} visit{{ record.visits.count|pluralize }}</div>
+    </div>
   </div>
+
+  {# ── ANC Schedule ── #}
+  {% if schedule %}
+  <div class="p-section-h">ANC Schedule</div>
+  <div class="p-card" style="padding:18px 16px 18px 20px;">
+    <div class="anc-schedule">
+      {% for m in schedule %}
+      <div class="anc-milestone {{ m.status }}">
+        <div class="anc-milestone-dot">
+          {% if m.status == "done" %}<i class="bi bi-check2"></i>
+          {% elif m.status == "scheduled" %}<i class="bi bi-clock"></i>
+          {% elif m.status == "overdue" %}<i class="bi bi-exclamation"></i>
+          {% else %}<i class="bi bi-circle"></i>{% endif %}
+        </div>
+        <div class="anc-milestone-ga">{{ m.ga_week }} weeks</div>
+        <div class="anc-milestone-label">{{ m.label }}</div>
+        <div class="anc-milestone-date">
+          {% if m.status == "done" %}
+            Attended {{ m.visit.visit_date|date:"j M Y" }}
+          {% elif m.status == "scheduled" %}
+            <i class="bi bi-calendar-check" style="font-size:11px;margin-right:3px;"></i>Scheduled for {{ m.target_date|date:"j M Y" }}
+          {% elif m.status == "overdue" %}
+            Due {{ m.target_date|date:"j M Y" }} — please contact the clinic
+          {% else %}
+            Expected around {{ m.target_date|date:"j M Y" }}
+          {% endif %}
+        </div>
+        {% if m.status == "done" and m.visit %}
+        <div class="anc-milestone-visit-summary">
+          {% if m.visit.weight_kg %}<div class="anc-vsub">Weight <span>{{ m.visit.weight_kg }} kg</span></div>{% endif %}
+          {% if m.visit.bp_display != "—" %}<div class="anc-vsub">BP <span>{{ m.visit.bp_display }} mmHg</span></div>{% endif %}
+          {% if m.visit.fetal_heart_rate %}<div class="anc-vsub">FHR <span>{{ m.visit.fetal_heart_rate }} bpm</span></div>{% endif %}
+          {% if m.visit.fundal_height_cm %}<div class="anc-vsub">FH <span>{{ m.visit.fundal_height_cm }} cm</span></div>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   {# ── Visit history ── #}
   {% with visits=record.visits.all %}
-  <div class="p-section-h">
-    ANC Visits
+  <div class="p-section-h" style="margin-top:24px;">
+    Visit History
     <span>{{ visits|length }} visit{{ visits|length|pluralize }}</span>
   </div>
 
   {% if visits %}
-  <div class="p-card" style="overflow-x: auto; padding: 0;">
-    <table class="anc-table" style="padding: 16px; display: table; width: 100%; min-width: 460px;">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>GA (wks)</th>
-          <th>Weight</th>
-          <th>BP</th>
-          <th>FHR</th>
-          <th>FH</th>
-          <th>Presentation</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for v in visits %}
-        <tr>
-          <td style="white-space:nowrap">{{ v.visit_date|date:"j M Y" }}</td>
-          <td>{{ v.gestational_age_weeks }}</td>
-          <td>{% if v.weight_kg %}{{ v.weight_kg }} kg{% else %}<span class="muted">—</span>{% endif %}</td>
-          <td>{{ v.bp_display }}</td>
-          <td>{% if v.fetal_heart_rate %}{{ v.fetal_heart_rate }} bpm{% else %}<span class="muted">—</span>{% endif %}</td>
-          <td>{% if v.fundal_height_cm %}{{ v.fundal_height_cm }} cm{% else %}<span class="muted">—</span>{% endif %}</td>
-          <td>{% if v.presentation %}{{ v.presentation }}{% else %}<span class="muted">—</span>{% endif %}</td>
-        </tr>
-        {% if v.diagnosis or v.plan or v.notes %}
-        <tr>
-          <td colspan="7" style="padding-top:0;padding-bottom:14px;">
-            {% if v.diagnosis %}
-            <div style="margin-bottom:5px;">
-              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);">Diagnosis</span>
-              <div style="font-size:12.5px;color:var(--ink);margin-top:2px;">{{ v.diagnosis }}</div>
-            </div>
-            {% endif %}
-            {% if v.plan %}
-            <div style="margin-bottom:5px;">
-              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);">Plan</span>
-              <div style="font-size:12.5px;color:var(--ink);margin-top:2px;">{{ v.plan }}</div>
-            </div>
-            {% endif %}
-            {% if v.notes %}
-            <div>
-              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);">Notes</span>
-              <div style="font-size:12px;color:var(--t3);margin-top:2px;">{{ v.notes }}</div>
-            </div>
-            {% endif %}
-          </td>
-        </tr>
+  {% for v in visits %}
+  <div class="p-card anc-visit-card" style="padding:0;">
+    <div class="anc-visit-header" onclick="toggleVisit(this)">
+      <div>
+        <div class="anc-visit-date">{{ v.visit_date|date:"j F Y" }}</div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:2px;">
+          {% if v.next_visit_date %}Next visit: {{ v.next_visit_date|date:"j M Y" }}{% else %}No next visit set{% endif %}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="anc-visit-ga-badge">{{ v.gestational_age_weeks }} wks</span>
+        <i class="bi bi-chevron-down anc-visit-chevron"></i>
+      </div>
+    </div>
+    <div class="anc-visit-body">
+
+      {# Vitals grid #}
+      <div class="anc-vitals-grid">
+        <div class="anc-vital">
+          <div class="anc-vital-k">Weight</div>
+          <div class="anc-vital-v">{% if v.weight_kg %}{{ v.weight_kg }} kg{% else %}—{% endif %}</div>
+        </div>
+        <div class="anc-vital">
+          <div class="anc-vital-k">Blood Pressure</div>
+          <div class="anc-vital-v">{{ v.bp_display }}</div>
+        </div>
+        <div class="anc-vital">
+          <div class="anc-vital-k">Fetal Heart Rate</div>
+          <div class="anc-vital-v">{% if v.fetal_heart_rate %}{{ v.fetal_heart_rate }} bpm{% else %}—{% endif %}</div>
+        </div>
+        <div class="anc-vital">
+          <div class="anc-vital-k">Fundal Height</div>
+          <div class="anc-vital-v">{% if v.fundal_height_cm %}{{ v.fundal_height_cm }} cm{% else %}—{% endif %}</div>
+        </div>
+        {% if v.presentation %}
+        <div class="anc-vital">
+          <div class="anc-vital-k">Presentation</div>
+          <div class="anc-vital-v">{{ v.presentation }}</div>
+        </div>
         {% endif %}
-        {% endfor %}
-      </tbody>
-    </table>
+        {% if v.urine_protein %}
+        <div class="anc-vital">
+          <div class="anc-vital-k">Urine Protein</div>
+          <div class="anc-vital-v">{{ v.get_urine_protein_display }}</div>
+        </div>
+        {% endif %}
+        {% if v.urine_glucose %}
+        <div class="anc-vital">
+          <div class="anc-vital-k">Urine Glucose</div>
+          <div class="anc-vital-v">{{ v.get_urine_glucose_display }}</div>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Clinical notes #}
+      {% if v.diagnosis %}
+      <div class="anc-clinical-row">
+        <div class="anc-clinical-label">Diagnosis</div>
+        <div class="anc-clinical-text">{{ v.diagnosis }}</div>
+      </div>
+      {% endif %}
+      {% if v.plan %}
+      <div class="anc-clinical-row">
+        <div class="anc-clinical-label">Management Plan</div>
+        <div class="anc-clinical-text">{{ v.plan }}</div>
+      </div>
+      {% endif %}
+      {% if v.notes %}
+      <div class="anc-clinical-row">
+        <div class="anc-clinical-label">Notes</div>
+        <div class="anc-clinical-text" style="color:var(--t2);">{{ v.notes }}</div>
+      </div>
+      {% endif %}
+
+      {% if v.next_visit_date %}
+      <span class="anc-next-visit-pill">
+        <i class="bi bi-calendar-check"></i>
+        Next visit: {{ v.next_visit_date|date:"l, j F Y" }}
+      </span>
+      {% endif %}
+
+    </div>
   </div>
+  {% endfor %}
+
   {% else %}
   <div class="p-card">
     <div class="p-empty">
@@ -286,7 +413,7 @@
 
   {# ── Ultrasound scans ── #}
   {% with scans=record.scans.all %}
-  <div class="p-section-h" style="margin-top: 28px;">
+  <div class="p-section-h" style="margin-top:24px;">
     Obstetric Ultrasound Scans
     <span>{{ scans|length }} scan{{ scans|length|pluralize }}</span>
   </div>
@@ -294,10 +421,10 @@
   {% if scans %}
   {% for scan in scans %}
   <div class="p-card">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:{% if scan.findings or scan.impression %}12{% else %}0{% endif %}px;">
       <div>
         <div style="font-weight:600;font-size:14px;color:var(--ink);">{{ scan.scan_date|date:"j F Y" }}</div>
-        <div style="font-size:12px;color:var(--t3);margin-top:2px;">
+        <div class="anc-scan-meta">
           {% if scan.gestational_age_weeks %}GA {{ scan.ga_display }}{% endif %}
           {% if scan.placenta_location %}&nbsp;·&nbsp;Placenta: {{ scan.get_placenta_location_display }}{% endif %}
           {% if scan.amniotic_fluid %}&nbsp;·&nbsp;Liquor: {{ scan.get_amniotic_fluid_display }}{% endif %}
@@ -310,19 +437,20 @@
       {% endif %}
     </div>
     {% if scan.findings %}
-    <div style="margin-bottom:8px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:3px;">Findings</div>
-      <div style="font-size:13px;color:var(--ink);">{{ scan.findings }}</div>
+    <div class="anc-scan-section">
+      <div class="anc-scan-section-label">Findings</div>
+      <div class="anc-scan-section-text">{{ scan.findings }}</div>
     </div>
     {% endif %}
     {% if scan.impression %}
-    <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:3px;">Impression</div>
-      <div style="font-size:13px;font-weight:500;color:var(--ink);">{{ scan.impression }}</div>
+    <div class="anc-impression-box">
+      <div class="anc-scan-section-label" style="margin-bottom:3px;">Impression</div>
+      <div class="anc-scan-section-text" style="font-weight:500;">{{ scan.impression }}</div>
     </div>
     {% endif %}
   </div>
   {% endfor %}
+
   {% else %}
   <div class="p-card">
     <div class="p-empty">
@@ -335,15 +463,41 @@
 
   {# ── Past pregnancies ── #}
   {% if past_records %}
-  <div class="p-section-h" style="margin-top: 28px;">Past Pregnancies</div>
+  <div class="p-section-h" style="margin-top:28px;">
+    Obstetric History
+    <span>{{ past_records|length }} record{{ past_records|length|pluralize }}</span>
+  </div>
   {% for pr in past_records %}
-  <div class="p-card">
-    <div class="p-row">
-      <div class="p-row-body">
-        <div class="p-row-title">EDD {{ pr.edd|date:"j F Y" }}</div>
-        <div class="p-row-sub">G{{ pr.gravida }}P{{ pr.para }} &nbsp;·&nbsp; Booked {{ pr.booking_date|date:"M Y" }} &nbsp;·&nbsp; {{ pr.visits.count }} visit{{ pr.visits.count|pluralize }}</div>
+  <div class="p-card anc-past-card" style="padding:0;" onclick="togglePast(this)">
+    <div style="padding:14px 16px;">
+      <div class="anc-past-summary">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink);">EDD {{ pr.edd|date:"j F Y" }}</div>
+          <div style="font-size:12px;color:var(--t3);margin-top:2px;">
+            G{{ pr.gravida }}P{{ pr.para }} &nbsp;·&nbsp; Booked {{ pr.booking_date|date:"M Y" }} &nbsp;·&nbsp; {{ pr.visits.count }} visit{{ pr.visits.count|pluralize }}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="p-tag p-tag-gray">Concluded</span>
+          <i class="bi bi-chevron-down" style="color:var(--t3);font-size:13px;transition:transform .2s;"></i>
+        </div>
       </div>
-      <span class="p-tag p-tag-gray">Concluded</span>
+
+      {% with pv=pr.visits.all %}
+      {% if pv %}
+      <div class="anc-past-visits">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:6px;">Visit Summary</div>
+        {% for v in pv %}
+        <div class="anc-past-visit-row">
+          <div style="white-space:nowrap;color:var(--t2);">{{ v.visit_date|date:"j M Y" }}</div>
+          <div>{{ v.gestational_age_weeks }} wks</div>
+          <div>{% if v.weight_kg %}{{ v.weight_kg }} kg{% else %}—{% endif %}</div>
+          <div>{{ v.bp_display }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
     </div>
   </div>
   {% endfor %}
@@ -360,4 +514,31 @@
 
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleVisit(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.anc-visit-chevron');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function togglePast(card) {
+  const visits = card.querySelector('.anc-past-visits');
+  const chevron = card.querySelector('.bi-chevron-down');
+  if (!visits) return;
+  const isOpen = visits.classList.contains('open');
+  visits.classList.toggle('open', !isOpen);
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+// Auto-open the most recent visit
+document.addEventListener('DOMContentLoaded', function () {
+  const first = document.querySelector('.anc-visit-header');
+  if (first) toggleVisit(first);
+});
+</script>
 {% endblock %}

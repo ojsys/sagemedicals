@@ -285,13 +285,71 @@ def portal_bills(request):
 
 @portal_login_required
 def portal_antenatal(request):
+    from datetime import timedelta
     patient = request.portal_patient
     record = patient.active_anc_record
-    past_records = patient.anc_records.filter(is_active=False).order_by("-edd")
+    past_records = (
+        patient.anc_records
+        .filter(is_active=False)
+        .prefetch_related("visits")
+        .order_by("-edd")
+    )
+
+    schedule = []
+    if record:
+        lmp = record.lmp if record.lmp else (record.edd - timedelta(days=280))
+        visits_list = list(record.visits.all())
+        today = date.today()
+
+        # Most recent visit's next_visit_date = the clinic's scheduled next appointment
+        next_scheduled = None
+        if visits_list:
+            next_scheduled = visits_list[0].next_visit_date  # visits ordered -visit_date
+
+        MILESTONES = [
+            (8,  "Booking / Early Assessment"),
+            (12, "First Trimester Review"),
+            (16, "16-Week Check"),
+            (20, "Anomaly Scan"),
+            (24, "24-Week Check"),
+            (28, "28-Week Check"),
+            (32, "32-Week Check"),
+            (34, "34-Week Check"),
+            (36, "36-Week Check"),
+            (38, "38-Week Check"),
+            (40, "Term Assessment"),
+        ]
+
+        for ga_week, label in MILESTONES:
+            target_date = lmp + timedelta(weeks=ga_week)
+            matched_visit = None
+            for v in visits_list:
+                if abs((v.visit_date - target_date).days) <= 14:
+                    matched_visit = v
+                    break
+
+            if matched_visit:
+                status = "done"
+            elif next_scheduled and abs((next_scheduled - target_date).days) <= 14:
+                status = "scheduled"
+            elif target_date < today:
+                status = "overdue"
+            else:
+                status = "upcoming"
+
+            schedule.append({
+                "ga_week": ga_week,
+                "label": label,
+                "target_date": target_date,
+                "visit": matched_visit,
+                "status": status,
+            })
+
     return render(request, "portal/antenatal.html", {
         "patient": patient,
         "record": record,
         "past_records": past_records,
+        "schedule": schedule,
     })
 
 

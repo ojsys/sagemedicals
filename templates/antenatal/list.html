@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Antenatal Care — SAGE EMR{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Clinical</div>
+    <h1 class="page-title">Antenatal Care (ANC)</h1>
+    <p class="page-sub">{{ total_active }} active pregnanc{{ total_active|pluralize:"y,ies" }}{% if anc_due_soon_count %} — {{ anc_due_soon_count }} due within 4 weeks{% endif %}.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/admin/antenatal/ancrecord/add/" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i>New ANC Record
+    </a>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:8px;flex:1;min-width:200px;max-width:360px;">
+    <input type="hidden" name="filter" value="{{ filter_val }}">
+    <div style="flex:1;position:relative;">
+      <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:13px;"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search patient name or ID…"
+        style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text-1);">
+    </div>
+    <button type="submit" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">Search</button>
+    {% if q %}<a href="?filter={{ filter_val }}" class="btn btn-ghost" style="padding:8px 12px;font-size:13px;">Clear</a>{% endif %}
+  </form>
+
+  <div class="filters">
+    <a href="?q={{ q }}&filter=all" class="chip {% if filter_val == 'all' %}on{% endif %}">All active</a>
+    <a href="?q={{ q }}&filter=due_soon" class="chip {% if filter_val == 'due_soon' %}on{% endif %}">Due ≤4 wks</a>
+    <a href="?q={{ q }}&filter=early" class="chip {% if filter_val == 'early' %}on{% endif %}">Early (&gt;28 wks to go)</a>
+  </div>
+</div>
+
+{% if records %}
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>EDD</th>
+        <th>GA Today</th>
+        <th>Blood Grp</th>
+        <th>G / P</th>
+        <th>Booked</th>
+        <th>Visits</th>
+        <th>Last Visit</th>
+        <th>Next Visit</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in records %}
+      {% with lv=rec.visits.all|first %}
+      <tr onclick="location.href='{% url 'antenatal:detail' rec.pk %}'" style="cursor:pointer;">
+        <td>
+          <div class="pname">{{ rec.patient.full_name }}</div>
+          <div class="pmeta">{{ rec.patient.hospital_number }}{% if rec.patient.sex %} · {{ rec.patient.get_sex_display }}{% endif %}</div>
+        </td>
+        <td style="white-space:nowrap;">
+          {{ rec.edd|date:"j M Y" }}
+          {% if rec.weeks_to_edd <= 4 %}
+          <span class="tag amber" style="margin-left:4px;font-size:10px;vertical-align:middle;">≤4 wks</span>
+          {% elif rec.weeks_to_edd <= 8 %}
+          <span class="tag blue" style="margin-left:4px;font-size:10px;vertical-align:middle;">≤8 wks</span>
+          {% endif %}
+        </td>
+        <td class="num" style="white-space:nowrap;">{{ rec.gestational_age_weeks }}<sup>+{{ rec.gestational_age_days }}</sup> wks</td>
+        <td>
+          {% if rec.blood_group %}
+            {{ rec.blood_group }}{% if rec.rhesus %} {{ rec.get_rhesus_display }}{% endif %}
+          {% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+        <td>G{{ rec.gravida }}P{{ rec.para }}</td>
+        <td style="color:var(--text-2);white-space:nowrap;">{{ rec.booking_date|date:"j M Y" }}</td>
+        <td class="num">{{ rec.visits.count }}</td>
+        <td style="white-space:nowrap;">
+          {% if lv %}{{ lv.visit_date|date:"j M Y" }}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap;">
+          {% if lv and lv.next_visit_date %}
+            {% if lv.next_visit_date <= today %}
+              <span class="tag amber">{{ lv.next_visit_date|date:"j M Y" }}</span>
+            {% else %}
+              {{ lv.next_visit_date|date:"j M Y" }}
+            {% endif %}
+          {% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <a href="{% url 'antenatal:detail' rec.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation()">
+              ANC
+            </a>
+            <a href="{% url 'patients:detail' rec.patient.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation()">
+              Patient
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div style="text-align:center;padding:60px 20px;color:var(--text-3);">
+  <i class="bi bi-heart-pulse" style="font-size:40px;display:block;margin-bottom:12px;opacity:.3;color:#1B998B;"></i>
+  {% if q %}
+  <div style="font-size:15px;">No ANC records found for "<strong>{{ q }}</strong>".</div>
+  <a href="?filter={{ filter_val }}" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--sage-primary);text-decoration:none;">Clear search</a>
+  {% else %}
+  <div style="font-size:15px;">No active ANC records{% if filter_val != 'all' %} matching this filter{% endif %}.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

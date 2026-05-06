@@ -66,6 +66,12 @@
 </a>
 {% endif %}
 
+{% if role in "super_admin,doctor,resident,nurse,hospital_admin" %}
+<a class="nav-item {% if '/antenatal' in url %}active{% endif %}" href="{% url 'antenatal:list' %}">
+  <i class="bi bi-heart-pulse"></i>Antenatal (ANC)
+</a>
+{% endif %}
+
 <div class="nav-section-label">Operations</div>
 
 {% if role in "super_admin,billing_officer" %}

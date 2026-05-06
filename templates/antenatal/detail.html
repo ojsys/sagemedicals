@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}ANC — {{ record.patient.full_name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="{% url 'antenatal:list' %}" style="color:var(--text-3);text-decoration:none;">Antenatal Care</a>
+      <span style="margin:0 6px;color:var(--text-3);">/</span>
+      {{ record.patient.full_name }}
+    </div>
+    <h1 class="page-title">{{ record.patient.full_name }}</h1>
+    <p class="page-sub">{{ record.patient.hospital_number }} · EDD {{ record.edd|date:"j F Y" }} · G{{ record.gravida }}P{{ record.para }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'patients:detail' record.patient.pk %}" class="btn btn-ghost">
+      <i class="bi bi-person"></i>Patient File
+    </a>
+    <a href="/admin/antenatal/ancrecord/{{ record.pk }}/change/" class="btn btn-ghost">
+      <i class="bi bi-pencil"></i>Edit Record
+    </a>
+  </div>
+</div>
+
+<!-- Summary row -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+
+  <div class="stat" style="padding:14px 16px;">
+    <div class="stat-label">Gestational Age</div>
+    <div class="stat-value num" style="font-size:26px;">{{ record.gestational_age_weeks }}<sup style="font-size:14px;">+{{ record.gestational_age_days }}</sup></div>
+    <div class="stat-meta">weeks today</div>
+  </div>
+
+  <div class="stat" style="padding:14px 16px;">
+    <div class="stat-label">Weeks to EDD</div>
+    <div class="stat-value num" style="font-size:26px;{% if record.weeks_to_edd <= 4 %}color:var(--sage-amber){% endif %}">{{ record.weeks_to_edd }}</div>
+    <div class="stat-meta">{{ record.edd|date:"j M Y" }}</div>
+  </div>
+
+  <div class="stat" style="padding:14px 16px;">
+    <div class="stat-label">Visits Attended</div>
+    <div class="stat-value num" style="font-size:26px;">{{ record.visits.count }}</div>
+    <div class="stat-meta">since {{ record.booking_date|date:"M Y" }}</div>
+  </div>
+
+  <div class="stat" style="padding:14px 16px;">
+    <div class="stat-label">Progress</div>
+    <div class="stat-value num" style="font-size:26px;">{{ record.progress_pct }}%</div>
+    <div style="height:4px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px;">
+      <div style="height:100%;border-radius:99px;background:#1B998B;width:{{ record.progress_pct }}%;transition:width .4s;"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 2-col: details + next visit -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+
+  <!-- Left: pregnancy details -->
+  <div class="card">
+    <div class="card-head"><div class="card-title">Pregnancy Details</div></div>
+    <table style="width:100%;font-size:13.5px;border-collapse:collapse;">
+      <tr>
+        <td style="padding:7px 0;color:var(--text-3);width:45%;">LMP</td>
+        <td style="padding:7px 0;font-weight:500;">{% if record.lmp %}{{ record.lmp|date:"j M Y" }}{% else %}<span style="color:var(--text-3)">Not recorded</span>{% endif %}</td>
+      </tr>
+      <tr style="border-top:1px solid var(--line-subtle);">
+        <td style="padding:7px 0;color:var(--text-3);">EDD</td>
+        <td style="padding:7px 0;font-weight:500;">{{ record.edd|date:"j F Y" }}</td>
+      </tr>
+      <tr style="border-top:1px solid var(--line-subtle);">
+        <td style="padding:7px 0;color:var(--text-3);">Gravida / Para</td>
+        <td style="padding:7px 0;font-weight:500;">G{{ record.gravida }}P{{ record.para }}</td>
+      </tr>
+      <tr style="border-top:1px solid var(--line-subtle);">
+        <td style="padding:7px 0;color:var(--text-3);">Blood Group</td>
+        <td style="padding:7px 0;font-weight:500;">
+          {% if record.blood_group %}{{ record.blood_group }}{% if record.rhesus %} ({{ record.get_rhesus_display }}){% endif %}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+      </tr>
+      <tr style="border-top:1px solid var(--line-subtle);">
+        <td style="padding:7px 0;color:var(--text-3);">Booking date</td>
+        <td style="padding:7px 0;font-weight:500;">{{ record.booking_date|date:"j M Y" }}</td>
+      </tr>
+      {% if record.notes %}
+      <tr style="border-top:1px solid var(--line-subtle);">
+        <td style="padding:7px 0;color:var(--text-3);vertical-align:top;">Notes</td>
+        <td style="padding:7px 0;">{{ record.notes }}</td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+
+  <!-- Right: next visit + patient info -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    {% with lv=record.visits.all|first %}
+    {% if lv and lv.next_visit_date %}
+    <div class="card" style="background:linear-gradient(135deg,#1B4D3E,#1B998B);color:#fff;border:none;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.6);margin-bottom:6px;">Next Scheduled Visit</div>
+      <div style="font-size:22px;font-weight:600;">{{ lv.next_visit_date|date:"l" }}</div>
+      <div style="font-size:17px;opacity:.85;">{{ lv.next_visit_date|date:"j F Y" }}</div>
+      <div style="font-size:12px;margin-top:8px;color:rgba(255,255,255,.6);">
+        {% with days=lv.next_visit_date|timeuntil %}in {{ days }}{% endwith %}
+      </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">Patient</div></div>
+      <div class="feed-item" style="padding:0;margin:0;">
+        <div class="feed-icon blue" style="flex-shrink:0;"><i class="bi bi-person"></i></div>
+        <div>
+          <div style="font-weight:600;font-size:14px;">{{ record.patient.full_name }}</div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:2px;">
+            {{ record.patient.hospital_number }}
+            {% if record.patient.date_of_birth %} · Age {{ record.patient.age_display }}{% endif %}
+            {% if record.patient.phone %} · {{ record.patient.phone }}{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Visit history -->
+<div class="table-wrap">
+  <div class="table-head">
+    <div class="card-title">Visit History</div>
+    <a href="/admin/antenatal/ancrecord/{{ record.pk }}/change/" class="btn btn-ghost" style="font-size:13px;">
+      <i class="bi bi-plus-lg"></i>Add / Edit Visits
+    </a>
+  </div>
+
+  {% if record.visits.all %}
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>GA (wks)</th>
+        <th>Weight</th>
+        <th>BP</th>
+        <th>FHR</th>
+        <th>FH</th>
+        <th>Presentation</th>
+        <th>Diagnosis / Plan</th>
+        <th>Next Visit</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in record.visits.all %}
+      <tr>
+        <td style="white-space:nowrap;font-weight:500;">{{ v.visit_date|date:"j M Y" }}</td>
+        <td class="num">{{ v.gestational_age_weeks }}</td>
+        <td>{% if v.weight_kg %}{{ v.weight_kg }} kg{% else %}<span style="color:var(--text-3)">—</span>{% endif %}</td>
+        <td class="num">{{ v.bp_display }}</td>
+        <td>{% if v.fetal_heart_rate %}{{ v.fetal_heart_rate }}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}</td>
+        <td>{% if v.fundal_height_cm %}{{ v.fundal_height_cm }} cm{% else %}<span style="color:var(--text-3)">—</span>{% endif %}</td>
+        <td>{% if v.presentation %}{{ v.presentation }}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}</td>
+        <td style="max-width:200px;">
+          {% if v.diagnosis %}
+          <div style="font-size:12px;color:var(--text-1);margin-bottom:3px;"><strong>Dx:</strong> {{ v.diagnosis|truncatechars:60 }}</div>
+          {% endif %}
+          {% if v.plan %}
+          <div style="font-size:12px;color:var(--text-2);"><strong>Rx:</strong> {{ v.plan|truncatechars:60 }}</div>
+          {% endif %}
+          {% if not v.diagnosis and not v.plan %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap;">
+          {% if v.next_visit_date %}
+            {% if v.next_visit_date <= today %}
+              <span class="tag amber">{{ v.next_visit_date|date:"j M Y" }}</span>
+            {% else %}
+              {{ v.next_visit_date|date:"j M Y" }}
+            {% endif %}
+          {% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+        <td>
+          <a href="/admin/antenatal/ancvisit/{{ v.pk }}/change/" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;">Edit</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% else %}
+  <div style="text-align:center;padding:40px 20px;color:var(--text-3);">
+    <i class="bi bi-clipboard2-pulse" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>
+    <div style="font-size:14px;">No visits recorded yet.</div>
+    <a href="/admin/antenatal/ancrecord/{{ record.pk }}/change/" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--sage-primary);text-decoration:none;">
+      Add first visit <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Ultrasound scans -->
+<div class="table-wrap" style="margin-top:20px;">
+  <div class="table-head">
+    <div class="card-title">Obstetric Ultrasound Scans</div>
+    <a href="/admin/antenatal/ancrecord/{{ record.pk }}/change/" class="btn btn-ghost" style="font-size:13px;">
+      <i class="bi bi-plus-lg"></i>Add / Edit Scans
+    </a>
+  </div>
+
+  {% if record.scans.all %}
+  {% for scan in record.scans.all %}
+  <div style="padding:14px 0;border-bottom:1px solid var(--line-subtle);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+      <div>
+        <span style="font-weight:600;font-size:14px;">{{ scan.scan_date|date:"j F Y" }}</span>
+        {% if scan.gestational_age_weeks %}
+        <span class="tag teal" style="margin-left:8px;">{{ scan.ga_display }}</span>
+        {% endif %}
+        {% if scan.placenta_location %}
+        <span style="font-size:12px;color:var(--text-3);margin-left:8px;">Placenta: {{ scan.get_placenta_location_display }}</span>
+        {% endif %}
+        {% if scan.amniotic_fluid %}
+        <span style="font-size:12px;color:var(--text-3);margin-left:8px;">Liquor: {{ scan.get_amniotic_fluid_display }}</span>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:6px;">
+        {% if scan.report_file %}
+        <a href="{{ scan.report_file.url }}" target="_blank" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;">
+          <i class="bi bi-file-earmark-pdf"></i> Report
+        </a>
+        {% endif %}
+        <a href="/admin/antenatal/ancrecord/{{ record.pk }}/change/" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;">Edit</a>
+      </div>
+    </div>
+    {% if scan.findings %}
+    <div style="font-size:13px;color:var(--text-2);margin-bottom:4px;"><strong>Findings:</strong> {{ scan.findings }}</div>
+    {% endif %}
+    {% if scan.impression %}
+    <div style="font-size:13px;color:var(--text-1);"><strong>Impression:</strong> {{ scan.impression }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div style="text-align:center;padding:30px 20px;color:var(--text-3);font-size:13px;">
+    No ultrasound scans recorded.
+    <a href="/admin/antenatal/ancrecord/{{ record.pk }}/change/" style="color:var(--sage-primary);text-decoration:none;margin-left:6px;">Add scan <i class="bi bi-arrow-right" style="font-size:11px;"></i></a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
