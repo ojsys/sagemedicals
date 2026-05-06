@@ -99,13 +99,13 @@ class PatientRegisterView(View):
 
     def get(self, request):
         return render(request, self.template_name, {
-            "form": PatientRegistrationForm(),
-            "nok_form": NextOfKinForm(),
+            "form": PatientRegistrationForm(prefix="pt"),
+            "nok_form": NextOfKinForm(prefix="nok"),
         })
 
     def post(self, request):
-        form = PatientRegistrationForm(request.POST, request.FILES)
-        nok_form = NextOfKinForm(request.POST)
+        form = PatientRegistrationForm(request.POST, request.FILES, prefix="pt")
+        nok_form = NextOfKinForm(request.POST, prefix="nok")
 
         if form.is_valid() and nok_form.is_valid():
             # Final duplicate check before saving
@@ -163,15 +163,15 @@ class PatientUpdateView(View):
         nok = getattr(patient, "next_of_kin", None)
         return render(request, self.template_name, {
             "patient": patient,
-            "form": PatientRegistrationForm(instance=patient),
-            "nok_form": NextOfKinForm(instance=nok),
+            "form": PatientRegistrationForm(instance=patient, prefix="pt"),
+            "nok_form": NextOfKinForm(instance=nok, prefix="nok"),
         })
 
     def post(self, request, pk):
         patient = get_object_or_404(Patient, pk=pk, is_active=True)
         nok = getattr(patient, "next_of_kin", None)
-        form = PatientRegistrationForm(request.POST, request.FILES, instance=patient)
-        nok_form = NextOfKinForm(request.POST, instance=nok)
+        form = PatientRegistrationForm(request.POST, request.FILES, instance=patient, prefix="pt")
+        nok_form = NextOfKinForm(request.POST, instance=nok, prefix="nok")
         if form.is_valid() and nok_form.is_valid():
             p = form.save(commit=False)
             p._current_user = request.user

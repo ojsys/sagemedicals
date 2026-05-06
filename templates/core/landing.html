@@ -26,7 +26,6 @@
       --t3:       rgba(255,255,255,.45);
       --t4:       rgba(255,255,255,.28);
       --r:        12px;
-      --r-lg:     16px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -91,6 +90,7 @@
     .l-brand-mark em { color: var(--teal); font-style: normal; }
     .l-brand-sep { width: 1px; height: 18px; background: var(--line-md); }
     .l-brand-name { font-size: 13px; color: var(--t3); letter-spacing: 0.01em; }
+
     .l-nav-status {
       display: flex; align-items: center; gap: 7px;
       font-size: 11.5px; color: var(--t4);
@@ -101,21 +101,24 @@
       box-shadow: 0 0 0 3px rgba(27,153,139,.18);
     }
 
-    /* ── Main grid ────────────────────────────────────────────── */
+    /* ── Main grid — 2 columns ────────────────────────────────── */
     .l-main {
       flex: 1; min-height: 0;
       position: relative; z-index: 10;
       display: grid;
-      grid-template-columns: 320px 1fr 1fr;
+      grid-template-columns: 320px 1fr;
     }
     .l-col {
       padding: 36px 40px 32px;
       display: flex; flex-direction: column;
     }
     .l-col + .l-col { border-left: 1px solid var(--line); }
-    .l-col-info  { background: transparent; }
+    .l-col-info    { background: transparent; }
     .l-col-patient { background: var(--teal-bg); }
     .l-col-staff   { background: var(--blue-bg); }
+
+    /* Staff panel hidden by default */
+    .l-col-staff { display: none; }
 
     /* ── Info column ──────────────────────────────────────────── */
     .l-eyebrow {
@@ -184,7 +187,7 @@
       gap: 8px; padding: 11px 20px; border-radius: var(--r);
       font-size: 13.5px; font-weight: 500;
       border: 1px solid transparent; cursor: pointer;
-      transition: all .15s; white-space: nowrap;
+      transition: all .15s; white-space: nowrap; text-decoration: none;
     }
     .l-btn-teal { background: var(--teal); color: #fff; }
     .l-btn-teal:hover { background: #178a7e; }
@@ -203,7 +206,31 @@
       display: flex; align-items: center; justify-content: center; gap: 5px;
     }
 
+    /* ── Staff access link (bottom of patient panel) ─────────── */
+    .l-staff-access {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+    }
+    .l-staff-access-btn {
+      background: none; border: none; padding: 0; cursor: pointer;
+      font-size: 12px; color: var(--t4);
+      display: inline-flex; align-items: center; gap: 4px;
+      transition: color .15s;
+    }
+    .l-staff-access-btn:hover { color: var(--t2); }
+
     /* ── Staff sign-in column ─────────────────────────────────── */
+    .l-back-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; cursor: pointer;
+      font-size: 12px; color: var(--t4);
+      margin-bottom: 24px;
+      transition: color .15s;
+    }
+    .l-back-btn:hover { color: var(--t2); }
+
     .l-field { margin-bottom: 12px; }
     .l-field label {
       display: block; font-size: 10.5px; font-weight: 500;
@@ -225,7 +252,6 @@
       background: rgba(255,255,255,.08);
       box-shadow: 0 0 0 3px rgba(15,76,129,.2);
     }
-
     .l-error {
       background: rgba(184,58,38,.12);
       border: 1px solid rgba(184,58,38,.28);
@@ -234,18 +260,13 @@
       font-size: 12.5px; color: #f4978e;
       display: flex; align-items: center; gap: 7px;
     }
-
     .l-submit-row { margin-top: 16px; }
-
-    .l-staff-foot {
-      margin-top: 13px; text-align: center;
-    }
+    .l-staff-foot { margin-top: 13px; text-align: center; }
     .l-staff-foot a {
       font-size: 12.5px; color: var(--t4);
       transition: color .15s;
     }
     .l-staff-foot a:hover { color: var(--t2); }
-
     .l-audit-note {
       font-size: 11px; color: var(--t4);
       text-align: center; line-height: 1.5; margin-top: 4px;
@@ -274,6 +295,8 @@
       .l-main { grid-template-columns: 1fr; }
       .l-col + .l-col { border-left: none; border-top: 1px solid var(--line); }
       .l-col-info { display: none; }
+      .l-col-staff { display: none !important; }
+      .l-col-patient { display: flex !important; }
       .l-nav { padding: 0 24px; }
       .l-col { padding: 28px 24px 24px; }
       .l-footer { display: none; }
@@ -340,8 +363,8 @@
     </div>
   </div>
 
-  <!-- ── Column 2: Patient Portal ── -->
-  <div class="l-col l-col-patient">
+  <!-- ── Column 2a: Patient Portal (default) ── -->
+  <div class="l-col l-col-patient" id="patientPanel">
     <div class="l-panel-badge l-panel-badge-teal">Patient Portal</div>
     <div class="l-icon-box l-icon-teal"><i class="bi bi-person-heart"></i></div>
     <h2 class="l-panel-title">Access your health records</h2>
@@ -362,10 +385,18 @@
       Secure &amp; encrypted &nbsp;·&nbsp; 24/7 access
     </div>
     <div class="l-spacer"></div>
+    <div class="l-staff-access">
+      <button class="l-staff-access-btn" onclick="showStaffPanel()">
+        Staff access <i class="bi bi-arrow-right-short"></i>
+      </button>
+    </div>
   </div>
 
-  <!-- ── Column 3: Staff Sign In ── -->
-  <div class="l-col l-col-staff">
+  <!-- ── Column 2b: Staff Sign In (hidden by default) ── -->
+  <div class="l-col l-col-staff" id="staffPanel">
+    <button class="l-back-btn" onclick="showPatientPanel()">
+      <i class="bi bi-arrow-left-short"></i> Patient Portal
+    </button>
     <div class="l-panel-badge l-panel-badge-blue">Staff Access</div>
     <div class="l-icon-box l-icon-blue"><i class="bi bi-hospital"></i></div>
     <h2 class="l-panel-title">EMR Sign In</h2>
@@ -435,6 +466,23 @@
   {% endif %}
   <span class="l-footer-item">&copy; {% now "Y" %} {{ site_settings.hospital_name }}</span>
 </footer>
+
+<script>
+  function showStaffPanel() {
+    document.getElementById('patientPanel').style.display = 'none';
+    document.getElementById('staffPanel').style.display  = 'flex';
+    document.getElementById('id_login').focus();
+  }
+
+  function showPatientPanel() {
+    document.getElementById('staffPanel').style.display  = 'none';
+    document.getElementById('patientPanel').style.display = 'flex';
+  }
+
+  {% if login_error %}
+  showStaffPanel();
+  {% endif %}
+</script>
 
 </body>
 </html>
