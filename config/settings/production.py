@@ -25,7 +25,11 @@ MIDDLEWARE = [
 
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # CompressedManifestStaticFilesStorage validates every URL reference in
+        # JS/CSS files and fails on source-map comments (.map) that aren't
+        # present. CompressedStaticFilesStorage gives gzip/brotli compression
+        # without the strict reference-checking pass.
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
