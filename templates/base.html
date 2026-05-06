@@ -869,7 +869,45 @@
     }
     .rx-alert strong { color: var(--sage-amber); display: block; margin-bottom: 2px; font-weight: 600; }
 
-    /* Responsive */
+    /* ── Mobile drawer elements (hidden on desktop) ── */
+    .mob-menu-btn {
+      display: none;
+      width: 36px; height: 36px;
+      align-items: center; justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      color: var(--text-2);
+      cursor: pointer;
+      flex-shrink: 0;
+      font-size: 20px;
+      transition: all .15s;
+      padding: 0;
+    }
+    .mob-menu-btn:hover { background: var(--bg); border-color: var(--line); }
+    .mob-brand-topbar {
+      display: none;
+      font-family: var(--display);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      color: var(--sage-ink);
+      text-decoration: none;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .mob-brand-topbar .dot { color: var(--sage-teal); }
+    .mob-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(11,30,45,.55);
+      z-index: 199;
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+    }
+    .mob-overlay.visible { display: block; }
+
+    /* Responsive — tablet */
     @media (max-width: 1100px) {
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
       .patient-shell { grid-template-columns: 1fr; }
@@ -878,10 +916,98 @@
       .bed-grid { grid-template-columns: repeat(4, 1fr); }
       .pipeline { grid-template-columns: repeat(3, 1fr); }
     }
+
+    /* Responsive — mobile */
     @media (max-width: 768px) {
+      /* Show mobile-only elements */
+      .mob-menu-btn { display: inline-flex; }
+      .mob-brand-topbar { display: inline-flex; }
+
+      /* App shell */
       .app { grid-template-columns: 1fr; }
-      .sidebar { display: none; }
-      .page-container { padding: 16px; }
+
+      /* Sidebar becomes an off-canvas drawer */
+      .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0; bottom: 0;
+        width: 240px;
+        height: 100dvh;
+        z-index: 200;
+        transition: left .24s cubic-bezier(.4,0,.2,1);
+      }
+      .sidebar.mob-open {
+        left: 0;
+        box-shadow: 8px 0 32px rgba(11,30,45,.45);
+      }
+
+      /* Topbar */
+      .topbar { padding: 10px 16px; gap: 10px; }
+      .topbar-search { display: none; }
+
+      /* Flash messages */
+      .flash-wrap { padding: 10px 16px 0; }
+
+      /* Page container */
+      .page-container { padding: 16px 16px 80px; }
+
+      /* Page header */
+      .page-head { flex-direction: column; align-items: flex-start; gap: 12px; padding-bottom: 12px; }
+      .page-title { font-size: 26px; }
+      .page-actions { flex-wrap: wrap; }
+
+      /* Stats */
+      .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat-value { font-size: 28px; }
+
+      /* Vitals: 2-col on mobile */
+      .vitals { grid-template-columns: repeat(2, 1fr); }
+      .vital { border-right: none; border-bottom: 1px solid var(--line-soft); }
+      .vital:nth-child(odd) { border-right: 1px solid var(--line-soft); }
+
+      /* Forms */
+      .form-grid { grid-template-columns: 1fr; }
+
+      /* Tables: horizontal scroll */
+      .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table.data { min-width: 540px; }
+      .table-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .filters { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+
+      /* Tabs: horizontal scroll */
+      .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; scrollbar-width: none; }
+      .tabs::-webkit-scrollbar { display: none; }
+
+      /* Bed grid */
+      .bed-grid { grid-template-columns: repeat(3, 1fr); }
+
+      /* Pipeline: horizontal scroll */
+      .pipeline { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; gap: 10px; }
+      .pipe-col { min-width: 200px; flex-shrink: 0; }
+
+      /* Stepper */
+      .stepper { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+      .step { min-width: 110px; flex-shrink: 0; }
+
+      /* Patient header */
+      .ph-grid { grid-template-columns: 60px 1fr; gap: 14px; }
+      .ph-actions { display: none; }
+      .patient-avatar { width: 60px; height: 60px; font-size: 22px; }
+      .ph-name { font-size: 20px; }
+
+      /* SOAP */
+      .soap-grid { grid-template-columns: 1fr; }
+
+      /* Invoice */
+      .invoice { padding: 16px; }
+      .inv-header { flex-direction: column; gap: 14px; }
+      .inv-bill-grid { grid-template-columns: 1fr; gap: 14px; }
+      .inv-meta-row { text-align: left; }
+
+      /* Bar chart */
+      .bar-row { grid-template-columns: 90px 1fr 48px; gap: 8px; font-size: 12px; }
+
+      /* Patient shell already 1-col via 1100px rule */
     }
 
     /* Scrollbar */
@@ -896,6 +1022,7 @@
 <body>
 
 {% if user.is_authenticated %}
+<div id="mob-overlay" class="mob-overlay"></div>
 <div class="app">
 
   <!-- ====== SIDEBAR ====== -->
@@ -926,6 +1053,16 @@
   <!-- ====== MAIN ====== -->
   <main>
     <header class="topbar">
+      <button id="mob-menu-btn" class="mob-menu-btn" aria-label="Open navigation">
+        <i class="bi bi-list"></i>
+      </button>
+      <a href="{% url 'core:dashboard' %}" class="mob-brand-topbar">
+        {% if site_settings.logo %}
+        <img style="height:26px;object-fit:contain;display:block" src="{{ site_settings.logo.url }}" alt="{{ site_settings.short_name }}">
+        {% else %}
+        {{ site_settings.short_name }}<span class="dot">.</span>
+        {% endif %}
+      </a>
       <div class="topbar-search">
         <i class="bi bi-search"></i>
         <input type="text" placeholder="Search patients, drugs, orders…"
@@ -1018,6 +1155,35 @@
     if (mount && btn && !btn.contains(e.target) && !mount.contains(e.target)) {
       mount.style.display = 'none';
     }
+  });
+})();
+
+// Mobile sidebar drawer
+(function() {
+  var sidebar  = document.querySelector('.sidebar');
+  var overlay  = document.getElementById('mob-overlay');
+  var menuBtn  = document.getElementById('mob-menu-btn');
+  if (!sidebar || !overlay || !menuBtn) return;
+
+  function open() {
+    sidebar.classList.add('mob-open');
+    overlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+  function close() {
+    sidebar.classList.remove('mob-open');
+    overlay.classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', open);
+  overlay.addEventListener('click', close);
+
+  // Close on nav link tap so page navigates cleanly
+  sidebar.querySelectorAll('.nav-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      if (window.innerWidth <= 768) close();
+    });
   });
 })();
 </script>
