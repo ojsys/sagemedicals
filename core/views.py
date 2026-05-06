@@ -13,6 +13,9 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
+from django.contrib.auth.mixins import AccessMixin
+from accounts.models import Role
+from django.contrib.auth.mixins import AccessMixin
 
 
 @never_cache
@@ -102,10 +105,19 @@ class TutorialView(View):
 
 
 @method_decorator(login_required, name="dispatch")
-class DashboardView(View):
+class DashboardView(AccessMixin, View):
     template_name = "core/dashboard.html"
 
-    def get(self, request):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        if request.user.role == Role.PATIENT:
+            return redirect(reverse("portal:dashboard"))
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
         today = date.today()
 
         from admissions.models import Admission
