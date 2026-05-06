@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} ANC Record — SAGE EMR{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="{% url 'antenatal:list' %}" style="color:var(--text-3);text-decoration:none;">Antenatal Care</a>
+      {% if record %}
+        <span style="margin:0 6px;color:var(--text-3);">/</span>
+        <a href="{% url 'antenatal:detail' record.pk %}" style="color:var(--text-3);text-decoration:none;">{{ record.patient.full_name }}</a>
+      {% endif %}
+    </div>
+    <h1 class="page-title">{{ action }} ANC Record</h1>
+  </div>
+  <div class="page-actions">
+    {% if record %}
+    <a href="{% url 'antenatal:detail' record.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Cancel</a>
+    {% else %}
+    <a href="{% url 'antenatal:list' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Cancel</a>
+    {% endif %}
+  </div>
+</div>
+
+<div style="max-width:660px;">
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" style="margin-bottom:16px;">
+      {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+    </div>
+    {% endif %}
+
+    {# Patient selector — only shown on create #}
+    {% if not record %}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Patient</div></div>
+
+      <div style="margin-bottom:0;">
+        <label class="form-label">Search patient <span style="color:var(--sage-red)">*</span></label>
+        <input type="text" id="patient-search" class="form-control" placeholder="Type name or hospital number…"
+               hx-get="{% url 'antenatal:patient_search' %}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#patient-results"
+               name="q" autocomplete="off">
+        <div id="patient-results"
+             style="border:1px solid var(--line);border-radius:var(--radius);margin-top:4px;overflow:hidden;display:none;background:var(--surface);box-shadow:0 4px 16px rgba(0,0,0,.08);"></div>
+        <input type="hidden" name="patient" id="patient-pk" value="{{ request.POST.patient }}">
+      </div>
+
+      {% if patient %}
+      <div id="patient-badge" style="display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:var(--radius);padding:10px 14px;margin-top:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--sage-primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0;">
+          {{ patient.first_name.0 }}{{ patient.last_name.0 }}
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:14px;">{{ patient.full_name }}</div>
+          <div style="font-size:12px;color:var(--text-3);">{{ patient.hospital_number }}{% if patient.age_display %} · {{ patient.age_display }}{% endif %}</div>
+        </div>
+      </div>
+      {% else %}
+      <div id="patient-badge" style="display:none;"></div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Patient</div></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--sage-primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0;">
+          {{ patient.first_name.0 }}{{ patient.last_name.0 }}
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:14px;">{{ patient.full_name }}</div>
+          <div style="font-size:12px;color:var(--text-3);">{{ patient.hospital_number }}{% if patient.age_display %} · {{ patient.age_display }}{% endif %}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Pregnancy Dates -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Pregnancy Dates</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+        <div>
+          <label class="form-label">Last Menstrual Period (LMP)</label>
+          {{ form.lmp }}
+          {% if form.lmp.errors %}<div class="form-error">{{ form.lmp.errors.0 }}</div>{% endif %}
+          <div style="font-size:11px;color:var(--text-3);margin-top:3px;">Leave blank if unknown</div>
+        </div>
+
+        <div>
+          <label class="form-label">Expected Delivery Date (EDD) <span style="color:var(--sage-red)">*</span></label>
+          {{ form.edd }}
+          {% if form.edd.errors %}<div class="form-error">{{ form.edd.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Booking Date</label>
+          {{ form.booking_date }}
+          {% if form.booking_date.errors %}<div class="form-error">{{ form.booking_date.errors.0 }}</div>{% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Obstetric History -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Obstetric History</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+        <div>
+          <label class="form-label">Gravida <span style="color:var(--sage-red)">*</span></label>
+          {{ form.gravida }}
+          {% if form.gravida.errors %}<div class="form-error">{{ form.gravida.errors.0 }}</div>{% endif %}
+          <div style="font-size:11px;color:var(--text-3);margin-top:3px;">Total pregnancies including current</div>
+        </div>
+
+        <div>
+          <label class="form-label">Para <span style="color:var(--sage-red)">*</span></label>
+          {{ form.para }}
+          {% if form.para.errors %}<div class="form-error">{{ form.para.errors.0 }}</div>{% endif %}
+          <div style="font-size:11px;color:var(--text-3);margin-top:3px;">Previous deliveries ≥24 weeks</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Investigations -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Investigations</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+        <div>
+          <label class="form-label">Blood Group</label>
+          {{ form.blood_group }}
+          {% if form.blood_group.errors %}<div class="form-error">{{ form.blood_group.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Rhesus</label>
+          {{ form.rhesus }}
+          {% if form.rhesus.errors %}<div class="form-error">{{ form.rhesus.errors.0 }}</div>{% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Notes + Status -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-head"><div class="card-title">Notes &amp; Status</div></div>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Clinical Notes</label>
+        {{ form.notes }}
+        {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors.0 }}</div>{% endif %}
+      </div>
+
+      {% if record %}
+      <div style="display:flex;align-items:center;gap:10px;">
+        {{ form.is_active }}
+        <label for="{{ form.is_active.id_for_label }}" style="font-size:14px;cursor:pointer;">
+          Active pregnancy (uncheck when pregnancy is concluded)
+        </label>
+      </div>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check2"></i>{{ action }} Record
+      </button>
+      {% if record %}
+      <a href="{% url 'antenatal:detail' record.pk %}" class="btn btn-ghost">Cancel</a>
+      {% else %}
+      <a href="{% url 'antenatal:list' %}" class="btn btn-ghost">Cancel</a>
+      {% endif %}
+    </div>
+
+  </form>
+</div>
+
+{% if not record %}
+<script>
+(function () {
+  const searchEl  = document.getElementById('patient-search');
+  const resultsEl = document.getElementById('patient-results');
+  const pkEl      = document.getElementById('patient-pk');
+  const badgeEl   = document.getElementById('patient-badge');
+
+  // Show/hide results dropdown as user types
+  searchEl.addEventListener('keyup', function () {
+    resultsEl.style.display = this.value.trim() ? 'block' : 'none';
+  });
+
+  // Handle row selection — rows carry data-pk, data-name, data-hn, data-initials
+  resultsEl.addEventListener('click', function (e) {
+    const row = e.target.closest('[data-pk]');
+    if (!row) return;
+
+    pkEl.value = row.dataset.pk;
+    searchEl.value = row.dataset.name;
+    resultsEl.innerHTML = '';
+    resultsEl.style.display = 'none';
+
+    badgeEl.innerHTML =
+      `<div style="display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:var(--radius);padding:10px 14px;margin-top:12px;">
+         <div style="width:36px;height:36px;border-radius:50%;background:var(--sage-primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0;">
+           ${row.dataset.initials || '?'}
+         </div>
+         <div>
+           <div style="font-weight:600;font-size:14px;">${row.dataset.name}</div>
+           <div style="font-size:12px;color:var(--text-3);">${row.dataset.hn}</div>
+         </div>
+       </div>`;
+    badgeEl.style.display = 'block';
+  });
+
+  // Highlight row on hover
+  resultsEl.addEventListener('mouseover', function (e) {
+    const row = e.target.closest('[data-pk]');
+    if (row) row.style.background = 'var(--bg)';
+  });
+  resultsEl.addEventListener('mouseout', function (e) {
+    const row = e.target.closest('[data-pk]');
+    if (row) row.style.background = '';
+  });
+
+  // Close results when clicking elsewhere
+  document.addEventListener('click', function (e) {
+    if (!searchEl.contains(e.target) && !resultsEl.contains(e.target)) {
+      resultsEl.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endif %}
+
+{% endblock %}

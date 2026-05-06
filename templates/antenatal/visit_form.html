@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} ANC Visit — {{ record.patient.full_name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="{% url 'antenatal:list' %}" style="color:var(--text-3);text-decoration:none;">Antenatal Care</a>
+      <span style="margin:0 6px;color:var(--text-3);">/</span>
+      <a href="{% url 'antenatal:detail' record.pk %}" style="color:var(--text-3);text-decoration:none;">{{ record.patient.full_name }}</a>
+    </div>
+    <h1 class="page-title">{{ action }} ANC Visit</h1>
+    <p class="page-sub">{{ record.patient.full_name }} · EDD {{ record.edd|date:"j F Y" }} · GA today {{ record.gestational_age_weeks }}+{{ record.gestational_age_days }} wks</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'antenatal:detail' record.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+  </div>
+</div>
+
+<div style="max-width:660px;">
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" style="margin-bottom:16px;">
+      {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Visit date & GA -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Visit Information</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label class="form-label">Visit Date <span style="color:var(--sage-red)">*</span></label>
+          {{ form.visit_date }}
+          {% if form.visit_date.errors %}<div class="form-error">{{ form.visit_date.errors.0 }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="form-label">Gestational Age (weeks) <span style="color:var(--sage-red)">*</span></label>
+          {{ form.gestational_age_weeks }}
+          {% if form.gestational_age_weeks.errors %}<div class="form-error">{{ form.gestational_age_weeks.errors.0 }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="form-label">Next Visit Date</label>
+          {{ form.next_visit_date }}
+          {% if form.next_visit_date.errors %}<div class="form-error">{{ form.next_visit_date.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Vitals -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Vitals</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+        <div>
+          <label class="form-label">Weight (kg)</label>
+          {{ form.weight_kg }}
+          {% if form.weight_kg.errors %}<div class="form-error">{{ form.weight_kg.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Fundal Height (cm)</label>
+          {{ form.fundal_height_cm }}
+          {% if form.fundal_height_cm.errors %}<div class="form-error">{{ form.fundal_height_cm.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Systolic BP (mmHg)</label>
+          {{ form.bp_systolic }}
+          {% if form.bp_systolic.errors %}<div class="form-error">{{ form.bp_systolic.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Diastolic BP (mmHg)</label>
+          {{ form.bp_diastolic }}
+          {% if form.bp_diastolic.errors %}<div class="form-error">{{ form.bp_diastolic.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Fetal Heart Rate (bpm)</label>
+          {{ form.fetal_heart_rate }}
+          {% if form.fetal_heart_rate.errors %}<div class="form-error">{{ form.fetal_heart_rate.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Presentation</label>
+          {{ form.presentation }}
+          {% if form.presentation.errors %}<div class="form-error">{{ form.presentation.errors.0 }}</div>{% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Urine -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Urinalysis</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label class="form-label">Urine Protein</label>
+          {{ form.urine_protein }}
+          {% if form.urine_protein.errors %}<div class="form-error">{{ form.urine_protein.errors.0 }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="form-label">Urine Glucose</label>
+          {{ form.urine_glucose }}
+          {% if form.urine_glucose.errors %}<div class="form-error">{{ form.urine_glucose.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Clinical notes -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-head"><div class="card-title">Clinical Notes</div></div>
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Diagnosis</label>
+        {{ form.diagnosis }}
+        {% if form.diagnosis.errors %}<div class="form-error">{{ form.diagnosis.errors.0 }}</div>{% endif %}
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Management Plan</label>
+        {{ form.plan }}
+        {% if form.plan.errors %}<div class="form-error">{{ form.plan.errors.0 }}</div>{% endif %}
+      </div>
+      <div>
+        <label class="form-label">Additional Notes</label>
+        {{ form.notes }}
+        {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors.0 }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check2"></i>{{ action }} Visit
+      </button>
+      <a href="{% url 'antenatal:detail' record.pk %}" class="btn btn-ghost">Cancel</a>
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}
