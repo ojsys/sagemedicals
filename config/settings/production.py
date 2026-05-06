@@ -23,18 +23,6 @@ MIDDLEWARE = [
     "accounts.middleware.RateLimitMiddleware",
 ]
 
-STORAGES = {
-    "staticfiles": {
-        # CompressedManifestStaticFilesStorage validates every URL reference in
-        # JS/CSS files and fails on source-map comments (.map) that aren't
-        # present. CompressedStaticFilesStorage gives gzip/brotli compression
-        # without the strict reference-checking pass.
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-}
 
 # Email verification is set to "optional" until SMTP is confirmed working.
 # Change back to "mandatory" once noreply@sagemedicals.com is verified in cPanel.
