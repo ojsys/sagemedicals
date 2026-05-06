@@ -1,3 +1,4 @@
 -r base.txt
 mysqlclient>=2.2.1
 sentry-sdk==2.28.0
+whitenoise>=6.9

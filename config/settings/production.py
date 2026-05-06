@@ -5,6 +5,33 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 
+# WhiteNoise serves static files directly from Django (no web-server config needed).
+# Must come directly after SecurityMiddleware so it runs before session/auth.
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "accounts.middleware.SessionTimeoutMiddleware",
+    "accounts.middleware.AuditMiddleware",
+    "accounts.middleware.RateLimitMiddleware",
+]
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+}
+
 # Email verification is set to "optional" until SMTP is confirmed working.
 # Change back to "mandatory" once noreply@sagemedicals.com is verified in cPanel.
 ACCOUNT_EMAIL_VERIFICATION = "optional"
