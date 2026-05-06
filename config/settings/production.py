@@ -12,6 +12,9 @@ ACCOUNT_EMAIL_VERIFICATION = "optional"
 ALLOWED_HOSTS = [
     "sagemedicals.com",
     "www.sagemedicals.com",
+    # cPanel routes all vhosts on this server through Passenger; the mail
+    # subdomain shares the same IP so its Host header arrives here too.
+    "mail.sagemedicals.com",
 ]
 
 # Trust the SSL termination proxy cPanel puts in front of Phusion Passenger

@@ -95,21 +95,29 @@ class TwoFactorVerifyView(View):
     """Post-login TOTP verification step."""
     template_name = "accounts/2fa_verify.html"
 
+    def _dashboard(self):
+        from django.urls import reverse
+        return reverse("core:dashboard")
+
     def get(self, request):
         if not _get_user_totp_device(request.user):
-            return redirect("/")
+            return redirect(self._dashboard())
         if getattr(request.user, "is_verified", lambda: True)():
-            return redirect("/")
+            return redirect(self._dashboard())
         return render(request, self.template_name, {})
 
     def post(self, request):
         device = _get_user_totp_device(request.user)
         if not device:
-            return redirect("/")
+            return redirect(self._dashboard())
         code = request.POST.get("code", "").strip().replace(" ", "")
         if device.verify_token(code):
             from django_otp import login as otp_login
             otp_login(request, device)
-            return redirect(request.POST.get("next", "/"))
+            # Use the next param only when it's a non-empty absolute path
+            next_url = request.POST.get("next", "").strip()
+            if not next_url or not next_url.startswith("/"):
+                next_url = self._dashboard()
+            return redirect(next_url)
         messages.error(request, "Invalid code. Try again.")
         return render(request, self.template_name, {"error": True})
