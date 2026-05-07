@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<p>{% blocktrans with object=object %}Are you sure you want to deactivate <strong>{{ object }}</strong>?{% endblocktrans %}</p>
+
+<p>
+  This user has linked clinical records (encounters, prescriptions, appointments, etc.).
+  They <strong>cannot be permanently deleted</strong> without removing those records first.
+  Deactivating the account will block their login while keeping all clinical data intact.
+</p>
+
+{% if deleted_objects %}
+<h2>{% trans "The following related objects will be affected:" %}</h2>
+<ul>
+  {% for obj in deleted_objects %}
+    <li>{{ obj }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if protected %}
+<h2>{% trans "Protected records (these will NOT be deleted — user will be deactivated instead):" %}</h2>
+<ul>
+  {% for obj in protected %}
+    <li>{{ obj }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <div>
+    <input type="hidden" name="post" value="yes">
+    <a href="../" class="button cancel-link">{% trans "No, go back" %}</a>
+    &nbsp;&nbsp;
+    <input type="submit" value="Yes, deactivate user" class="button default">
+  </div>
+</form>
+{% endblock %}

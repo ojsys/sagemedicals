@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib import messages
+from django.contrib.admin.utils import get_deleted_objects
+from django.core.exceptions import PermissionDenied
+from django.template.response import TemplateResponse
 
 from .models import AuditLog, User
 
@@ -26,21 +29,56 @@ class UserAdmin(BaseUserAdmin):
     )
     actions = ["deactivate_users", "activate_users"]
 
-    def delete_model(self, request, obj):
-        # Deactivate instead of hard-delete to preserve linked clinical records
-        obj.is_active = False
-        obj.save(update_fields=["is_active"])
-        self.message_user(
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            raise PermissionDenied
+
+        obj = self.get_object(request, object_id)
+        if obj is None:
+            return self._get_obj_does_not_exist_redirect(request, self.model._meta, object_id)
+
+        if request.method == "POST":
+            obj.is_active = False
+            obj.save(update_fields=["is_active"])
+            self.message_user(
+                request,
+                f"User '{obj.email}' has been deactivated. Their clinical records are preserved.",
+                level=messages.WARNING,
+            )
+            return self.response_delete(request, str(obj), obj.pk)
+
+        # Build the list of related objects for display (informational only)
+        deleted_objects, model_count, perms_needed, protected = get_deleted_objects(
+            [obj], request, self.admin_site
+        )
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Deactivate user",
+            "object_name": str(self.model._meta.verbose_name),
+            "object": obj,
+            "deleted_objects": deleted_objects,
+            "model_count": model_count,
+            "protected": protected,
+            "opts": self.model._meta,
+            "app_label": self.model._meta.app_label,
+            "is_popup": False,
+            "to_field": None,
+            # Custom flag so the template knows this is a deactivation
+            "deactivate_instead": True,
+            **(extra_context or {}),
+        }
+        return TemplateResponse(
             request,
-            f"User '{obj.email}' has been deactivated (not deleted) to preserve clinical records.",
-            level=messages.WARNING,
+            "admin/accounts/user/deactivate_confirmation.html",
+            context,
         )
 
     def delete_queryset(self, request, queryset):
         count = queryset.update(is_active=False)
         self.message_user(
             request,
-            f"{count} user(s) deactivated (not deleted) to preserve clinical records.",
+            f"{count} user(s) deactivated. Their clinical records are preserved.",
             level=messages.WARNING,
         )
 
