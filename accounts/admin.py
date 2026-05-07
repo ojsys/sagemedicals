@@ -29,6 +29,11 @@ class UserAdmin(BaseUserAdmin):
     )
     actions = ["deactivate_users", "activate_users"]
 
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        actions.pop("delete_selected", None)
+        return actions
+
     def delete_view(self, request, object_id, extra_context=None):
         if not self.has_delete_permission(request):
             raise PermissionDenied
