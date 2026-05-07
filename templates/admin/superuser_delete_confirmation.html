@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:'|add:opts.app_label|add:'_'|add:opts.model_name|add:'_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; Delete
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Delete {{ object_name }}</h1>
+
+<p>Are you sure you want to delete <strong>{{ object }}</strong>?</p>
+
+{% if deleted_objects %}
+<h2>The following related objects will also be deleted:</h2>
+<ul>
+  {% for item in deleted_objects %}
+    <li>{{ item }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if protected %}
+<div style="background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;margin:12px 0;border-radius:4px;">
+  <strong>Warning:</strong> The following records are protected but will also be permanently removed:
+  <ul style="margin:6px 0 0 0;">
+    {% for item in protected %}
+      <li>{{ item }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <p>
+    <input type="submit" value="Yes, I'm sure" class="button default">
+    &nbsp;
+    <a href="../" class="button">No, take me back</a>
+  </p>
+</form>
+{% endblock %}

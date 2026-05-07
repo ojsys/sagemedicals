@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from patients.models import Allergy, ChronicCondition, NextOfKin, Patient
 
@@ -23,7 +24,7 @@ class NextOfKinInline(admin.StackedInline):
 
 
 @admin.register(Patient)
-class PatientAdmin(admin.ModelAdmin):
+class PatientAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("hospital_number", "full_name", "age_display", "sex", "phone", "payer_type", "is_active")
     list_filter = ("sex", "payer_type", "is_active", "address_state")
     search_fields = ("hospital_number", "first_name", "last_name", "phone", "nhia_number")

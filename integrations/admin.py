@@ -1,10 +1,11 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from integrations.models import Claim, ClaimBatch, HMOAuthorization, Payer
 
 
 @admin.register(Payer)
-class PayerAdmin(admin.ModelAdmin):
+class PayerAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("name", "payer_type", "code", "is_active")
     list_filter = ("payer_type", "is_active")
 
@@ -16,7 +17,7 @@ class ClaimInline(admin.TabularInline):
 
 
 @admin.register(ClaimBatch)
-class ClaimBatchAdmin(admin.ModelAdmin):
+class ClaimBatchAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = (
         "payer", "period_start", "period_end", "status",
         "total_claimed", "total_approved",
@@ -26,7 +27,7 @@ class ClaimBatchAdmin(admin.ModelAdmin):
 
 
 @admin.register(HMOAuthorization)
-class HMOAuthorizationAdmin(admin.ModelAdmin):
+class HMOAuthorizationAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = (
         "authorization_code", "payer", "patient", "status",
         "valid_from", "valid_until", "approved_amount",

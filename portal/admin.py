@@ -1,16 +1,17 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from portal.models import PortalAppointmentRequest, PortalFeedback, PortalSession
 
 
 @admin.register(PortalSession)
-class PortalSessionAdmin(admin.ModelAdmin):
+class PortalSessionAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("patient", "expires_at", "last_active", "ip_address")
     readonly_fields = ("token",)
 
 
 @admin.register(PortalAppointmentRequest)
-class PortalAppointmentRequestAdmin(admin.ModelAdmin):
+class PortalAppointmentRequestAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("patient", "preferred_date", "clinic", "status", "reviewed_by")
     list_filter = ("status",)
     actions = ["mark_booked", "mark_declined"]
@@ -25,6 +26,6 @@ class PortalAppointmentRequestAdmin(admin.ModelAdmin):
 
 
 @admin.register(PortalFeedback)
-class PortalFeedbackAdmin(admin.ModelAdmin):
+class PortalFeedbackAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("patient", "encounter", "rating", "created_at")
     list_filter = ("rating",)

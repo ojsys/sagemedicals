@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:'|add:opts.app_label|add:'_'|add:opts.model_name|add:'_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; Delete selected
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Delete selected {{ objects_name }}</h1>
+
+<p>
+  Are you sure you want to delete the <strong>{{ queryset.count }}</strong>
+  selected {{ objects_name }}? This action cannot be undone.
+</p>
+
+<ul>
+  {% for obj in queryset %}
+    <li>{{ obj }}</li>
+  {% endfor %}
+</ul>
+
+<form method="post">
+  {% csrf_token %}
+  {% for obj in queryset %}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="delete_selected">
+  <input type="hidden" name="confirmed" value="yes">
+  <p>
+    <input type="submit" value="Yes, delete all" class="button default">
+    &nbsp;
+    <a href="." class="button">No, take me back</a>
+  </p>
+</form>
+{% endblock %}

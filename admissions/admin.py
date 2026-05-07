@@ -9,6 +9,7 @@ from admissions.models import (
     Ward,
     WardRound,
 )
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 
 class RoomInline(admin.TabularInline):
@@ -22,21 +23,21 @@ class BedInline(admin.TabularInline):
 
 
 @admin.register(Ward)
-class WardAdmin(admin.ModelAdmin):
+class WardAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("name", "ward_type", "floor", "is_active")
     list_filter = ("is_active",)
     inlines = [RoomInline]
 
 
 @admin.register(Room)
-class RoomAdmin(admin.ModelAdmin):
+class RoomAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("ward", "name", "is_isolation")
     list_filter = ("ward",)
     inlines = [BedInline]
 
 
 @admin.register(Bed)
-class BedAdmin(admin.ModelAdmin):
+class BedAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("label", "room", "status")
     list_filter = ("status", "room__ward")
 
@@ -54,7 +55,7 @@ class WardRoundInline(admin.TabularInline):
 
 
 @admin.register(Admission)
-class AdmissionAdmin(admin.ModelAdmin):
+class AdmissionAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("patient", "bed", "status", "admitted_at", "discharged_at")
     list_filter = ("status",)
     search_fields = ("patient__first_name", "patient__last_name", "patient__hospital_number")
@@ -62,6 +63,6 @@ class AdmissionAdmin(admin.ModelAdmin):
 
 
 @admin.register(MedicationAdministration)
-class MARAdmin(admin.ModelAdmin):
+class MARAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("admission", "prescription", "scheduled_at", "result", "administered_by")
     list_filter = ("result",)

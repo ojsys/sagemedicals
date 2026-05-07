@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from billing.models import Invoice, InvoiceItem, Payment, PaystackTransaction, ServiceCatalogue
 
@@ -13,19 +14,19 @@ class PaymentInline(admin.TabularInline):
     readonly_fields = ("received_at",)
 
 @admin.register(ServiceCatalogue)
-class ServiceCatalogueAdmin(admin.ModelAdmin):
+class ServiceCatalogueAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("code", "name", "category", "self_pay_price", "nhia_price", "is_active")
     list_filter = ("category", "is_active")
 
 @admin.register(Invoice)
-class InvoiceAdmin(admin.ModelAdmin):
+class InvoiceAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("invoice_number", "patient", "total", "amount_paid", "balance", "status")
     list_filter = ("status",)
     inlines = [InvoiceItemInline, PaymentInline]
     readonly_fields = ("invoice_number",)
 
 @admin.register(PaystackTransaction)
-class PaystackTransactionAdmin(admin.ModelAdmin):
+class PaystackTransactionAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("reference", "invoice", "amount_naira", "status", "created_at", "verified_at")
     list_filter = ("status",)
     readonly_fields = ("reference", "amount_kobo", "authorization_url", "paystack_id",

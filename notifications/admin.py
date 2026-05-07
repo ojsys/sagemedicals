@@ -1,16 +1,17 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from notifications.models import Notification, NotificationTemplate, OTPVerification
 
 
 @admin.register(NotificationTemplate)
-class NotificationTemplateAdmin(admin.ModelAdmin):
+class NotificationTemplateAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("event_type", "channel", "is_active")
     list_filter = ("channel", "is_active")
 
 
 @admin.register(Notification)
-class NotificationAdmin(admin.ModelAdmin):
+class NotificationAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("channel", "recipient", "event_type", "status", "sent_at")
     list_filter = ("channel", "status", "event_type")
     search_fields = ("recipient", "body")
@@ -19,7 +20,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
 
 @admin.register(OTPVerification)
-class OTPVerificationAdmin(admin.ModelAdmin):
+class OTPVerificationAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("phone", "is_used", "attempts", "expires_at", "created_at")
     list_filter = ("is_used",)
     readonly_fields = ("code",)

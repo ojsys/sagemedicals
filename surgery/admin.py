@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from surgery.models import SurgeryBooking, SurgeryTeamMember, Theatre
 
@@ -9,12 +10,12 @@ class TeamInline(admin.TabularInline):
 
 
 @admin.register(Theatre)
-class TheatreAdmin(admin.ModelAdmin):
+class TheatreAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("name", "location", "is_active")
 
 
 @admin.register(SurgeryBooking)
-class SurgeryBookingAdmin(admin.ModelAdmin):
+class SurgeryBookingAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = (
         "procedure_name", "patient", "theatre", "lead_surgeon",
         "scheduled_date", "scheduled_time", "priority", "status",

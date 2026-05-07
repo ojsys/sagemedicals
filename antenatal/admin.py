@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from .models import ANCRecord, ANCVisit, ObstetricScan
 
@@ -29,7 +30,7 @@ class ObstetricScanInline(admin.StackedInline):
 
 
 @admin.register(ANCRecord)
-class ANCRecordAdmin(admin.ModelAdmin):
+class ANCRecordAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = [
         "patient", "edd", "gestational_age_today", "gravida_para",
         "booking_date", "is_active",

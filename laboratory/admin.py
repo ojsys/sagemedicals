@@ -1,10 +1,11 @@
 from django.contrib import admin
+from core.admin_mixins import SuperuserForceDeleteMixin
 
 from laboratory.models import LabOrder, LabResult, LabTest
 
 
 @admin.register(LabTest)
-class LabTestAdmin(admin.ModelAdmin):
+class LabTestAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("code", "name", "panel", "sample_type", "turnaround_hours", "price", "is_active")
     list_filter = ("sample_type", "is_active")
     search_fields = ("code", "name", "panel")
@@ -14,7 +15,7 @@ class LabResultInline(admin.StackedInline):
     extra = 0
 
 @admin.register(LabOrder)
-class LabOrderAdmin(admin.ModelAdmin):
+class LabOrderAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = ("patient", "test", "priority", "status", "barcode", "created_at")
     list_filter = ("priority", "status")
     inlines = [LabResultInline]
