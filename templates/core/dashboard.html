@@ -28,7 +28,7 @@
     <div class="glyph"><i class="bi bi-people"></i></div>
     <div class="stat-label">Today's Patients</div>
     <div class="stat-value num">{{ patients_today }}</div>
-    <div class="stat-meta"><span class="delta flat">Today</span><span>new registrations</span></div>
+    <div class="stat-meta"><span class="delta flat">Today</span><span>visits (encounters + ANC)</span></div>
     <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
       <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12" stroke="#0F4C81" stroke-width="1.5" fill="none"/>
       <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12 L200,36 L0,36 Z" fill="url(#g1)" opacity=".18"/>
@@ -192,7 +192,7 @@
           </div>
         </div>
         <ul class="legend-list" style="flex:1">
-          <li><span class="sw" style="background:var(--sage-primary)"></span>Registrations<span class="vv">{{ patients_today }}</span></li>
+          <li><span class="sw" style="background:var(--sage-primary)"></span>Visits today<span class="vv">{{ patients_today }}</span></li>
           <li><span class="sw" style="background:var(--sage-teal)"></span>Admissions<span class="vv">{{ active_admissions }}</span></li>
           <li><span class="sw" style="background:var(--sage-amber)"></span>Queue<span class="vv">{{ queue_waiting }}</span></li>
           <li><span class="sw" style="background:var(--sage-red)"></span>Pending labs<span class="vv">{{ pending_labs }}</span></li>

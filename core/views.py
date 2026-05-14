@@ -124,14 +124,19 @@ class DashboardView(AccessMixin, View):
         today = date.today()
 
         from admissions.models import Admission
-        from antenatal.models import ANCRecord
+        from antenatal.models import ANCRecord, ANCVisit
+        from encounters.models import Encounter
         from laboratory.models import LabOrder
         from patients.models import Patient
         from scheduling.models import Appointment, QueueEntry
 
-        patients_today = Patient.objects.filter(
-            created_at__date=today, is_active=True
-        ).count()
+        enc_pids = set(
+            Encounter.objects.filter(date_time__date=today).values_list("patient_id", flat=True)
+        )
+        anc_pids = set(
+            ANCVisit.objects.filter(visit_date=today).values_list("record__patient_id", flat=True)
+        )
+        patients_today = len(enc_pids | anc_pids)
 
         active_admissions = Admission.objects.filter(
             status=Admission.Status.ACTIVE

@@ -59,12 +59,13 @@
       {% for val, label in type_choices %}
       <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
+      <option value="anc" {% if type_filter == "anc" %}selected{% endif %}>Antenatal (ANC)</option>
     </select>
     {% if status_filter or type_filter %}
     <a href="?{% if patient %}patient={{ patient.pk }}{% endif %}" class="btn btn-ghost btn-sm">Clear</a>
     {% endif %}
   </form>
-  <div style="margin-left:auto;font-size:12.5px;color:var(--text-3)">{{ total }} encounter{{ total|pluralize }}</div>
+  <div style="margin-left:auto;font-size:12.5px;color:var(--text-3)">{{ total }} encounter{{ total|pluralize }}{% if anc_total %} · {{ anc_total }} ANC visit{{ anc_total|pluralize }}{% endif %}</div>
 </div>
 
 {% if encounters %}
@@ -112,9 +113,40 @@
 {% endif %}
 
 {% else %}
+{% if not anc_visits %}
 <div style="text-align:center;padding:80px 20px;color:var(--text-3)">
   <i class="bi bi-journal-x" style="font-size:48px;display:block;margin-bottom:16px;opacity:.2"></i>
   No encounters found.
+</div>
+{% endif %}
+{% endif %}
+
+{% if anc_visits %}
+<div style="margin-top:32px">
+  <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:10px;padding:0 4px">
+    Antenatal Care (ANC) Visits
+  </div>
+  <div class="table-wrap">
+    <div class="enc-th">
+      <span>Date</span>
+      <span>Patient</span>
+      <span>Type</span>
+      <span>GA</span>
+      <span>BP</span>
+    </div>
+    {% for v in anc_visits %}
+    <a class="enc-row" href="{% url 'antenatal:detail' v.record.pk %}">
+      <span class="num" style="color:var(--text-3)">{{ v.visit_date|date:"d M Y" }}</span>
+      <span>
+        <div style="font-weight:500;color:var(--sage-ink)">{{ v.record.patient.full_name }}</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:1px">{{ v.record.patient.hospital_number }}</div>
+      </span>
+      <span><span class="tag" style="font-size:11px;background:#fce4ec;color:#c2185b">ANC Visit</span></span>
+      <span style="color:var(--text-2)">{{ v.gestational_age_weeks }}wks</span>
+      <span style="color:var(--text-2)">{{ v.bp_display }}</span>
+    </a>
+    {% endfor %}
+  </div>
 </div>
 {% endif %}
 {% endblock %}

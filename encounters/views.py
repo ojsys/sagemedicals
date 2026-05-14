@@ -61,6 +61,7 @@ class EncounterListView(View):
 
     def get(self, request):
         from django.core.paginator import Paginator
+        from antenatal.models import ANCVisit
         patient_pk = request.GET.get("patient")
         status_filter = request.GET.get("status", "")
         type_filter = request.GET.get("type", "")
@@ -81,6 +82,12 @@ class EncounterListView(View):
         paginator = Paginator(qs, 30)
         page = paginator.get_page(request.GET.get("page", 1))
 
+        anc_qs = ANCVisit.objects.select_related("record__patient").order_by("-visit_date")
+        if patient_pk:
+            anc_qs = anc_qs.filter(record__patient=patient)
+        if type_filter and type_filter != "anc":
+            anc_qs = anc_qs.none()
+
         return render(request, self.template_name, {
             "encounters": page,
             "page_obj": page,
@@ -90,6 +97,8 @@ class EncounterListView(View):
             "status_choices": Encounter.Status.choices,
             "type_choices": Encounter.EncounterType.choices,
             "total": qs.count(),
+            "anc_visits": anc_qs[:30],
+            "anc_total": anc_qs.count(),
         })
 
 
