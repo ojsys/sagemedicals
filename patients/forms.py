@@ -26,6 +26,10 @@ class PatientRegistrationForm(SmartSelectMixin, forms.ModelForm):
             "date_of_birth": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "gender_identity": forms.TextInput(attrs={"placeholder": "Optional — patient's own description"}),
             "address": forms.Textarea(attrs={"rows": 2}),
+            "nhia_number": forms.TextInput(attrs={"placeholder": "e.g. SHA/00123456/A"}),
+            "hmo_name": forms.TextInput(attrs={"placeholder": "e.g. Hygeia HMO, Leadway Health"}),
+            "hmo_plan": forms.TextInput(attrs={"placeholder": "e.g. Basic, Standard, Executive"}),
+            "hmo_number": forms.TextInput(attrs={"placeholder": "Member / policy number"}),
         }
 
     def __init__(self, *args, **kwargs):

@@ -169,6 +169,7 @@
                  @click="payer='nhia'">
               <i class="bi bi-shield-fill-check" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-primary)"></i>
               <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">NHIA</div>
+              <div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Govt. Insurance</div>
             </div>
           </label>
           <label style="cursor:pointer">
@@ -177,7 +178,8 @@
                  style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
                  @click="payer='private_hmo'">
               <i class="bi bi-hospital" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-teal)"></i>
-              <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">HMO</div>
+              <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">Private HMO</div>
+              <div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Managed Care</div>
             </div>
           </label>
           <label style="cursor:pointer">
@@ -187,6 +189,7 @@
                  @click="payer='corporate'">
               <i class="bi bi-briefcase" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-amber)"></i>
               <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">Corporate</div>
+              <div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Employer-Sponsored</div>
             </div>
           </label>
           <label style="cursor:pointer">
@@ -196,36 +199,44 @@
                  @click="payer='self_pay'">
               <i class="bi bi-person-fill" style="font-size:20px;display:block;margin-bottom:6px;color:var(--sage-ink)"></i>
               <div style="font-size:12px;font-weight:600;color:var(--sage-ink)">Self Pay</div>
+              <div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Cash / Out-of-Pocket</div>
             </div>
           </label>
         </div>
 
         <div class="row g-3">
           <!-- NHIA fields -->
-          <div class="col-md-6" x-show="payer === 'nhia'" x-cloak>
+          <div class="col-12" x-show="payer === 'nhia'" x-cloak>
+            <div style="background:rgba(15,76,129,.05);border:1px solid rgba(15,76,129,.15);border-radius:var(--radius);padding:10px 14px;font-size:12.5px;color:var(--sage-primary);display:flex;gap:8px;align-items:flex-start">
+              <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:1px"></i>
+              <span>NHIA patients are enrolled under a Health Maintenance Organisation (HMO). Enter the patient's NHIA Enrollee ID from their insurance card, then select their assigned HMO.</span>
+            </div>
+          </div>
+          <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
             <label class="form-label">NHIA Enrollee ID <span style="color:var(--sage-red)">*</span></label>
             {{ form.nhia_number }}
             {% if form.nhia_number.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.nhia_number.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-6" x-show="payer === 'nhia'" x-cloak>
-            <label class="form-label">HMO Name</label>{{ form.hmo_name }}
+          <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
+            <label class="form-label">Assigned HMO</label>
+            {{ form.hmo_name }}
           </div>
-          <div class="col-md-6" x-show="payer === 'nhia'" x-cloak>
-            <label class="form-label">HMO Plan</label>{{ form.hmo_plan }}
+          <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
+            <label class="form-label">NHIA Plan / Tier</label>{{ form.hmo_plan }}
           </div>
 
           <!-- Private HMO fields -->
-          <div class="col-md-6" x-show="payer === 'private_hmo'" x-cloak>
+          <div class="col-md-4" x-show="payer === 'private_hmo'" x-cloak>
             <label class="form-label">HMO Name <span style="color:var(--sage-red)">*</span></label>
             {{ form.hmo_name }}
             {% if form.hmo_name.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.hmo_name.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-6" x-show="payer === 'private_hmo'" x-cloak>
-            <label class="form-label">HMO Member Number</label>
+          <div class="col-md-4" x-show="payer === 'private_hmo'" x-cloak>
+            <label class="form-label">Member Number</label>
             {{ form.hmo_number }}
           </div>
-          <div class="col-md-6" x-show="payer === 'private_hmo'" x-cloak>
-            <label class="form-label">HMO Plan / Package</label>{{ form.hmo_plan }}
+          <div class="col-md-4" x-show="payer === 'private_hmo'" x-cloak>
+            <label class="form-label">Plan / Package</label>{{ form.hmo_plan }}
           </div>
 
           <!-- Corporate fields -->

@@ -55,22 +55,47 @@
     <div x-data="{ payer: '{{ form.payer_type.value }}' }">
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label">Payer Type *</label>
+          <label class="form-label">Payer Type <span style="color:var(--sage-red)">*</span></label>
           <select name="payer_type" class="form-select" x-model="payer">
             {% for val, label in form.fields.payer_type.choices %}
             <option value="{{ val }}" {% if form.payer_type.value == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
+        <!-- NHIA fields -->
         <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
-          <label class="form-label">NHIA Enrollee ID</label>{{ form.nhia_number }}
+          <label class="form-label">NHIA Enrollee ID <span style="color:var(--sage-red)">*</span></label>
+          {{ form.nhia_number }}
+          {% if form.nhia_number.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.nhia_number.errors.0 }}</div>{% endif %}
         </div>
-        <div class="col-md-4" x-show="payer === 'nhia' || payer === 'private_hmo'" x-cloak>
-          <label class="form-label">HMO Name</label>{{ form.hmo_name }}
+        <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
+          <label class="form-label">Assigned HMO</label>{{ form.hmo_name }}
         </div>
+        <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
+          <label class="form-label">NHIA Plan / Tier</label>{{ form.hmo_plan }}
+        </div>
+        <!-- Private HMO fields -->
+        <div class="col-md-4" x-show="payer === 'private_hmo'" x-cloak>
+          <label class="form-label">HMO Name <span style="color:var(--sage-red)">*</span></label>
+          {{ form.hmo_name }}
+          {% if form.hmo_name.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.hmo_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="col-md-4" x-show="payer === 'private_hmo'" x-cloak>
+          <label class="form-label">Member Number</label>{{ form.hmo_number }}
+        </div>
+        <div class="col-md-4" x-show="payer === 'private_hmo'" x-cloak>
+          <label class="form-label">Plan / Package</label>{{ form.hmo_plan }}
+        </div>
+        <!-- Corporate fields -->
         <div class="col-md-4" x-show="payer === 'corporate'" x-cloak>
-          <label class="form-label">Employer</label>{{ form.corporate_employer }}
+          <label class="form-label">Employer / Company <span style="color:var(--sage-red)">*</span></label>
+          {{ form.corporate_employer }}
         </div>
+      </div>
+      <!-- NHIA info tip -->
+      <div x-show="payer === 'nhia'" x-cloak style="margin-top:12px;background:rgba(15,76,129,.05);border:1px solid rgba(15,76,129,.15);border-radius:var(--radius);padding:10px 14px;font-size:12.5px;color:var(--sage-primary);display:flex;gap:8px;align-items:flex-start">
+        <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:1px"></i>
+        <span>NHIA patients are enrolled under a Health Maintenance Organisation (HMO). Enter the Enrollee ID from the patient's insurance card, then record their assigned HMO.</span>
       </div>
     </div>
   </div>
