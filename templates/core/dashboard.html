@@ -248,6 +248,31 @@
   </div>
 </div>
 
+{% if request.user.can_manage_staff %}
+<!-- ── Staff Management (Super Admin / Lead Doctor) ── -->
+<div style="margin-top:24px;">
+  <div class="card" style="background:linear-gradient(180deg, var(--sage-ink) 0%, var(--sage-ink-soft) 100%);color:#fff;border-color:transparent;">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;">
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.18em;color:rgba(244,245,242,.55);margin-bottom:6px;font-weight:500;">
+          {% if request.user.is_superuser %}Super Admin{% else %}Lead Doctor{% endif %} · Administration
+        </div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:500;color:#fff;letter-spacing:-0.02em;">Staff &amp; user management</div>
+        <p style="margin:6px 0 0;color:rgba(244,245,242,.78);font-size:13.5px;max-width:560px;">
+          Create accounts for new doctors, nurses, and other staff. Update roles, reset passwords, or deactivate users who have left — without leaving the application.
+        </p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <a href="{% url 'accounts:user_create' %}" class="btn btn-teal"><i class="bi bi-person-plus"></i>Add Staff</a>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#fff;">
+          <i class="bi bi-people"></i>Manage Users
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- ── Antenatal Module ── -->
 <div style="margin-top:24px;">
   <div class="table-head" style="margin-bottom:14px;padding:0;">

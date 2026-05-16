@@ -89,6 +89,12 @@
 </a>
 {% endif %}
 
+{% if request.user.can_manage_staff %}
+<a class="nav-item {% if '/me/users' in url %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+  <i class="bi bi-person-gear"></i>Staff &amp; Users
+</a>
+{% endif %}
+
 <a class="nav-item {% if '/admin' in url %}active{% endif %}" href="/admin/">
   <i class="bi bi-gear"></i>Settings
 </a>

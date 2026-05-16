@@ -136,21 +136,57 @@
     <div class="toc-section">Administration</div>
     <a href="#reports">Reports</a>
     <a href="#claims">NHIA Claims</a>
+    <a href="#staff">Staff &amp; Users</a>
 
     <div class="toc-section">Patients</div>
     <a href="#portal">Patient Portal</a>
+
+    <div class="toc-section">Reference</div>
+    <a href="#icons">Icons &amp; Buttons</a>
+    <a href="#faq">Common Questions</a>
   </nav>
 
   <!-- Main Content -->
   <div class="tutorial-body">
 
     <!-- Hero -->
-    <div style="margin-bottom:40px">
+    <div style="margin-bottom:32px">
       <div class="eyebrow">Staff Reference Guide</div>
       <h1 class="page-title" style="font-size:48px">SAGE EMR <em>Tutorial</em></h1>
-      <p class="page-sub" style="font-size:15px;max-width:600px;margin-top:12px">
-        A step-by-step guide to every part of the system — from registering your first patient to generating monthly returns. Find your role below and follow along.
+      <p class="page-sub" style="font-size:15px;max-width:640px;margin-top:12px">
+        Welcome. This guide walks you through SAGE EMR step-by-step — from your very first sign-in to generating monthly returns. Find your role in the table below, then jump to the section that matches what you need to do.
       </p>
+    </div>
+
+    <!-- New-staff orientation -->
+    <div class="card" style="margin-bottom:24px;background:var(--sage-teal-soft);border-color:#B0DBD3;">
+      <div style="display:grid;grid-template-columns:48px 1fr;gap:14px;align-items:start;">
+        <div style="width:48px;height:48px;border-radius:12px;background:#fff;display:grid;place-items:center;color:var(--sage-teal);font-size:22px;">
+          <i class="bi bi-stars"></i>
+        </div>
+        <div>
+          <div style="font-family:var(--display);font-size:18px;color:var(--sage-ink);font-weight:500;margin-bottom:6px;">New here? Start with these four things.</div>
+          <ol style="margin:0;padding-left:18px;color:var(--text-2);font-size:13.5px;line-height:1.8;">
+            <li><strong>Sign in</strong> with the email and password your administrator gave you (see <a href="#login" style="color:var(--sage-primary);text-decoration:none;">Logging In</a>).</li>
+            <li><strong>Tour the Dashboard</strong> — this is your home page (see <a href="#dashboard" style="color:var(--sage-primary);text-decoration:none;">The Dashboard</a>).</li>
+            <li><strong>Find your role</strong> in the table below — the highlighted sections are written for you.</li>
+            <li><strong>Try one task</strong> end-to-end before your first real patient (e.g. register a test patient, then deactivate them later).</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to use this guide -->
+    <div class="callout info" style="margin-bottom:32px;">
+      <i class="bi bi-book"></i>
+      <div>
+        <strong>How to read this guide:</strong> coloured badges like
+        <span class="role-badge doctor" style="margin:0 4px;">Doctor</span> show which roles a section is most relevant for.
+        Numbered <strong>step lists</strong> walk you through screens click by click.
+        <strong style="color:var(--sage-teal);">Green tips</strong> are shortcuts;
+        <strong style="color:var(--sage-amber);">amber notes</strong> warn about things to be careful of;
+        <strong style="color:var(--sage-red);">red alerts</strong> are mistakes you must not make.
+      </div>
     </div>
 
     <!-- Quick role reference -->
@@ -203,30 +239,51 @@
     <span class="role-badge all">All Staff</span>
     <ol class="steps" style="margin-top:14px">
       <li>Open your web browser and go to the SAGE EMR address provided by your IT department.</li>
-      <li>Enter your <strong>email address</strong> and <strong>password</strong>.</li>
+      <li>Enter your <strong>email address</strong> (this is your username) and <strong>password</strong>.</li>
       <li>Click <strong>Sign In</strong>.</li>
-      <li>If your account is protected by two-factor authentication, enter the 6-digit code from your authenticator app.</li>
+      <li>If your account is protected by two-factor authentication (2FA), enter the 6-digit code from your authenticator app on your phone.</li>
+    </ol>
+    <h4>First-time sign-in?</h4>
+    <p>Your administrator will create your account and share a temporary password with you. After signing in, go to your profile (bottom-left of the sidebar → your name) and:</p>
+    <ol class="steps">
+      <li>Change your password to something only you know.</li>
+      <li>Set up 2FA — this protects patient data even if your password is leaked.</li>
     </ol>
     <div class="callout warn">
       <i class="bi bi-exclamation-triangle"></i>
-      <div>After <strong>5 failed login attempts</strong> your account is locked for 30 minutes. Contact your administrator if this happens.</div>
+      <div>After <strong>5 failed login attempts</strong> your account is locked for 30 minutes. If this happens, contact your administrator — they can reset your password and unlock you immediately.</div>
     </div>
     <div class="callout tip">
       <i class="bi bi-lightbulb"></i>
-      <div>Your session will time out after a period of inactivity. Save your work and log back in if you see the login screen unexpectedly.</div>
+      <div>Your session will time out after a period of inactivity. If you see the sign-in screen unexpectedly, your session expired — sign back in to continue.</div>
     </div>
 
     <h3 id="dashboard">The Dashboard</h3>
     <span class="role-badge all">All Staff</span>
-    <p style="margin-top:10px">The Dashboard is the first screen you see after logging in. It gives you a live snapshot of the hospital right now.</p>
+    <p style="margin-top:10px">The Dashboard is the first screen you see after logging in. Think of it as the front desk of the whole hospital — a live snapshot of what's happening right now.</p>
+    <h4>The four big numbers at the top</h4>
     <ul>
-      <li><strong>Today's Patients</strong> — new registrations this morning.</li>
-      <li><strong>Active Admissions</strong> — inpatients currently in beds.</li>
-      <li><strong>Queue Today</strong> — patients waiting or in consultation.</li>
-      <li><strong>Pending Labs</strong> — lab orders not yet released.</li>
+      <li><strong>Today's Patients</strong> — how many people have been seen at the facility today (encounters + ANC visits).</li>
+      <li><strong>Active Admissions</strong> — patients currently occupying beds on the wards.</li>
+      <li><strong>Queue Today</strong> — patients currently waiting to be seen or in consultation.</li>
+      <li><strong>Pending Labs</strong> — lab orders that have not yet had their results released.</li>
     </ul>
-    <p>Below the stats, <strong>Today's Clinic Queue</strong> shows every patient booked for today. Click a patient's row to open their profile. Use the <strong>Waiting / In Progress / Done</strong> filter chips to focus on a specific group.</p>
-    <p>The <strong>Recent Activity</strong> panel on the right shows the latest events across the hospital in real time.</p>
+    <h4>Today's Clinic Queue</h4>
+    <p>Below the stats. Every patient booked or walked-in for today appears here.</p>
+    <ul>
+      <li>The coloured bar on the left is the triage priority (red = immediate, amber = urgent, green = routine).</li>
+      <li>Click a patient's row to open their profile and start working with them.</li>
+      <li>Use the chips at the top — <strong>All / Waiting / In progress / Done</strong> — to filter the list.</li>
+    </ul>
+    <h4>The right-hand panels</h4>
+    <ul>
+      <li><strong>Today's Summary</strong> — a quick visual of where patients are right now.</li>
+      <li><strong>Recent Activity</strong> — the latest admissions, registrations, and pending labs across the hospital.</li>
+    </ul>
+    <div class="callout tip">
+      <i class="bi bi-lightbulb"></i>
+      <div>The dashboard updates as the day progresses — there is no "refresh" button. If you want to see the latest, simply reload the page or navigate back to it from the sidebar.</div>
+    </div>
 
     <hr>
 
@@ -738,6 +795,72 @@
       <li>Track claim status (Submitted → Queried → Approved → Paid).</li>
     </ol>
 
+    <h3 id="staff">Staff &amp; User Management</h3>
+    <span class="role-badge all">Super Admin</span> <span class="role-badge doctor">Lead Doctor</span>
+    <p style="margin-top:10px">
+      The <strong>Super Admin</strong> can grant a senior doctor <strong>Lead Doctor</strong> rights — letting them add, edit, and deactivate staff accounts directly from the application, without needing the Django admin panel.
+    </p>
+    <p>Look for <strong>Staff &amp; Users</strong> in the left sidebar (visible only if you have permission), or use the <strong>Add Staff</strong> button on the dashboard.</p>
+
+    <h4>Granting Lead Doctor rights (Super Admin only)</h4>
+    <ol class="steps">
+      <li>Go to <strong>Staff &amp; Users</strong> in the sidebar.</li>
+      <li>Find the doctor you want to promote.</li>
+      <li>Click the <i class="bi bi-shield-plus"></i> <strong>shield icon</strong> next to their row.</li>
+      <li>The badge <span class="lead-pill" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;font-size:11px;font-weight:500;border-radius:4px;background:var(--sage-teal-soft);color:var(--sage-teal);"><i class="bi bi-shield-check"></i>Lead Doctor</span> appears on their row. They can now manage staff users.</li>
+    </ol>
+    <div class="callout tip">
+      <i class="bi bi-lightbulb"></i>
+      <div>To revoke Lead Doctor rights, click the same shield icon again (it becomes <i class="bi bi-shield-slash"></i>).</div>
+    </div>
+
+    <h4>Adding a new staff member</h4>
+    <ol class="steps">
+      <li>Click <strong>Add Staff Member</strong> (top right of the Staff &amp; Users page) or <strong>Add Staff</strong> on the dashboard.</li>
+      <li>Fill in the person's <strong>first name, last name, email and phone</strong>. The email is what they'll use to sign in.</li>
+      <li>Choose their <strong>role</strong> — this controls what they can see and do in the application. Pick the closest match (e.g. Doctor, Nurse, Receptionist, Pharmacist).</li>
+      <li>Enter a <strong>department</strong> if relevant (e.g. Paediatrics, Out-patient).</li>
+      <li>Set an <strong>initial password</strong>. The user should change it on first sign-in.</li>
+      <li>Click <strong>Create User</strong>. They can now sign in immediately.</li>
+    </ol>
+    <div class="callout alert">
+      <i class="bi bi-shield-exclamation"></i>
+      <div>
+        <strong>Share the password securely</strong> — in person, or through a private channel. Never send it in an open group chat or unsecured email.
+      </div>
+    </div>
+
+    <h4>Editing, resetting, or deactivating an account</h4>
+    <table class="quick-ref">
+      <thead><tr><th>If you want to…</th><th>Click this on the user's row</th></tr></thead>
+      <tbody>
+        <tr><td>Change name, email, role or department</td><td><i class="bi bi-pencil"></i> <strong>Edit</strong></td></tr>
+        <tr><td>Reset their password (e.g. they forgot it)</td><td><i class="bi bi-key"></i> <strong>key icon</strong></td></tr>
+        <tr><td>Stop them signing in (e.g. they left)</td><td><i class="bi bi-pause"></i> <strong>Deactivate</strong></td></tr>
+        <tr><td>Bring a deactivated user back</td><td><i class="bi bi-play"></i> <strong>Reactivate</strong></td></tr>
+        <tr><td>Make them a Lead Doctor <em>(Super Admin only)</em></td><td><i class="bi bi-shield-plus"></i> <strong>shield icon</strong></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>
+        <strong>Deactivating is not deletion.</strong> The user can no longer sign in, but every encounter, prescription, or order they signed remains in the patient's record — as it must, for medico-legal reasons.
+        Use deactivate when a staff member leaves the hospital.
+      </div>
+    </div>
+
+    <div class="callout info">
+      <i class="bi bi-info-circle"></i>
+      <div>
+        <strong>What's the difference between Super Admin and Lead Doctor?</strong>
+        <ul style="margin-top:6px;">
+          <li><strong>Super Admin</strong> — the platform owner. Full access to everything including the Django admin panel. Can promote/demote Lead Doctors.</li>
+          <li><strong>Lead Doctor</strong> — a senior clinician trusted to add and manage staff from the front-end. Cannot create other Super Admins, and cannot edit the Super Admin's account.</li>
+        </ul>
+      </div>
+    </div>
+
     <hr>
 
     <!-- ═══════════════════════════════════════════════════
@@ -764,6 +887,62 @@
       <i class="bi bi-lightbulb"></i>
       <div>Encourage patients to save the portal link on their phone's home screen for easy access.</div>
     </div>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════
+         REFERENCE — Icons & FAQ
+    ═══════════════════════════════════════════════════ -->
+
+    <h2 id="icons">Reference — Icons &amp; Buttons</h2>
+    <p>Throughout the application, these icons mean the same thing wherever you see them:</p>
+    <table class="quick-ref">
+      <thead><tr><th style="width:70px;">Icon</th><th>Meaning</th><th>Where you'll see it</th></tr></thead>
+      <tbody>
+        <tr><td style="font-size:18px;color:var(--sage-primary);"><i class="bi bi-plus-lg"></i></td><td><strong>Add / Create</strong></td><td>New patient, new encounter, new order, new staff member</td></tr>
+        <tr><td style="font-size:18px;color:var(--text-2);"><i class="bi bi-pencil"></i></td><td><strong>Edit</strong></td><td>Change details of an existing record</td></tr>
+        <tr><td style="font-size:18px;color:var(--sage-red);"><i class="bi bi-trash"></i></td><td><strong>Delete / Remove</strong></td><td>Carefully — most records can only be deactivated, not deleted</td></tr>
+        <tr><td style="font-size:18px;color:var(--sage-teal);"><i class="bi bi-search"></i></td><td><strong>Search</strong></td><td>Top of every list — filter as you type</td></tr>
+        <tr><td style="font-size:18px;color:var(--text-2);"><i class="bi bi-funnel"></i></td><td><strong>Filter</strong></td><td>Narrow a list by status, role, date, etc.</td></tr>
+        <tr><td style="font-size:18px;color:var(--text-2);"><i class="bi bi-key"></i></td><td><strong>Reset password</strong></td><td>Staff &amp; Users page</td></tr>
+        <tr><td style="font-size:18px;color:var(--sage-teal);"><i class="bi bi-shield-check"></i></td><td><strong>Lead Doctor / verified</strong></td><td>Staff &amp; Users — granted accounts</td></tr>
+        <tr><td style="font-size:18px;color:var(--sage-primary);"><i class="bi bi-bell"></i></td><td><strong>Notifications</strong></td><td>Top-right of every screen — critical results, urgent messages</td></tr>
+        <tr><td style="font-size:18px;color:var(--text-2);"><i class="bi bi-gear"></i></td><td><strong>Settings / Admin panel</strong></td><td>Top-right and sidebar</td></tr>
+        <tr><td style="font-size:18px;color:var(--text-3);"><i class="bi bi-box-arrow-right"></i></td><td><strong>Sign out</strong></td><td>Bottom of the sidebar</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Common buttons</h4>
+    <ul>
+      <li><strong>Dark buttons</strong> (e.g. <span class="btn btn-primary btn-sm" style="pointer-events:none;">Save</span>) are the main action on the page.</li>
+      <li><strong>Outlined buttons</strong> (e.g. <span class="btn btn-ghost btn-sm" style="pointer-events:none;">Cancel</span>) are secondary actions or "back out".</li>
+      <li><strong>Red outlined buttons</strong> (e.g. <span class="btn btn-danger-outline btn-sm" style="pointer-events:none;">Deactivate</span>) are destructive — pause and read the message before clicking.</li>
+    </ul>
+
+    <hr>
+
+    <h2 id="faq">Common Questions</h2>
+
+    <h4>I forgot my password. What do I do?</h4>
+    <p>Contact your hospital administrator or any Lead Doctor. They can reset it for you from <strong>Staff &amp; Users</strong> immediately — you'll then sign in with the new password they share.</p>
+
+    <h4>I locked myself out — 5 failed sign-ins.</h4>
+    <p>Either wait 30 minutes, or ask an administrator. When they reset your password, the lock is cleared automatically.</p>
+
+    <h4>I can't see a menu item that my colleague has.</h4>
+    <p>Menus depend on your role. If you genuinely need access (e.g. you've moved from nursing to records), ask the Super Admin or a Lead Doctor to update your role from <strong>Staff &amp; Users → Edit</strong>.</p>
+
+    <h4>I think I made a mistake on a signed encounter.</h4>
+    <p>Signed encounters are locked by design — it's how the system meets medico-legal record-keeping requirements. Open a new encounter with an addendum note, or contact your departmental lead for guidance.</p>
+
+    <h4>A duplicate patient has been created by accident.</h4>
+    <p>Do not start writing notes in either record. Contact the records officer or administrator — duplicate records require a proper merge process to avoid splitting clinical history.</p>
+
+    <h4>My screen looks different from the screenshots in training.</h4>
+    <p>The application is updated regularly. Steps may look slightly different but the names of buttons usually stay the same — search the guide for the button name. If you still can't find what you need, contact your administrator.</p>
+
+    <h4>Can I use SAGE EMR on my phone?</h4>
+    <p>Yes — the application works on any modern browser including phones and tablets. Tap the <i class="bi bi-list"></i> menu icon to open the sidebar.</p>
 
     <hr>
 

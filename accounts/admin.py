@@ -19,7 +19,7 @@ class UserAdmin(SuperuserForceDeleteMixin, BaseUserAdmin):
         (None, {"fields": ("email", "password")}),
         ("Personal Info", {"fields": ("first_name", "last_name", "phone")}),
         ("Role & Access", {"fields": ("role", "department", "delegate_to", "delegation_expires_at")}),
-        ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "is_lead_doctor", "groups", "user_permissions")}),
         ("Security", {"fields": ("failed_login_attempts", "locked_until", "password_changed_at")}),
     )
     add_fieldsets = (

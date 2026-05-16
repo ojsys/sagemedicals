@@ -59,6 +59,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     department = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_lead_doctor = models.BooleanField(
+        default=False,
+        help_text="Lead Doctor — granted by Super Admin. Can create and manage staff users from the application.",
+    )
     date_joined = models.DateTimeField(default=timezone.now)
     # Time-bound delegation
     delegate_to = models.ForeignKey(
@@ -91,6 +95,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_clinical(self):
         return self.role in CLINICAL_ROLES
+
+    @property
+    def can_manage_staff(self):
+        """True for the platform Super Admin or any user granted Lead Doctor rights."""
+        return bool(
+            self.is_superuser
+            or self.role == Role.SUPER_ADMIN
+            or self.is_lead_doctor
+        )
 
     @property
     def is_locked(self):

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'create' %}Add Staff Member{% else %}Edit {{ target.get_full_name|default:target.email }}{% endif %} — SAGE EMR{% endblock %}
+
+{% block extra_css %}
+.field-help { font-size: 11.5px; color: var(--text-3); margin-top: 4px; }
+.errorlist { list-style: none; padding: 0; margin: 6px 0 0; color: var(--sage-red); font-size: 12.5px; }
+.form-section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: 16px; }
+.form-section h3 { font-family: var(--display); font-size: 16px; margin: 0 0 14px; color: var(--sage-ink); }
+.checkline { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; }
+.checkline input { margin-top: 3px; }
+.checkline label { font-size: 13.5px; color: var(--text); margin: 0; }
+.checkline .sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Staff &amp; Users</div>
+    <h1 class="page-title">
+      {% if mode == 'create' %}Add a <em>staff member</em>
+      {% else %}Edit <em>{{ target.get_full_name|default:target.email }}</em>{% endif %}
+    </h1>
+    <p class="page-sub">
+      {% if mode == 'create' %}
+        The new user can sign in immediately with the email and password you set below. They should change their password on first login.
+      {% else %}
+        Update profile, role, or activate / deactivate the account. Use <strong>Reset Password</strong> for password changes.
+      {% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="{% url 'accounts:user_list' %}"><i class="bi bi-arrow-left"></i>Back</a>
+    {% if mode == 'edit' %}
+      <a class="btn btn-ghost" href="{% url 'accounts:user_password' target.pk %}"><i class="bi bi-key"></i>Reset Password</a>
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="form-section">
+    <h3>Personal Information</h3>
+    <div class="form-grid">
+      <div class="input-group-field">
+        <label>First name <span class="req">*</span></label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}{{ form.first_name.errors }}{% endif %}
+      </div>
+      <div class="input-group-field">
+        <label>Last name <span class="req">*</span></label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}{{ form.last_name.errors }}{% endif %}
+      </div>
+      <div class="input-group-field">
+        <label>Email <span class="req">*</span></label>
+        {{ form.email }}
+        <div class="field-help">Used to sign in. Must be unique.</div>
+        {% if form.email.errors %}{{ form.email.errors }}{% endif %}
+      </div>
+      <div class="input-group-field">
+        <label>Phone</label>
+        {{ form.phone }}
+        {% if form.phone.errors %}{{ form.phone.errors }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Role &amp; Department</h3>
+    <div class="form-grid">
+      <div class="input-group-field">
+        <label>Role <span class="req">*</span></label>
+        {{ form.role }}
+        <div class="field-help">Determines which parts of the application this user can access.</div>
+        {% if form.role.errors %}{{ form.role.errors }}{% endif %}
+      </div>
+      <div class="input-group-field">
+        <label>Department</label>
+        {{ form.department }}
+        <div class="field-help">e.g. General Outpatient, Paediatrics, Pharmacy.</div>
+        {% if form.department.errors %}{{ form.department.errors }}{% endif %}
+      </div>
+      <div class="full">
+        <div class="checkline">
+          {{ form.is_active }}
+          <div>
+            <label for="{{ form.is_active.id_for_label }}"><strong>Active</strong></label>
+            <div class="sub">When inactive, the user cannot sign in. Their clinical records remain visible to other staff.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if mode == 'create' %}
+  <div class="form-section">
+    <h3>Initial Password</h3>
+    <div class="form-grid">
+      <div class="input-group-field">
+        <label>Password <span class="req">*</span></label>
+        {{ form.password1 }}
+        <div class="field-help">{{ form.password1.help_text }}</div>
+        {% if form.password1.errors %}{{ form.password1.errors }}{% endif %}
+      </div>
+      <div class="input-group-field">
+        <label>Confirm password <span class="req">*</span></label>
+        {{ form.password2 }}
+        {% if form.password2.errors %}{{ form.password2.errors }}{% endif %}
+      </div>
+      <div class="full">
+        <div class="callout info" style="margin:6px 0 0;background:#E5EEF6;border-left:4px solid var(--sage-primary);padding:12px 14px;border-radius:var(--radius);font-size:13px;color:#0A3560;">
+          <i class="bi bi-info-circle"></i>
+          <div>Share the password through a secure channel (in person or a private message). Ask the user to enable two-factor authentication after first sign-in.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+    <a class="btn btn-ghost" href="{% url 'accounts:user_list' %}">Cancel</a>
+    <button class="btn btn-primary" type="submit">
+      {% if mode == 'create' %}<i class="bi bi-person-plus"></i>Create User
+      {% else %}<i class="bi bi-check2"></i>Save Changes{% endif %}
+    </button>
+  </div>
+</form>
+
+<script>
+  // Add Bootstrap form-control class to native inputs for consistent styling
+  document.querySelectorAll('form input[type=text], form input[type=email], form input[type=password], form input[type=tel], form select')
+    .forEach(el => el.classList.add('form-control'));
+</script>
+{% endblock %}

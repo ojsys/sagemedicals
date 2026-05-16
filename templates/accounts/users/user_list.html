@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Staff &amp; Users — SAGE EMR{% endblock %}
+
+{% block extra_css %}
+.role-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-weight: 500;
+}
+.role-pill.super_admin     { background: #EDE9FE; color: #6D28D9; }
+.role-pill.hospital_admin  { background: #E5EEF6; color: var(--sage-primary); }
+.role-pill.doctor,
+.role-pill.resident        { background: var(--sage-red-soft); color: var(--sage-red); }
+.role-pill.nurse           { background: var(--sage-teal-soft); color: var(--sage-teal); }
+.role-pill.pharmacist      { background: var(--sage-green-soft); color: var(--sage-green); }
+.role-pill.lab_tech,
+.role-pill.radiologist     { background: var(--sage-amber-soft); color: var(--sage-amber); }
+.role-pill.billing_officer { background: #EDE9FE; color: #6D28D9; }
+.lead-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px; font-weight: 500;
+  border-radius: 4px;
+  background: var(--sage-teal-soft); color: var(--sage-teal);
+}
+form.inline { display: inline; margin: 0; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Administration</div>
+    <h1 class="page-title">Staff &amp; <em>Users</em></h1>
+    <p class="page-sub">
+      Create accounts for new staff, manage their role and access, or deactivate users who have left.
+      {% if not request.user.is_superuser %}Lead Doctor access — granted by the Super Admin.{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">
+      <i class="bi bi-person-plus"></i>Add Staff Member
+    </a>
+  </div>
+</div>
+
+<!-- Stat row -->
+<div class="stat-grid">
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-people"></i></div>
+    <div class="stat-label">Total Staff</div>
+    <div class="stat-value num">{{ counts.total }}</div>
+    <div class="stat-meta"><span class="delta flat">All time</span><span>excluding patients</span></div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-teal-soft);color:var(--sage-teal)"><i class="bi bi-check2-circle"></i></div>
+    <div class="stat-label">Active</div>
+    <div class="stat-value num">{{ counts.active }}</div>
+    <div class="stat-meta"><span class="delta flat">Now</span><span>can sign in</span></div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--bg-2);color:var(--text-2)"><i class="bi bi-pause-circle"></i></div>
+    <div class="stat-label">Inactive</div>
+    <div class="stat-value num">{{ counts.inactive }}</div>
+    <div class="stat-meta"><span class="delta flat">—</span><span>sign-in disabled</span></div>
+  </div>
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-teal-soft);color:var(--sage-teal)"><i class="bi bi-shield-check"></i></div>
+    <div class="stat-label">Lead Doctors</div>
+    <div class="stat-value num">{{ counts.lead }}</div>
+    <div class="stat-meta"><span class="delta flat">Trusted</span><span>can manage staff</span></div>
+  </div>
+</div>
+
+<!-- Filters / search -->
+<div class="table-wrap">
+  <div class="table-head" style="flex-wrap:wrap;gap:12px;">
+    <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1;">
+      <div class="search" style="min-width:240px;flex:1;">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" value="{{ q }}" placeholder="Search name, email, phone, department…">
+      </div>
+      <select name="role" class="form-select" style="max-width:200px;">
+        <option value="">All roles</option>
+        {% for val, label in roles %}
+          <option value="{{ val }}" {% if role == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-ghost" type="submit"><i class="bi bi-funnel"></i>Filter</button>
+      {% if q or role or status %}<a class="btn btn-ghost" href="{% url 'accounts:user_list' %}">Clear</a>{% endif %}
+    </form>
+
+    <div class="filters">
+      <a class="chip {% if not status %}on{% endif %}" href="?{% if q %}q={{ q }}&{% endif %}{% if role %}role={{ role }}&{% endif %}">All</a>
+      <a class="chip {% if status == 'active' %}on{% endif %}" href="?status=active{% if q %}&q={{ q }}{% endif %}{% if role %}&role={{ role }}{% endif %}">Active</a>
+      <a class="chip {% if status == 'inactive' %}on{% endif %}" href="?status=inactive{% if q %}&q={{ q }}{% endif %}{% if role %}&role={{ role }}{% endif %}">Inactive</a>
+      <a class="chip {% if status == 'lead' %}on{% endif %}" href="?status=lead{% if q %}&q={{ q }}{% endif %}{% if role %}&role={{ role }}{% endif %}">Lead Doctors</a>
+    </div>
+  </div>
+
+  {% if page_obj.object_list %}
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Staff</th>
+        <th>Role</th>
+        <th>Department</th>
+        <th>Status</th>
+        <th>Last sign-in</th>
+        <th style="text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in page_obj.object_list %}
+      <tr style="cursor:default;">
+        <td>
+          <div class="pname">{{ u.get_full_name|default:u.email }}</div>
+          <div class="pmeta">{{ u.email }}{% if u.phone %} · {{ u.phone }}{% endif %}</div>
+        </td>
+        <td>
+          <span class="role-pill {{ u.role }}">{{ u.get_role_display }}</span>
+          {% if u.is_lead_doctor %}
+            <div style="margin-top:4px;"><span class="lead-pill"><i class="bi bi-shield-check"></i>Lead Doctor</span></div>
+          {% endif %}
+          {% if u.is_superuser %}
+            <div style="margin-top:4px;"><span class="lead-pill" style="background:#EDE9FE;color:#6D28D9;"><i class="bi bi-key"></i>Super Admin</span></div>
+          {% endif %}
+        </td>
+        <td style="color:var(--text-2);">{{ u.department|default:"—" }}</td>
+        <td>
+          {% if u.is_active %}
+            <span class="tag green"><span class="dot"></span>Active</span>
+          {% else %}
+            <span class="tag gray"><span class="dot"></span>Inactive</span>
+          {% endif %}
+          {% if u.is_locked %}
+            <div style="margin-top:4px;"><span class="tag red"><i class="bi bi-lock"></i>Locked</span></div>
+          {% endif %}
+        </td>
+        <td style="color:var(--text-2);font-size:12px;">
+          {% if u.last_login %}{{ u.last_login|date:"j M Y · H:i" }}{% else %}<span style="color:var(--text-3);">Never</span>{% endif %}
+        </td>
+        <td style="text-align:right;">
+          <div class="row-actions" style="justify-content:flex-end;">
+            <a class="btn btn-ghost btn-sm" href="{% url 'accounts:user_edit' u.pk %}"><i class="bi bi-pencil"></i>Edit</a>
+            <a class="btn btn-ghost btn-sm" href="{% url 'accounts:user_password' u.pk %}" title="Reset password"><i class="bi bi-key"></i></a>
+
+            {% if request.user.is_superuser and u.pk != request.user.pk and not u.is_superuser %}
+              <form method="post" class="inline" action="{% url 'accounts:user_toggle_lead' u.pk %}">
+                {% csrf_token %}
+                {% if u.is_lead_doctor %}
+                  <button class="btn btn-ghost btn-sm" type="submit" title="Revoke Lead Doctor"><i class="bi bi-shield-slash"></i></button>
+                {% else %}
+                  <button class="btn btn-ghost btn-sm" type="submit" title="Grant Lead Doctor"><i class="bi bi-shield-plus"></i></button>
+                {% endif %}
+              </form>
+            {% endif %}
+
+            {% if u.pk != request.user.pk %}
+              <form method="post" class="inline" action="{% url 'accounts:user_toggle_active' u.pk %}"
+                    onsubmit="return confirm('{% if u.is_active %}Deactivate{% else %}Activate{% endif %} {{ u.get_full_name|default:u.email|escapejs }}?');">
+                {% csrf_token %}
+                {% if u.is_active %}
+                  <button class="btn btn-danger-outline btn-sm" type="submit"><i class="bi bi-pause"></i>Deactivate</button>
+                {% else %}
+                  <button class="btn btn-ghost btn-sm" type="submit"><i class="bi bi-play"></i>Reactivate</button>
+                {% endif %}
+              </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.has_other_pages %}
+  <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line-soft);font-size:13px;color:var(--text-2);">
+    <div>Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</div>
+    <div style="display:flex;gap:6px;">
+      {% if page_obj.has_previous %}
+        <a class="chip" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if role %}&role={{ role }}{% endif %}{% if status %}&status={{ status }}{% endif %}"><i class="bi bi-chevron-left"></i> Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a class="chip" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if role %}&role={{ role }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Next <i class="bi bi-chevron-right"></i></a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+    <div style="text-align:center;padding:48px 20px;color:var(--text-3);">
+      <i class="bi bi-people" style="font-size:34px;display:block;margin-bottom:10px;opacity:.4;"></i>
+      <div style="font-size:14px;">No staff users match your filters.</div>
+      <a href="{% url 'accounts:user_create' %}" style="display:inline-block;margin-top:14px;font-size:13px;color:var(--sage-primary);text-decoration:none;font-weight:500;">
+        Add a staff member <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
