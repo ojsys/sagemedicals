@@ -120,13 +120,18 @@
           <div class="col-md-4">
             <label class="form-label">Phone <span style="color:var(--sage-red)">*</span></label>
             {{ form.phone }}
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:4px;line-height:1.4">
+              Enter local format (e.g. <strong style="color:var(--sage-ink)">08061265550</strong>). The country code <strong>+234</strong> is added automatically.
+            </div>
             {% if form.phone.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.phone.errors.0 }}</div>{% endif %}
           </div>
           <div class="col-md-4">
             <label class="form-label">Alternate Phone</label>{{ form.phone_alt }}
+            {% if form.phone_alt.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.phone_alt.errors.0 }}</div>{% endif %}
           </div>
           <div class="col-md-4">
-            <label class="form-label">Email</label>{{ form.email }}
+            <label class="form-label">Email <span style="color:var(--text-3);font-weight:400;font-size:11.5px">(optional)</span></label>
+            {{ form.email }}
           </div>
           <div class="col-12">
             <label class="form-label">Residential Address</label>{{ form.address }}

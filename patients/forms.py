@@ -26,6 +26,9 @@ class PatientRegistrationForm(SmartSelectMixin, forms.ModelForm):
             "date_of_birth": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "gender_identity": forms.TextInput(attrs={"placeholder": "Optional — patient's own description"}),
             "address": forms.Textarea(attrs={"rows": 2}),
+            "phone": forms.TextInput(attrs={"placeholder": "e.g. 08061265550", "inputmode": "tel"}),
+            "phone_alt": forms.TextInput(attrs={"placeholder": "e.g. 08061265550", "inputmode": "tel"}),
+            "email": forms.EmailInput(attrs={"placeholder": "Optional"}),
             "nhia_number": forms.TextInput(attrs={"placeholder": "e.g. SHA/00123456/A"}),
             "hmo_name": forms.TextInput(attrs={"placeholder": "e.g. Hygeia HMO, Leadway Health"}),
             "hmo_plan": forms.TextInput(attrs={"placeholder": "e.g. Basic, Standard, Executive"}),
@@ -46,6 +49,12 @@ class PatientRegistrationForm(SmartSelectMixin, forms.ModelForm):
         self.fields["sex"].required = True
         self.fields["phone"].required = True
         self.fields["payer_type"].required = True
+        self.fields["email"].required = False
+
+    def clean_email(self):
+        # Store empty email as NULL so the unique constraint allows multiple
+        # patients with no email on file.
+        return self.cleaned_data.get("email") or None
 
     def clean_phone(self):
         phone = self.cleaned_data.get("phone", "")

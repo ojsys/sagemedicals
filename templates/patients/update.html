@@ -39,11 +39,20 @@
     <div class="card-head"><div class="card-title"><i class="bi bi-telephone" style="margin-right:8px;color:var(--sage-teal)"></i>Contact Details</div></div>
     <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label">Phone *</label>{{ form.phone }}
+          <label class="form-label">Phone <span style="color:var(--sage-red)">*</span></label>{{ form.phone }}
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:4px;line-height:1.4">
+            Enter local format (e.g. <strong style="color:var(--sage-ink)">08061265550</strong>). <strong>+234</strong> is added automatically.
+          </div>
           {% if form.phone.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.phone.errors.0 }}</div>{% endif %}
         </div>
-        <div class="col-md-4"><label class="form-label">Alt. Phone</label>{{ form.phone_alt }}</div>
-        <div class="col-md-4"><label class="form-label">Email</label>{{ form.email }}</div>
+        <div class="col-md-4">
+          <label class="form-label">Alt. Phone</label>{{ form.phone_alt }}
+          {% if form.phone_alt.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.phone_alt.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Email <span style="color:var(--text-3);font-weight:400;font-size:11.5px">(optional)</span></label>
+          {{ form.email }}
+        </div>
         <div class="col-12"><label class="form-label">Address</label>{{ form.address }}</div>
         <div class="col-md-4"><label class="form-label">State</label>{{ form.address_state }}</div>
         <div class="col-md-4"><label class="form-label">LGA</label>{{ form.address_lga }}</div>

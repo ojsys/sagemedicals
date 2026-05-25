@@ -50,7 +50,7 @@ class Patient(BaseModel):
     # Contact
     phone = models.CharField(max_length=20, blank=True)
     phone_alt = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     address = models.TextField(blank=True)
     address_state = models.CharField(max_length=50, choices=NIGERIAN_STATES, blank=True)
     address_lga = models.CharField(max_length=100, blank=True)
