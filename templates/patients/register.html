@@ -41,6 +41,18 @@
 <form id="registration-form" method="post" enctype="multipart/form-data" novalidate>
   {% csrf_token %}
 
+  {% if form.errors or nok_form.errors %}
+  <div style="background:rgba(184,58,38,.06);border:1px solid rgba(184,58,38,.25);border-left:4px solid var(--sage-red);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px">
+    <strong style="color:var(--sage-red);display:block;margin-bottom:6px">Please correct the following:</strong>
+    <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--sage-ink)">
+      {% for field in form %}{% for err in field.errors %}<li>{{ field.label }}: {{ err }}</li>{% endfor %}{% endfor %}
+      {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+      {% for field in nok_form %}{% for err in field.errors %}<li>Next of Kin {{ field.label }}: {{ err }}</li>{% endfor %}{% endfor %}
+      {% for err in nok_form.non_field_errors %}<li>Next of Kin: {{ err }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start">
 
     <!-- ── LEFT: main form ───────────────────────────────────────── -->
@@ -163,7 +175,7 @@
         <!-- Payer type icon buttons -->
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
           <label style="cursor:pointer">
-            <input type="radio" name="payer_type" value="nhia" x-model="payer" style="display:none">
+            <input type="radio" name="{{ form.payer_type.html_name }}" value="nhia" x-model="payer" style="display:none">
             <div :style="payer==='nhia' ? 'border-color:var(--sage-primary);background:rgba(15,76,129,.06)' : ''"
                  style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
                  @click="payer='nhia'">
@@ -173,7 +185,7 @@
             </div>
           </label>
           <label style="cursor:pointer">
-            <input type="radio" name="payer_type" value="private_hmo" x-model="payer" style="display:none">
+            <input type="radio" name="{{ form.payer_type.html_name }}" value="private_hmo" x-model="payer" style="display:none">
             <div :style="payer==='private_hmo' ? 'border-color:var(--sage-teal);background:rgba(27,153,139,.06)' : ''"
                  style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
                  @click="payer='private_hmo'">
@@ -183,7 +195,7 @@
             </div>
           </label>
           <label style="cursor:pointer">
-            <input type="radio" name="payer_type" value="corporate" x-model="payer" style="display:none">
+            <input type="radio" name="{{ form.payer_type.html_name }}" value="corporate" x-model="payer" style="display:none">
             <div :style="payer==='corporate' ? 'border-color:var(--sage-amber);background:rgba(201,131,29,.06)' : ''"
                  style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
                  @click="payer='corporate'">
@@ -193,7 +205,7 @@
             </div>
           </label>
           <label style="cursor:pointer">
-            <input type="radio" name="payer_type" value="self_pay" x-model="payer" style="display:none">
+            <input type="radio" name="{{ form.payer_type.html_name }}" value="self_pay" x-model="payer" style="display:none">
             <div :style="payer==='self_pay' ? 'border-color:var(--sage-ink);background:rgba(11,30,45,.04)' : ''"
                  style="border:2px solid var(--line);border-radius:var(--radius);padding:14px 10px;text-align:center;transition:all .15s;cursor:pointer"
                  @click="payer='self_pay'">
@@ -203,6 +215,7 @@
             </div>
           </label>
         </div>
+        {% if form.payer_type.errors %}<div style="color:var(--sage-red);font-size:12px;margin-bottom:10px">{{ form.payer_type.errors.0 }}</div>{% endif %}
 
         <div class="row g-3">
           <!-- NHIA fields -->
@@ -384,7 +397,9 @@
 
 <style>
   /* Hide Django's default file inputs — our styled labels wrap them */
-  #id_photo, #id_id_document, #id_hmo_card {
+  #{{ form.photo.id_for_label }},
+  #{{ form.id_document.id_for_label }},
+  #{{ form.hmo_card.id_for_label }} {
     position: absolute;
     width: 1px; height: 1px;
     opacity: 0; pointer-events: none;
@@ -396,8 +411,13 @@ function docUploads() {
   return {
     files: { photo: '', id_document: '', hmo_card: '' },
     init() {
-      ['photo', 'id_document', 'hmo_card'].forEach(name => {
-        const input = document.getElementById('id_' + name);
+      const ids = {
+        photo: '{{ form.photo.id_for_label }}',
+        id_document: '{{ form.id_document.id_for_label }}',
+        hmo_card: '{{ form.hmo_card.id_for_label }}',
+      };
+      Object.entries(ids).forEach(([name, id]) => {
+        const input = document.getElementById(id);
         if (input) {
           input.addEventListener('change', () => {
             this.files[name] = input.files[0]?.name || '';
@@ -409,14 +429,14 @@ function docUploads() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const fields = ['id_first_name','id_last_name','id_date_of_birth'];
+  const fields = ['{{ form.first_name.id_for_label }}','{{ form.last_name.id_for_label }}','{{ form.date_of_birth.id_for_label }}'];
 
   function runCheck() {
     const params = new URLSearchParams({
-      first_name:    document.querySelector('[name=first_name]')?.value  || '',
-      last_name:     document.querySelector('[name=last_name]')?.value   || '',
-      date_of_birth: document.querySelector('[name=date_of_birth]')?.value || '',
-      phone:         document.querySelector('[name=phone]')?.value       || '',
+      first_name:    document.querySelector('[name="{{ form.first_name.html_name }}"]')?.value  || '',
+      last_name:     document.querySelector('[name="{{ form.last_name.html_name }}"]')?.value   || '',
+      date_of_birth: document.querySelector('[name="{{ form.date_of_birth.html_name }}"]')?.value || '',
+      phone:         document.querySelector('[name="{{ form.phone.html_name }}"]')?.value       || '',
     });
     if (!params.get('first_name') && !params.get('last_name')) return;
     htmx.ajax('GET', '/patients/check-duplicate/?' + params, {
