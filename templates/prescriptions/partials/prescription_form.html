@@ -1,0 +1,12 @@
+{% if form.errors or form.non_field_errors %}
+<div style="background:rgba(184,58,38,.06);border:1px solid rgba(184,58,38,.25);border-left:4px solid var(--sage-red);border-radius:var(--radius);padding:10px 14px;margin:8px 16px">
+  <strong style="color:var(--sage-red);font-size:12.5px;display:block;margin-bottom:4px">Prescription not saved</strong>
+  <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--sage-ink)">
+    {% for field in form %}{% for err in field.errors %}<li>{{ field.label }}: {{ err }}</li>{% endfor %}{% endfor %}
+    {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% with prescriptions=encounter.prescriptions.all %}
+  {% include "prescriptions/partials/prescription_list.html" %}
+{% endwith %}

@@ -19,8 +19,7 @@ from prescriptions.services import (
 class PrescriptionForm(SmartSelectMixin, django_forms.ModelForm):
     class Meta:
         model = Prescription
-        fields = ["drug", "dose", "route", "frequency", "frequency_other",
-                  "duration_days", "quantity", "instructions", "is_prn", "is_stat"]
+        fields = ["drug", "dose", "frequency", "duration_days", "quantity", "instructions"]
         widgets = {"instructions": django_forms.Textarea(attrs={"rows": 2})}
 
     def __init__(self, *args, **kwargs):
