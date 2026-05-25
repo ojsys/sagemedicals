@@ -9,6 +9,9 @@ from django.views.generic import RedirectView
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="laboratory:worklist"), name="index"),
     path("worklist/", views.LabWorklistView.as_view(), name="worklist"),
+    path("tests/", views.LabTestCatalogueView.as_view(), name="test_catalogue"),
+    path("tests/<int:pk>/edit/", views.LabTestEditView.as_view(), name="test_edit"),
+    path("tests/<int:pk>/toggle/", views.LabTestToggleView.as_view(), name="test_toggle"),
     path("encounter/<int:encounter_pk>/order/", views.LabOrderCreateView.as_view(), name="order_create"),
     path("order/<int:pk>/", views.LabOrderDetailView.as_view(), name="order_detail"),
     path("order/<int:pk>/collect/", views.SampleCollectView.as_view(), name="collect"),

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Edit Lab Test{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Laboratory / Test Catalogue / Edit</div>
+    <h1 class="page-title">Edit <em>{{ test.name }}</em></h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'laboratory:test_catalogue' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if form.errors or form.non_field_errors %}
+  <div style="background:rgba(184,58,38,.06);border:1px solid rgba(184,58,38,.25);border-left:4px solid var(--sage-red);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px">
+    <strong style="color:var(--sage-red);font-size:13px;display:block;margin-bottom:4px">Please correct:</strong>
+    <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--sage-ink)">
+      {% for field in form %}{% for err in field.errors %}<li>{{ field.label }}: {{ err }}</li>{% endfor %}{% endfor %}
+      {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Code <span style="color:var(--sage-red)">*</span></label>{{ form.code }}
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Test name <span style="color:var(--sage-red)">*</span></label>{{ form.name }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Category / Panel</label>{{ form.panel }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Sample type</label>{{ form.sample_type }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Turnaround (hrs)</label>{{ form.turnaround_hours }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Price (₦)</label>{{ form.price }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Units</label>{{ form.units }}
+      </div>
+      <div class="col-12">
+        <label class="form-label">Reference range</label>{{ form.reference_range_note }}
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i>Save changes</button>
+        <a href="{% url 'laboratory:test_catalogue' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

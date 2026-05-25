@@ -25,6 +25,38 @@ class LabOrderForm(SmartSelectMixin, django_forms.ModelForm):
         self.fields["priority"].widget.attrs["class"] = "form-select"
 
 
+class LabTestForm(SmartSelectMixin, django_forms.ModelForm):
+    class Meta:
+        model = LabTest
+        fields = [
+            "code", "name", "panel", "sample_type",
+            "turnaround_hours", "price", "units", "reference_range_note",
+        ]
+        widgets = {
+            "code": django_forms.TextInput(attrs={"placeholder": "e.g. MP, FBC, RFT"}),
+            "name": django_forms.TextInput(attrs={"placeholder": "e.g. Malaria Parasite Test"}),
+            "panel": django_forms.TextInput(attrs={
+                "placeholder": "e.g. Microbiology, Haematology",
+                "list": "lab-panel-options",
+            }),
+            "units": django_forms.TextInput(attrs={"placeholder": "e.g. mg/dL"}),
+            "reference_range_note": django_forms.TextInput(attrs={"placeholder": "e.g. 70-110 (fasting)"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, f in self.fields.items():
+            if isinstance(f.widget, django_forms.Select):
+                f.widget.attrs.setdefault("class", "form-select")
+            else:
+                f.widget.attrs.setdefault("class", "form-control")
+        self.fields["code"].required = True
+        self.fields["name"].required = True
+
+    def clean_code(self):
+        return self.cleaned_data["code"].strip().upper()
+
+
 class LabResultForm(SmartSelectMixin, django_forms.ModelForm):
     class Meta:
         model = LabResult
@@ -227,3 +259,75 @@ class LabResultPDFView(View):
         response = HttpResponse(buf.read(), content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{fname}"'
         return response
+
+
+# ── Lab Test Catalogue ────────────────────────────────────────
+
+@method_decorator(login_required, name="dispatch")
+class LabTestCatalogueView(View):
+    """List existing lab tests and add new ones inline."""
+
+    template_name = "laboratory/test_catalogue.html"
+
+    def get(self, request, form=None):
+        qs = LabTest.objects.all().order_by("panel", "name")
+        q = request.GET.get("q", "").strip()
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(name__icontains=q) | Q(code__icontains=q) | Q(panel__icontains=q)
+            )
+        panels = (
+            LabTest.objects.exclude(panel="")
+            .values_list("panel", flat=True).distinct().order_by("panel")
+        )
+        return render(request, self.template_name, {
+            "tests": qs,
+            "form": form or LabTestForm(),
+            "q": q,
+            "panels": panels,
+            "total": LabTest.objects.count(),
+            "active_count": LabTest.objects.filter(is_active=True).count(),
+        })
+
+    def post(self, request):
+        form = LabTestForm(request.POST)
+        if form.is_valid():
+            test = form.save(commit=False)
+            test._current_user = request.user
+            test.save()
+            messages.success(request, f"Test '{test.name}' added.")
+            return redirect("laboratory:test_catalogue")
+        return self.get(request, form=form)
+
+
+@method_decorator(login_required, name="dispatch")
+class LabTestEditView(View):
+    template_name = "laboratory/test_edit.html"
+
+    def get(self, request, pk):
+        test = get_object_or_404(LabTest, pk=pk)
+        return render(request, self.template_name, {"form": LabTestForm(instance=test), "test": test})
+
+    def post(self, request, pk):
+        test = get_object_or_404(LabTest, pk=pk)
+        form = LabTestForm(request.POST, instance=test)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            updated._current_user = request.user
+            updated.save()
+            messages.success(request, f"Test '{updated.name}' updated.")
+            return redirect("laboratory:test_catalogue")
+        return render(request, self.template_name, {"form": form, "test": test})
+
+
+@method_decorator(login_required, name="dispatch")
+class LabTestToggleView(View):
+    def post(self, request, pk):
+        test = get_object_or_404(LabTest, pk=pk)
+        test.is_active = not test.is_active
+        test._current_user = request.user
+        test.save(update_fields=["is_active"])
+        state = "activated" if test.is_active else "deactivated"
+        messages.success(request, f"Test '{test.name}' {state}.")
+        return redirect("laboratory:test_catalogue")

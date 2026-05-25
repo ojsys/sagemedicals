@@ -40,8 +40,13 @@
 {% endif %}
 
 {% if role in "super_admin,doctor,resident,nurse,lab_tech" %}
-<a class="nav-item {% if '/lab' in url %}active{% endif %}" href="/lab/">
+<a class="nav-item {% if '/lab' in url and '/tests' not in url %}active{% endif %}" href="/lab/">
   <i class="bi bi-droplet-half"></i>Laboratory
+</a>
+{% endif %}
+{% if role in "super_admin,lab_tech" %}
+<a class="nav-item {% if '/lab/tests' in url %}active{% endif %}" href="{% url 'laboratory:test_catalogue' %}">
+  <i class="bi bi-clipboard-data"></i>Lab Test Catalogue
 </a>
 {% endif %}
 

@@ -142,7 +142,7 @@ class EncounterWorkspaceView(View):
             "diagnoses": encounter.diagnoses.all(),
             "prescriptions": encounter.prescriptions.all().select_related("drug"),
             "lab_orders": encounter.lab_orders.all().select_related("test"),
-            "lab_tests": LabTest.objects.filter(is_active=True).order_by("name"),
+            "lab_tests": LabTest.objects.filter(is_active=True).order_by("panel", "name"),
             "allergies": encounter.patient.active_allergies,
             "conditions": encounter.patient.chronic_conditions.filter(status="active"),
             "recent_labs": LabOrder.objects.filter(patient=encounter.patient, status="released")

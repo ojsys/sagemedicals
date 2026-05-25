@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Lab Test Catalogue{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Laboratory / Test Catalogue</div>
+    <h1 class="page-title">Manage <em>lab tests</em></h1>
+    <div style="font-size:13px;color:var(--text-3);margin-top:2px">
+      {{ active_count }} active · {{ total }} total. Add or edit tests staff can order.
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'laboratory:worklist' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Worklist</a>
+  </div>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+    <div style="background:rgba(27,153,139,.06);border:1px solid rgba(27,153,139,.25);border-left:4px solid var(--sage-teal);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--sage-ink)">
+      {{ m }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Add new test -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head">
+    <div class="card-title"><i class="bi bi-plus-circle" style="margin-right:8px;color:var(--sage-teal)"></i>Add new test</div>
+    <span style="font-size:12px;color:var(--text-3)">Appears immediately in the order form</span>
+  </div>
+
+  {% if form.errors or form.non_field_errors %}
+  <div style="background:rgba(184,58,38,.06);border:1px solid rgba(184,58,38,.25);border-left:4px solid var(--sage-red);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px">
+    <strong style="color:var(--sage-red);font-size:13px;display:block;margin-bottom:4px">Please correct:</strong>
+    <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--sage-ink)">
+      {% for field in form %}{% for err in field.errors %}<li>{{ field.label }}: {{ err }}</li>{% endfor %}{% endfor %}
+      {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'laboratory:test_catalogue' %}">
+    {% csrf_token %}
+    <datalist id="lab-panel-options">
+      {% for p in panels %}<option value="{{ p }}">{% endfor %}
+    </datalist>
+    <div class="row g-3">
+      <div class="col-md-2">
+        <label class="form-label">Code <span style="color:var(--sage-red)">*</span></label>
+        {{ form.code }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Test name <span style="color:var(--sage-red)">*</span></label>
+        {{ form.name }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Category / Panel</label>
+        {{ form.panel }}
+        <div style="font-size:11px;color:var(--text-3);margin-top:3px">e.g. Microbiology, Haematology, Chemistry</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Sample type</label>
+        {{ form.sample_type }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Turnaround (hrs)</label>
+        {{ form.turnaround_hours }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Price (₦)</label>
+        {{ form.price }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Units</label>
+        {{ form.units }}
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Reference range</label>
+        {{ form.reference_range_note }}
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i>Save test</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Search + list -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title"><i class="bi bi-list-ul" style="margin-right:8px;color:var(--sage-teal)"></i>Test catalogue</div>
+    <form method="get" style="display:flex;gap:6px">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search code, name, panel…" class="form-control form-control-sm" style="width:240px">
+      {% if q %}<a href="{% url 'laboratory:test_catalogue' %}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+    </form>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table class="table" style="margin:0;font-size:13px">
+      <thead style="background:var(--bg-2)">
+        <tr>
+          <th style="padding:10px 16px">Code</th>
+          <th style="padding:10px 16px">Test</th>
+          <th style="padding:10px 16px">Category</th>
+          <th style="padding:10px 16px">Sample</th>
+          <th style="padding:10px 16px">TAT</th>
+          <th style="padding:10px 16px">Price</th>
+          <th style="padding:10px 16px">Status</th>
+          <th style="padding:10px 16px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tests %}
+        <tr>
+          <td style="padding:10px 16px;font-family:var(--mono);font-weight:500">{{ t.code }}</td>
+          <td style="padding:10px 16px">{{ t.name }}</td>
+          <td style="padding:10px 16px;color:var(--text-3)">{{ t.panel|default:"—" }}</td>
+          <td style="padding:10px 16px;color:var(--text-3)">{{ t.get_sample_type_display }}</td>
+          <td style="padding:10px 16px;color:var(--text-3)">{{ t.turnaround_hours }}h</td>
+          <td style="padding:10px 16px">₦{{ t.price|floatformat:2 }}</td>
+          <td style="padding:10px 16px">
+            {% if t.is_active %}
+              <span class="tag green" style="font-size:10.5px">Active</span>
+            {% else %}
+              <span class="tag gray" style="font-size:10.5px">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="padding:10px 16px;text-align:right">
+            <a href="{% url 'laboratory:test_edit' t.pk %}" class="btn btn-ghost btn-sm" style="padding:3px 8px"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="{% url 'laboratory:test_toggle' t.pk %}" style="display:inline-block">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost btn-sm" style="padding:3px 8px"
+                      title="{% if t.is_active %}Deactivate{% else %}Activate{% endif %}">
+                <i class="bi bi-{% if t.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text-3)">No tests yet — add one above to get started.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
