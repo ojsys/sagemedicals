@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Clinic Schedule{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Scheduling / Schedules / {{ action }}</div>
+    <h1 class="page-title">{{ action }} <em>clinic schedule</em></h1>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'scheduling:schedule_list' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Back</a>
+  </div>
+</div>
+
+<div style="max-width:760px">
+  {% if form.errors or form.non_field_errors %}
+  <div style="background:rgba(184,58,38,.06);border:1px solid rgba(184,58,38,.25);border-left:4px solid var(--sage-red);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px">
+    <strong style="color:var(--sage-red);display:block;margin-bottom:4px">Please correct:</strong>
+    <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--sage-ink)">
+      {% for field in form %}{% for err in field.errors %}<li>{{ field.label }}: {{ err }}</li>{% endfor %}{% endfor %}
+      {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-head"><div class="card-title">Schedule details</div></div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Clinic <span style="color:var(--sage-red)">*</span></label>
+          {{ form.clinic }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Consultant <span style="color:var(--sage-red)">*</span></label>
+          {{ form.consultant }}
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">Only doctors and residents can be consultants.</div>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Working days <span style="color:var(--sage-red)">*</span></label>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;padding:8px 0">
+            {% for choice in form.working_days %}
+              <label style="display:flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer">
+                {{ choice.tag }} {{ choice.choice_label }}
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Start time <span style="color:var(--sage-red)">*</span></label>
+          {{ form.start_time }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">End time <span style="color:var(--sage-red)">*</span></label>
+          {{ form.end_time }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Slot duration (min)</label>
+          {{ form.slot_duration_minutes }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Patients per slot</label>
+          {{ form.max_per_slot }}
+        </div>
+        <div class="col-12">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+            {{ form.is_active }} Active (available for booking)
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:16px;margin-top:16px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary"><i class="bi bi-check-circle"></i>Save schedule</button>
+        <a href="{% url 'scheduling:schedule_list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

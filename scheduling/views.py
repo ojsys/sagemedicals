@@ -6,8 +6,15 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 
+from accounts.models import Role, User
 from patients.models import Patient
 from scheduling.models import Appointment, Clinic, ClinicSchedule, QueueEntry
+
+
+WEEKDAY_CHOICES = [
+    (0, "Monday"), (1, "Tuesday"), (2, "Wednesday"), (3, "Thursday"),
+    (4, "Friday"), (5, "Saturday"), (6, "Sunday"),
+]
 
 
 class AppointmentForm(django_forms.ModelForm):
@@ -28,6 +35,67 @@ class AppointmentForm(django_forms.ModelForm):
             else:
                 f.widget.attrs.setdefault("class", "form-control")
         self.fields["schedule"].queryset = ClinicSchedule.objects.filter(is_active=True).select_related("clinic", "consultant")
+
+
+class ClinicScheduleForm(django_forms.ModelForm):
+    working_days = django_forms.MultipleChoiceField(
+        choices=WEEKDAY_CHOICES,
+        widget=django_forms.CheckboxSelectMultiple,
+        help_text="Days this consultant runs this clinic.",
+    )
+
+    class Meta:
+        model = ClinicSchedule
+        fields = [
+            "clinic", "consultant", "working_days",
+            "start_time", "end_time", "slot_duration_minutes",
+            "max_per_slot", "is_active",
+        ]
+        widgets = {
+            "start_time": django_forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "end_time": django_forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Consultants = clinical staff who hold clinics (doctors, residents)
+        self.fields["consultant"].queryset = User.objects.filter(
+            role__in=[Role.DOCTOR, Role.RESIDENT], is_active=True
+        ).order_by("first_name", "last_name")
+        self.fields["clinic"].queryset = Clinic.objects.filter(is_active=True)
+        for name, f in self.fields.items():
+            if name == "working_days":
+                continue
+            if isinstance(f.widget, django_forms.Select):
+                f.widget.attrs.setdefault("class", "form-select")
+            elif isinstance(f.widget, django_forms.CheckboxInput):
+                continue
+            else:
+                f.widget.attrs.setdefault("class", "form-control")
+        # On edit, preselect the existing working_days
+        if self.instance and self.instance.pk and self.instance.working_days:
+            self.initial["working_days"] = [str(d) for d in self.instance.working_days]
+
+    def clean_working_days(self):
+        return [int(d) for d in self.cleaned_data["working_days"]]
+
+
+class ClinicForm(django_forms.ModelForm):
+    class Meta:
+        model = Clinic
+        fields = ["name", "department", "location", "is_active"]
+        widgets = {
+            "name": django_forms.TextInput(attrs={"placeholder": "e.g. General Outpatient Clinic"}),
+            "department": django_forms.TextInput(attrs={"placeholder": "e.g. Internal Medicine"}),
+            "location": django_forms.TextInput(attrs={"placeholder": "e.g. Block B, Room 12"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for f in self.fields.values():
+            if isinstance(f.widget, django_forms.CheckboxInput):
+                continue
+            f.widget.attrs.setdefault("class", "form-control")
 
 
 class TriageForm(django_forms.ModelForm):
@@ -100,7 +168,11 @@ class AppointmentCreateView(View):
             patient = get_object_or_404(Patient, pk=patient_pk)
             initial["patient"] = patient
         form = AppointmentForm(initial=initial)
-        return render(request, self.template_name, {"form": form, "patient": patient})
+        return render(request, self.template_name, {
+            "form": form,
+            "patient": patient,
+            "schedule_count": ClinicSchedule.objects.filter(is_active=True).count(),
+        })
 
     def post(self, request):
         form = AppointmentForm(request.POST)
@@ -242,3 +314,100 @@ class AppointmentListView(View):
             "upcoming": upcoming,
             "status_choices": Appointment.Status.choices,
         })
+
+
+# ── Clinic & Schedule Management ──────────────────────────────
+
+@method_decorator(login_required, name="dispatch")
+class ClinicScheduleListView(View):
+    template_name = "scheduling/schedule_list.html"
+
+    def get(self, request):
+        weekday_labels = dict(WEEKDAY_CHOICES)
+        schedules = list(
+            ClinicSchedule.objects.select_related("clinic", "consultant")
+            .order_by("clinic__name", "consultant__first_name")
+        )
+        for s in schedules:
+            s.working_days_display = " · ".join(
+                weekday_labels.get(int(d), str(d)) for d in (s.working_days or [])
+            ) or "—"
+        clinics = Clinic.objects.all().order_by("name")
+        return render(request, self.template_name, {
+            "schedules": schedules,
+            "clinics": clinics,
+        })
+
+
+@method_decorator(login_required, name="dispatch")
+class ClinicScheduleCreateView(View):
+    template_name = "scheduling/schedule_form.html"
+
+    def get(self, request):
+        return render(request, self.template_name, {
+            "form": ClinicScheduleForm(),
+            "action": "New",
+        })
+
+    def post(self, request):
+        form = ClinicScheduleForm(request.POST)
+        if form.is_valid():
+            sched = form.save(commit=False)
+            sched._current_user = request.user
+            sched.save()
+            messages.success(request, f"Schedule saved: {sched}.")
+            return redirect("scheduling:schedule_list")
+        return render(request, self.template_name, {"form": form, "action": "New"})
+
+
+@method_decorator(login_required, name="dispatch")
+class ClinicScheduleEditView(View):
+    template_name = "scheduling/schedule_form.html"
+
+    def get(self, request, pk):
+        sched = get_object_or_404(ClinicSchedule, pk=pk)
+        return render(request, self.template_name, {
+            "form": ClinicScheduleForm(instance=sched),
+            "schedule": sched,
+            "action": "Edit",
+        })
+
+    def post(self, request, pk):
+        sched = get_object_or_404(ClinicSchedule, pk=pk)
+        form = ClinicScheduleForm(request.POST, instance=sched)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            updated._current_user = request.user
+            updated.save()
+            messages.success(request, "Schedule updated.")
+            return redirect("scheduling:schedule_list")
+        return render(request, self.template_name, {"form": form, "schedule": sched, "action": "Edit"})
+
+
+@method_decorator(login_required, name="dispatch")
+class ClinicScheduleDeleteView(View):
+    def post(self, request, pk):
+        sched = get_object_or_404(ClinicSchedule, pk=pk)
+        if sched.appointments.exists():
+            messages.error(request, "Cannot delete: this schedule has existing appointments. Deactivate it instead.")
+        else:
+            label = str(sched)
+            sched.delete()
+            messages.success(request, f"Schedule deleted: {label}.")
+        return redirect("scheduling:schedule_list")
+
+
+@method_decorator(login_required, name="dispatch")
+class ClinicCreateView(View):
+    """Quick inline clinic creation from the schedule list page."""
+
+    def post(self, request):
+        form = ClinicForm(request.POST)
+        if form.is_valid():
+            clinic = form.save(commit=False)
+            clinic._current_user = request.user
+            clinic.save()
+            messages.success(request, f"Clinic '{clinic.name}' created.")
+        else:
+            messages.error(request, "Please enter a clinic name.")
+        return redirect("scheduling:schedule_list")

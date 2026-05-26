@@ -22,6 +22,17 @@
   </div>
   {% endif %}
 
+  {% if schedule_count == 0 %}
+  <div style="background:rgba(201,131,29,.06);border:1px solid rgba(201,131,29,.25);border-left:4px solid var(--sage-amber);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size:18px;color:var(--sage-amber);flex-shrink:0;margin-top:1px"></i>
+    <div style="flex:1;font-size:13.5px">
+      <strong style="display:block;margin-bottom:4px;color:var(--sage-ink)">No clinic schedules configured</strong>
+      The Schedule field below will be empty until at least one active consultant schedule exists.
+      <a href="{% url 'scheduling:schedule_list' %}" style="color:var(--sage-primary);font-weight:500;margin-left:6px">Set up schedules →</a>
+    </div>
+  </div>
+  {% endif %}
+
   <form method="post">
     {% csrf_token %}
     <div class="card">

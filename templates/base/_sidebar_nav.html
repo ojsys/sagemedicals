@@ -24,6 +24,11 @@
   <i class="bi bi-list-ol"></i>Queue
 </a>
 {% endif %}
+{% if role in "super_admin,hospital_admin" %}
+<a class="nav-item {% if '/scheduling/schedules' in url or '/scheduling/clinics' in url %}active{% endif %}" href="{% url 'scheduling:schedule_list' %}">
+  <i class="bi bi-calendar-week"></i>Clinic Schedules
+</a>
+{% endif %}
 
 {% if role in "super_admin,doctor,resident,nurse" %}
 <a class="nav-item {% if '/encounters' in url %}active{% endif %}" href="{% url 'encounters:list' %}">

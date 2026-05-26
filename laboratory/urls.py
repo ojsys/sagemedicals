@@ -19,4 +19,6 @@ urlpatterns = [
     path("order/<int:pk>/verify/", views.LabResultVerifyView.as_view(), name="result_verify"),
     path("order/<int:pk>/acknowledge/", views.CriticalAcknowledgeView.as_view(), name="acknowledge"),
     path("order/<int:pk>/pdf/", views.LabResultPDFView.as_view(), name="result_pdf"),
+    path("order/<int:pk>/cancel/", views.LabOrderCancelView.as_view(), name="order_cancel"),
+    path("order/<int:pk>/delete/", views.LabOrderDeleteView.as_view(), name="order_delete"),
 ]

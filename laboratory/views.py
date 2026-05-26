@@ -331,3 +331,56 @@ class LabTestToggleView(View):
         state = "activated" if test.is_active else "deactivated"
         messages.success(request, f"Test '{test.name}' {state}.")
         return redirect("laboratory:test_catalogue")
+
+
+def _remove_lab_invoice_item(order):
+    """Best-effort: drop the matching InvoiceItem this lab order added (description-based match)."""
+    if not order.encounter_id:
+        return
+    from billing.models import Invoice, InvoiceItem
+    invoices = Invoice.objects.filter(encounter_id=order.encounter_id).exclude(status=Invoice.Status.PAID)
+    for inv in invoices:
+        item = InvoiceItem.objects.filter(
+            invoice=inv, description=f"Lab: {order.test.name}"
+        ).order_by("-created_at").first()
+        if item:
+            item.delete()
+            inv.recalculate()
+            return
+
+
+@method_decorator(login_required, name="dispatch")
+class LabOrderCancelView(View):
+    """Cancel a lab order that hasn't been released yet and remove its billing line."""
+
+    def post(self, request, pk):
+        order = get_object_or_404(LabOrder, pk=pk)
+        if order.status in (LabOrder.Status.RELEASED, LabOrder.Status.VERIFIED):
+            messages.error(request, "Cannot cancel a released or verified order.")
+            return redirect("laboratory:order_detail", pk=pk)
+        order.status = LabOrder.Status.CANCELLED
+        order._current_user = request.user
+        order.save(update_fields=["status"])
+        _remove_lab_invoice_item(order)
+        messages.success(request, f"Lab order for {order.test.name} cancelled and billing line removed.")
+        return redirect("laboratory:order_detail", pk=pk)
+
+
+@method_decorator(login_required, name="dispatch")
+class LabOrderDeleteView(View):
+    """Hard-delete a cancelled lab order. Also removes any remaining billing line."""
+
+    def post(self, request, pk):
+        order = get_object_or_404(LabOrder, pk=pk)
+        if order.status != LabOrder.Status.CANCELLED:
+            messages.error(request, "Only cancelled orders can be deleted.")
+            return redirect("laboratory:order_detail", pk=pk)
+        # Belt and braces — remove any lingering billing item too.
+        _remove_lab_invoice_item(order)
+        label = order.test.name
+        encounter_pk = order.encounter_id
+        order.delete()
+        messages.success(request, f"Cancelled lab order for {label} deleted.")
+        if encounter_pk:
+            return redirect("encounters:workspace", pk=encounter_pk)
+        return redirect("laboratory:worklist")

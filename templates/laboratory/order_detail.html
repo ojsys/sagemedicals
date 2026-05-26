@@ -66,6 +66,23 @@
       </form>
       <a href="{% url 'laboratory:result_entry' order.pk %}" class="btn btn-ghost">Edit Result</a>
     {% endif %}
+
+    {% if order.status not in 'released,verified,cancelled' %}
+      <form method="post" action="{% url 'laboratory:order_cancel' order.pk %}" style="display:inline"
+            onsubmit="return confirm('Cancel this lab order? The related billing line will also be removed.');">
+        {% csrf_token %}
+        <button class="btn btn-ghost" style="color:var(--sage-red)"><i class="bi bi-x-circle"></i>Cancel Order</button>
+      </form>
+    {% endif %}
+    {% if order.status == 'cancelled' %}
+      <form method="post" action="{% url 'laboratory:order_delete' order.pk %}" style="display:inline"
+            onsubmit="return confirm('Permanently delete this cancelled order? Any remaining billing line will also be removed. This cannot be undone.');">
+        {% csrf_token %}
+        <button class="btn btn-ghost" style="color:var(--sage-red);border-color:var(--sage-red)">
+          <i class="bi bi-trash"></i>Delete
+        </button>
+      </form>
+    {% endif %}
   </div>
 </div>
 
