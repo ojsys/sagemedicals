@@ -89,7 +89,7 @@
       <span class="tag gray" style="font-size:11px">{{ enc.get_encounter_type_display }}</span>
     </span>
     <span style="color:var(--text-2)">
-      {% if enc.attending %}Dr. {{ enc.attending.last_name }}{% else %}—{% endif %}
+      {% if enc.attending %}{% if enc.attending.is_doctor %}Dr. {{ enc.attending.last_name }}{% else %}{{ enc.attending.get_full_name }}{% endif %}{% else %}—{% endif %}
     </span>
     <span>
       {% if enc.status == 'signed' %}<span class="tag green" style="font-size:11px"><span class="dot"></span>Signed</span>

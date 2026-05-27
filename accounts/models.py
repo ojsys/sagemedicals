@@ -37,6 +37,9 @@ CLINICAL_ROLES = {
 # Roles that share the nursing-station layout/dashboard.
 NURSING_ROLES = {Role.NURSE, Role.CHEW}
 
+# Medical doctors — the only roles addressed with the "Dr." title.
+DOCTOR_ROLES = {Role.DOCTOR, Role.RESIDENT}
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -100,6 +103,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_clinical(self):
         return self.role in CLINICAL_ROLES
+
+    @property
+    def is_doctor(self):
+        """True only for medical doctors (doctors/consultants and residents/house officers)."""
+        return self.role in DOCTOR_ROLES
+
+    @property
+    def display_name(self):
+        """Name as it should be shown: 'Dr. <full name>' for doctors, plain full name otherwise."""
+        name = self.get_full_name() or self.email
+        return f"Dr. {name}" if self.is_doctor else name
 
     @property
     def can_manage_staff(self):
