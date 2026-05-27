@@ -17,6 +17,7 @@ from django.contrib.auth.mixins import AccessMixin
 from accounts.models import NURSING_ROLES, Role
 from django.contrib.auth.mixins import AccessMixin
 from django.template.defaultfilters import pluralize
+from django.utils.safestring import mark_safe
 
 
 @never_cache
@@ -138,6 +139,11 @@ class DashboardView(AccessMixin, View):
         builder = role_builders.get(role)
         if builder:
             template, ctx = builder(request)
+            # Pre-build each stat's glyph style as a safe attribute so the
+            # template never embeds {{ }} inside a literal style="" attribute.
+            for s in ctx.get("stats", []):
+                style = s.pop("glyph_style", "")
+                s["glyph_attr"] = mark_safe(f' style="{style}"') if style else ""
             return render(request, template, ctx)
 
         template = (
