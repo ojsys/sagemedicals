@@ -1016,6 +1016,36 @@
     ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 
+    /* ── Print ──────────────────────────────────────────────
+       window.print() on any page drops the app chrome (sidebar,
+       topbar, flash messages, action buttons, anything .no-print)
+       and prints the page content full-width. */
+    @media print {
+      .mob-overlay,
+      .sidebar,
+      .topbar,
+      .flash-wrap,
+      .page-actions,
+      .no-print { display: none !important; }
+
+      .app { display: block !important; }
+      main { margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+      .page-container { padding: 0 !important; max-width: 100% !important; }
+      /* Collapse the invoice's 2-column (doc + payment rail) grid to the doc only */
+      .invoice-layout { display: block !important; }
+
+      html, body { background: #fff !important; }
+      .card, .invoice, .table-wrap { box-shadow: none !important; }
+
+      /* Keep brand colours / tags / totals shading in the printout */
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      /* Don't split rows or cards across pages */
+      tr, .card, .invoice, .bk-row { page-break-inside: avoid; }
+
+      @page { margin: 14mm; }
+    }
+
     {% block extra_css %}{% endblock %}
   </style>
 </head>

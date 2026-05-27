@@ -18,7 +18,7 @@
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr{% if invoice.balance > 0 %} 360px{% endif %};gap:20px;align-items:start">
+<div class="invoice-layout" style="display:grid;grid-template-columns:1fr{% if invoice.balance > 0 %} 360px{% endif %};gap:20px;align-items:start">
 
   <!-- Invoice document -->
   <div class="invoice">
@@ -130,7 +130,7 @@
 
   <!-- Payment rail -->
   {% if invoice.balance > 0 %}
-  <div>
+  <div class="no-print">
 
     <!-- Paystack online payment -->
     <div class="card" style="margin-bottom:16px">

@@ -99,34 +99,58 @@ def build_invoice_pdf(invoice):
     def _header(canvas, doc):
         _page_header(canvas, doc, "INVOICE", invoice.invoice_number)
 
+    # Local right-aligned colour variants, mirroring the on-screen totals
+    right_green = ParagraphStyle("right_green", parent=RIGHT, textColor=SAGE_GREEN)
+    right_red = ParagraphStyle("right_red", parent=RIGHT, textColor=SAGE_RED, fontName="Helvetica-Bold")
+    total_lbl = ParagraphStyle("total_lbl", fontName="Helvetica-Bold", fontSize=11, textColor=SAGE_INK, alignment=TA_RIGHT)
+    total_val = ParagraphStyle("total_val", fontName="Helvetica-Bold", fontSize=13, textColor=SAGE_INK, alignment=TA_RIGHT)
+
     story = []
-
-    # Patient info block
     patient = invoice.patient
-    story.append(Paragraph("Patient", H2))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=LINE, spaceAfter=6))
-    story.append(_kv_table([
-        ("Name", patient.full_name),
-        ("Hospital No.", patient.hospital_number),
-        ("Date of Birth", str(patient.date_of_birth) if patient.date_of_birth else "—"),
-        ("Sex", patient.get_sex_display() if patient.sex else "—"),
+
+    # ── Bill To + Encounter (mirrors the HTML inv-bill-grid) ──
+    if patient.payer_type == "nhia":
+        payer = "NHIA" + (f" · {patient.nhia_number}" if patient.nhia_number else "")
+    elif patient.payer_type == "private_hmo":
+        payer = "HMO" + (f" · {patient.hmo_name}" if patient.hmo_name else "")
+    else:
+        payer = "Self-pay"
+
+    bill_to = [
+        Paragraph("BILL TO", LABEL),
+        Paragraph(patient.full_name, H2),
+        Paragraph(patient.hospital_number, SMALL),
+    ]
+    if patient.phone:
+        bill_to.append(Paragraph(patient.phone, SMALL))
+    bill_to.append(Paragraph(payer, SMALL))
+
+    meta_lines = [
+        Paragraph("INVOICE", LABEL),
+        Paragraph(invoice.invoice_number, H2),
+        Paragraph(f"Issued: {invoice.created_at.strftime('%d %b %Y')}", SMALL),
+        Paragraph(f"Status: {invoice.get_status_display()}", SMALL),
+    ]
+    enc = invoice.encounter
+    if enc:
+        meta_lines.append(Spacer(1, 4))
+        meta_lines.append(Paragraph("ENCOUNTER", LABEL))
+        meta_lines.append(Paragraph(enc.get_encounter_type_display(), SMALL))
+        meta_lines.append(Paragraph(enc.date_time.strftime("%d %b %Y, %H:%M"), SMALL))
+        doctor = getattr(enc, "doctor", None)
+        if doctor:
+            meta_lines.append(Paragraph(f"Dr. {doctor.get_full_name()}", SMALL))
+
+    head_tbl = Table([[bill_to, meta_lines]], colWidths=[9.4*cm, 8.1*cm])
+    head_tbl.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (0, -1), 0),
+        ("RIGHTPADDING", (-1, 0), (-1, -1), 0),
     ]))
-    story.append(Spacer(1, 10))
+    story.append(head_tbl)
+    story.append(Spacer(1, 16))
 
-    # Invoice meta
-    story.append(Paragraph("Invoice Details", H2))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=LINE, spaceAfter=6))
-    story.append(_kv_table([
-        ("Invoice No.", invoice.invoice_number),
-        ("Date", invoice.created_at.strftime("%d %B %Y")),
-        ("Status", invoice.get_status_display()),
-    ]))
-    story.append(Spacer(1, 14))
-
-    # Line items
-    story.append(Paragraph("Items", H2))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=LINE, spaceAfter=6))
-
+    # ── Line items ──
     header_row = [
         Paragraph("Description", LABEL),
         Paragraph("Qty", LABEL),
@@ -142,36 +166,67 @@ def build_invoice_pdf(invoice):
             Paragraph(f"₦{item.total:,.2f}", RIGHT),
         ])
 
-    col_w = [9*cm, 1.8*cm, 3.5*cm, 3.5*cm]
+    col_w = [9*cm, 1.8*cm, 3.4*cm, 3.3*cm]
     t = Table(table_data, colWidths=col_w, repeatRows=1)
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), LIGHT_GREY),
         ("LINEBELOW", (0, 0), (-1, 0), 0.5, LINE),
         ("LINEBELOW", (0, 1), (-1, -1), 0.3, LINE),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ("LEFTPADDING", (0, 0), (0, -1), 0),
     ]))
     story.append(t)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
 
-    # Totals
-    totals_data = [
-        [Paragraph("Subtotal", BODY), Paragraph(f"₦{invoice.total:,.2f}", RIGHT)],
-        [Paragraph("Paid", BODY), Paragraph(f"₦{invoice.amount_paid:,.2f}", RIGHT)],
-        [Paragraph("Balance Due", H2), Paragraph(f"₦{invoice.balance:,.2f}", RIGHT_BOLD)],
-    ]
+    # ── Totals (subtotal, discount, total, paid, balance) ──
+    totals_data = [[Paragraph("Subtotal", RIGHT), Paragraph(f"₦{invoice.subtotal:,.2f}", RIGHT)]]
+    if invoice.discount:
+        totals_data.append([Paragraph("Discount", right_green), Paragraph(f"−₦{invoice.discount:,.2f}", right_green)])
+    total_row_idx = len(totals_data)
+    totals_data.append([Paragraph("Total", total_lbl), Paragraph(f"₦{invoice.total:,.2f}", total_val)])
+    if invoice.amount_paid:
+        totals_data.append([Paragraph("Amount Paid", right_green), Paragraph(f"₦{invoice.amount_paid:,.2f}", right_green)])
+        bal_style = right_red if invoice.balance > 0 else right_green
+        totals_data.append([Paragraph("Balance", bal_style), Paragraph(f"₦{invoice.balance:,.2f}", bal_style)])
+
     t2 = Table(totals_data, colWidths=[14*cm, 3.5*cm])
     t2.setStyle(TableStyle([
-        ("LINEABOVE", (0, 2), (-1, 2), 1, SAGE_INK),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LINEABOVE", (0, total_row_idx), (-1, total_row_idx), 1, SAGE_INK),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (-1, 0), (-1, -1), 0),
     ]))
     story.append(t2)
 
+    # ── Payment history ──
+    payments = list(invoice.payments.all())
+    if payments:
+        story.append(Spacer(1, 18))
+        story.append(Paragraph("Payment History", LABEL))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=LINE, spaceAfter=6))
+        pay_rows = []
+        for p in payments:
+            ref = f"  ·  {p.reference}" if p.reference else ""
+            pay_rows.append([
+                Paragraph(f"{p.get_mode_display()}{ref}", BODY),
+                Paragraph(p.received_at.strftime("%d %b %Y"), SMALL),
+                Paragraph(f"₦{p.amount:,.2f}", RIGHT),
+            ])
+        pt = Table(pay_rows, colWidths=[10*cm, 4*cm, 3.5*cm])
+        pt.setStyle(TableStyle([
+            ("LINEBELOW", (0, 0), (-1, -1), 0.3, LINE),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (0, -1), 0),
+            ("RIGHTPADDING", (-1, 0), (-1, -1), 0),
+        ]))
+        story.append(pt)
+
     if invoice.notes:
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 14))
         story.append(Paragraph("Notes", LABEL))
         story.append(Paragraph(invoice.notes, SMALL))
 

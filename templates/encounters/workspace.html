@@ -9,7 +9,7 @@
     <p class="page-sub">{{ encounter.get_encounter_type_display }} · {{ encounter.date_time|date:"d M Y, H:i" }}</p>
   </div>
   <div class="page-actions">
-    <a href="#" class="btn btn-ghost"><i class="bi bi-printer"></i>Print</a>
+    <a href="#" onclick="window.print();return false;" class="btn btn-ghost"><i class="bi bi-printer"></i>Print</a>
     {% if encounter.status == 'draft' %}
     <form method="post" action="{% url 'encounters:sign' encounter.pk %}" style="display:inline"
           onsubmit="return confirm('Sign and lock this encounter? This cannot be undone.')">
