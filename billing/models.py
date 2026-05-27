@@ -74,7 +74,9 @@ class Invoice(BaseModel):
             self.status = Invoice.Status.PAID
         elif self.amount_paid > 0:
             self.status = Invoice.Status.PARTIAL
-        self.save(update_fields=["subtotal", "total", "balance", "status"])
+        # NOTE: amount_paid must be saved too — it is set by record_payment()
+        # before this call. Omitting it left invoices "settled" with collected = 0.
+        self.save(update_fields=["subtotal", "total", "amount_paid", "balance", "status"])
 
 
 class InvoiceItem(BaseModel):

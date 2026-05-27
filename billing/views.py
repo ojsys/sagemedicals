@@ -30,29 +30,70 @@ class BillingListView(View):
 
     def get(self, request):
         from django.core.paginator import Paginator
-        from django.db.models import Sum
+        from django.db.models import Count, Sum
+        from django.utils import timezone
 
         patient_pk = request.GET.get("patient")
         status_filter = request.GET.get("status", "")
 
-        qs = (
-            Invoice.objects.select_related("patient", "encounter")
-            .order_by("-created_at")
-        )
+        # Base scope: all invoices, narrowed to a patient when viewing their bills.
+        # The status dropdown only narrows the invoice *table*, not the headline
+        # figures — a dashboard should always show the whole financial picture.
+        base_qs = Invoice.objects.select_related("patient", "encounter").order_by("-created_at")
         patient = None
         if patient_pk:
             patient = get_object_or_404(Patient, pk=patient_pk)
-            qs = qs.filter(patient=patient)
-        if status_filter:
-            qs = qs.filter(status=status_filter)
+            base_qs = base_qs.filter(patient=patient)
 
-        totals = qs.aggregate(
+        # ── Headline figures (exclude void invoices from money totals) ──
+        financial_qs = base_qs.exclude(status=Invoice.Status.VOID)
+        agg = financial_qs.aggregate(
             total_billed=Sum("total"),
             total_paid=Sum("amount_paid"),
             total_balance=Sum("balance"),
         )
+        total_billed = agg["total_billed"] or 0
+        total_paid = agg["total_paid"] or 0
+        total_balance = agg["total_balance"] or 0
+        collection_rate = round((total_paid / total_billed) * 100, 1) if total_billed else 0
 
-        paginator = Paginator(qs, 30)
+        # ── Invoice status breakdown (counts + billed amount per status) ──
+        status_labels = dict(Invoice.Status.choices)
+        status_rows = []
+        for row in (
+            base_qs.values("status")
+            .annotate(n=Count("id"), amt=Sum("total"))
+            .order_by("-amt")
+        ):
+            status_rows.append({
+                "status": row["status"],
+                "label": status_labels.get(row["status"], row["status"]),
+                "count": row["n"],
+                "amount": row["amt"] or 0,
+            })
+
+        # ── Payment analytics (real cash received) ──
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
+        payments = Payment.objects.filter(invoice__in=base_qs)
+        collected_today = payments.filter(received_at__date=today).aggregate(s=Sum("amount"))["s"] or 0
+        collected_month = payments.filter(received_at__date__gte=month_start).aggregate(s=Sum("amount"))["s"] or 0
+        mode_labels = dict(Payment.Mode.choices)
+        mode_rows = [
+            {
+                "mode": r["mode"],
+                "label": mode_labels.get(r["mode"], r["mode"]),
+                "amount": r["s"] or 0,
+                "count": r["n"],
+            }
+            for r in payments.values("mode").annotate(s=Sum("amount"), n=Count("id")).order_by("-s")
+        ]
+
+        # ── Invoice table (status filter applies here only) ──
+        list_qs = base_qs
+        if status_filter:
+            list_qs = list_qs.filter(status=status_filter)
+        paginator = Paginator(list_qs, 30)
         page = paginator.get_page(request.GET.get("page", 1))
 
         return render(request, self.template_name, {
@@ -61,8 +102,17 @@ class BillingListView(View):
             "patient": patient,
             "status_filter": status_filter,
             "status_choices": Invoice.Status.choices,
-            "totals": totals,
-            "total_count": qs.count(),
+            "total_count": list_qs.count(),
+            # dashboard
+            "total_billed": total_billed,
+            "total_paid": total_paid,
+            "total_balance": total_balance,
+            "collection_rate": collection_rate,
+            "status_rows": status_rows,
+            "collected_today": collected_today,
+            "collected_month": collected_month,
+            "mode_rows": mode_rows,
+            "invoice_count": financial_qs.count(),
         })
 
 
