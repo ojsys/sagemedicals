@@ -157,16 +157,40 @@ class PaymentCreateView(View):
 class InvoicePDFView(View):
     def get(self, request, pk):
         invoice = get_object_or_404(
-            Invoice.objects.select_related("patient").prefetch_related("items__service"),
+            Invoice.objects.select_related("patient", "encounter")
+            .prefetch_related("items__service", "payments"),
             pk=pk,
         )
-        from core.pdf_utils import build_invoice_pdf
-        buf = build_invoice_pdf(invoice)
-        response = HttpResponse(buf.read(), content_type="application/pdf")
+
+        pdf_bytes = self._render_html_pdf(request, invoice)
+        if pdf_bytes is None:
+            # WeasyPrint unavailable on this host — fall back to the ReportLab build.
+            from core.pdf_utils import build_invoice_pdf
+            pdf_bytes = build_invoice_pdf(invoice).read()
+
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = (
             f'inline; filename="invoice-{invoice.invoice_number}.pdf"'
         )
         return response
+
+    def _render_html_pdf(self, request, invoice):
+        """Render the same HTML used on the invoice page into a PDF via WeasyPrint.
+
+        Returns the PDF bytes, or None if WeasyPrint isn't installed/working
+        (e.g. missing native libs on the host), so the caller can fall back.
+        """
+        try:
+            from weasyprint import HTML
+        except Exception:
+            return None
+        from django.template.loader import render_to_string
+
+        html = render_to_string("billing/invoice_pdf.html", {"invoice": invoice}, request=request)
+        try:
+            return HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+        except Exception:
+            return None
 
 
 @method_decorator(login_required, name="dispatch")

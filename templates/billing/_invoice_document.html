@@ -1,0 +1,111 @@
+{% comment %}
+Shared invoice document — rendered both on the billing page and into the PDF
+(via WeasyPrint) so the two are always identical. Keep all styling in classes
+defined in base.html / billing/invoice_pdf.html, not on the surrounding page.
+{% endcomment %}
+<div class="invoice">
+  <div class="inv-header">
+    <div>
+      <div class="inv-brand-mark">SAGE<span class="dot">.</span></div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.6">
+        SAGE Medical Center<br>
+        EMR Billing System
+      </div>
+    </div>
+    <div class="inv-meta-row">
+      <div class="inv-num">{{ invoice.invoice_number }}</div>
+      <div>Issued: {{ invoice.created_at|date:"d M Y" }}</div>
+      {% if invoice.due_date %}<div>Due: {{ invoice.due_date|date:"d M Y" }}</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="inv-bill-grid">
+    <div>
+      <div class="inv-section-label">Bill To</div>
+      <div style="font-size:14px;font-weight:500;color:var(--sage-ink)">{{ invoice.patient.full_name }}</div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:4px;line-height:1.6">
+        <span class="mono">{{ invoice.patient.hospital_number }}</span><br>
+        {{ invoice.patient.phone }}<br>
+        {% if invoice.patient.payer_type == 'nhia' %}NHIA{% if invoice.patient.nhia_number %} · {{ invoice.patient.nhia_number }}{% endif %}
+        {% elif invoice.patient.payer_type == 'private_hmo' %}HMO{% if invoice.patient.hmo_name %} · {{ invoice.patient.hmo_name }}{% endif %}
+        {% else %}Self-pay{% endif %}
+      </div>
+    </div>
+    {% if invoice.encounter %}
+    <div>
+      <div class="inv-section-label">Encounter</div>
+      <div style="font-size:12px;color:var(--text-2);line-height:1.7">
+        {{ invoice.encounter.get_encounter_type_display }}<br>
+        {{ invoice.encounter.date_time|date:"d M Y, H:i" }}<br>
+        {% if invoice.encounter.doctor %}Dr. {{ invoice.encounter.doctor.get_full_name }}{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Line items -->
+  <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px">
+    <thead>
+      <tr style="border-bottom:1px solid var(--line)">
+        <th style="text-align:left;padding:8px 0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-3);font-weight:500">Description</th>
+        <th style="text-align:right;padding:8px 0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-3);font-weight:500">Qty</th>
+        <th style="text-align:right;padding:8px 0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-3);font-weight:500">Unit Price</th>
+        <th style="text-align:right;padding:8px 0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-3);font-weight:500">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in invoice.items.all %}
+      <tr style="border-bottom:1px solid var(--line-soft)">
+        <td style="padding:12px 0;color:var(--text)">{{ item.description }}</td>
+        <td style="padding:12px 0;text-align:right;color:var(--text-2)" class="num">{{ item.quantity }}</td>
+        <td style="padding:12px 0;text-align:right;color:var(--text-2)" class="num">₦{{ item.unit_price|floatformat:2 }}</td>
+        <td style="padding:12px 0;text-align:right;font-weight:500" class="num">₦{{ item.total|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" style="padding:12px 0;text-align:right;color:var(--text-2);font-size:12px;border-top:1px solid var(--line)">Subtotal</td>
+        <td class="num" style="padding:12px 0;text-align:right;border-top:1px solid var(--line)">₦{{ invoice.subtotal|floatformat:2 }}</td>
+      </tr>
+      {% if invoice.discount %}
+      <tr>
+        <td colspan="3" style="padding:4px 0;text-align:right;color:var(--sage-green);font-size:12px">Discount</td>
+        <td class="num" style="padding:4px 0;text-align:right;color:var(--sage-green)">−₦{{ invoice.discount|floatformat:2 }}</td>
+      </tr>
+      {% endif %}
+      <tr style="background:var(--surface-warm);border-top:2px solid var(--sage-ink)">
+        <td colspan="3" style="padding:14px 0;text-align:right;font-weight:600;font-size:14px">Total</td>
+        <td class="num" style="padding:14px 0;text-align:right;font-weight:700;font-size:18px;font-family:var(--display)">₦{{ invoice.total|floatformat:2 }}</td>
+      </tr>
+      {% if invoice.amount_paid %}
+      <tr>
+        <td colspan="3" style="padding:8px 0;text-align:right;color:var(--sage-green);font-size:12px">Amount Paid</td>
+        <td class="num" style="padding:8px 0;text-align:right;color:var(--sage-green)">₦{{ invoice.amount_paid|floatformat:2 }}</td>
+      </tr>
+      <tr>
+        <td colspan="3" style="padding:8px 0;text-align:right;font-weight:600;{% if invoice.balance > 0 %}color:var(--sage-red){% else %}color:var(--sage-green){% endif %}">Balance</td>
+        <td class="num" style="padding:8px 0;text-align:right;font-weight:600;{% if invoice.balance > 0 %}color:var(--sage-red){% else %}color:var(--sage-green){% endif %}">₦{{ invoice.balance|floatformat:2 }}</td>
+      </tr>
+      {% endif %}
+    </tfoot>
+  </table>
+
+  {% if invoice.payments.all %}
+  <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line)">
+    <div class="inv-section-label">Payment History</div>
+    {% for payment in invoice.payments.all %}
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line-soft);font-size:12.5px">
+      <div>
+        <span>{{ payment.get_mode_display }}</span>
+        {% if payment.reference %}<span class="mono" style="color:var(--text-3);margin-left:8px">{{ payment.reference }}</span>{% endif %}
+      </div>
+      <div style="display:flex;gap:20px;align-items:center">
+        <span style="color:var(--text-3)">{{ payment.received_at|date:"d M Y" }}</span>
+        <span class="num" style="font-weight:500">₦{{ payment.amount|floatformat:2 }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
