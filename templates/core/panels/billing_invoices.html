@@ -1,0 +1,45 @@
+<div class="table-wrap">
+  <div class="table-head">
+    <div>
+      <div class="card-title">Unpaid Invoices</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">Issued or partially paid invoices awaiting settlement</div>
+    </div>
+    <a href="{% url 'billing:list' %}" class="btn btn-ghost btn-sm">All invoices <i class="bi bi-arrow-right"></i></a>
+  </div>
+
+  {% if invoices %}
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Invoice</th>
+        <th>Patient</th>
+        <th class="num">Total</th>
+        <th class="num">Balance</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in invoices %}
+      <tr class="patient-row" onclick="location.href='{% url 'billing:invoice' inv.pk %}'">
+        <td><span class="num" style="font-size:12px;color:var(--text-2)">{{ inv.invoice_number }}</span></td>
+        <td>
+          <div class="pname">{{ inv.patient.full_name }}</div>
+          <div class="pmeta">{{ inv.patient.hospital_number }}</div>
+        </td>
+        <td class="num">₦{{ inv.total|floatformat:0 }}</td>
+        <td class="num" style="font-weight:600">₦{{ inv.balance|floatformat:0 }}</td>
+        <td>
+          {% if inv.status == 'partial' %}<span class="tag blue"><span class="dot"></span>Partial</span>
+          {% else %}<span class="tag amber"><span class="dot"></span>Issued</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
+    <i class="bi bi-check2-circle" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+    <div style="font-size:14px">No outstanding invoices — everything is settled.</div>
+  </div>
+  {% endif %}
+</div>

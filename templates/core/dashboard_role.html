@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title_text }} — SAGE EMR{% endblock %}
+
+{% block content %}
+{% now "H" as hr %}
+
+<!-- Page header -->
+<div class="page-head">
+  <div>
+    <div class="eyebrow">{{ eyebrow }}{% if today %} · {{ today|date:"l · j F Y" }}{% endif %}</div>
+    <h1 class="page-title">
+      {% if hr < "12" %}Good morning{% elif hr < "17" %}Good afternoon{% else %}Good evening{% endif %},
+      <em>{{ request.user.first_name|default:request.user.email }}</em>.
+    </h1>
+    <p class="page-sub">{{ subtitle }}</p>
+  </div>
+  <div class="page-actions">
+    {% for a in actions %}
+    <a href="{{ a.href }}" class="btn {% if a.primary %}btn-primary{% else %}btn-ghost{% endif %}"><i class="bi {{ a.icon }}"></i>{{ a.label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Stat row -->
+<div class="stat-grid">
+  {% for s in stats %}
+  <div class="stat">
+    <div class="glyph"{% if s.glyph_style %} style="{{ s.glyph_style }}"{% endif %}><i class="bi {{ s.icon }}"></i></div>
+    <div class="stat-label">{{ s.label }}</div>
+    <div class="stat-value num">{{ s.value }}</div>
+    <div class="stat-meta"><span class="delta flat">{{ s.tag }}</span><span>{{ s.meta }}</span></div>
+  </div>
+  {% endfor %}
+</div>
+
+{% include panel_template %}
+{% endblock %}

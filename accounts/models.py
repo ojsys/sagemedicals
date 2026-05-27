@@ -13,6 +13,7 @@ class Role(models.TextChoices):
     DOCTOR = "doctor", "Doctor / Consultant"
     RESIDENT = "resident", "Resident / House Officer"
     NURSE = "nurse", "Nurse"
+    CHEW = "chew", "Community Health Extension Worker (CHEW)"
     LAB_TECH = "lab_tech", "Lab Technician / Scientist"
     RADIOLOGIST = "radiologist", "Radiologist / Imaging Tech"
     PHARMACIST = "pharmacist", "Pharmacist"
@@ -27,10 +28,14 @@ CLINICAL_ROLES = {
     Role.DOCTOR,
     Role.RESIDENT,
     Role.NURSE,
+    Role.CHEW,
     Role.LAB_TECH,
     Role.RADIOLOGIST,
     Role.PHARMACIST,
 }
+
+# Roles that share the nursing-station layout/dashboard.
+NURSING_ROLES = {Role.NURSE, Role.CHEW}
 
 
 class UserManager(BaseUserManager):

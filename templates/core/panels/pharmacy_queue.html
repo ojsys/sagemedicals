@@ -1,0 +1,63 @@
+<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px">
+
+  <!-- Left: prescriptions to dispense -->
+  <div class="table-wrap">
+    <div class="table-head">
+      <div>
+        <div class="card-title">Prescriptions to Dispense</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">Pending prescriptions awaiting the pharmacy</div>
+      </div>
+    </div>
+
+    {% if pending_rx %}
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Drug</th>
+          <th>Qty</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rx in pending_rx %}
+        <tr>
+          <td>
+            <div class="pname">{{ rx.patient.full_name }}</div>
+            <div class="pmeta">{{ rx.patient.hospital_number }}</div>
+          </td>
+          <td style="font-size:13px;color:var(--text-2)">{{ rx.drug }}<div class="pmeta">{{ rx.dose }} · {{ rx.get_frequency_display }}</div></td>
+          <td class="num">{{ rx.quantity }}</td>
+          <td><a href="{% url 'pharmacy:dispense' rx.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-capsule"></i>Dispense</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
+      <i class="bi bi-bag-check" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+      <div style="font-size:14px">No prescriptions waiting to be dispensed.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: low stock -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Low Stock</div>
+      <a href="{% url 'pharmacy:stock' %}" class="card-sub" style="text-decoration:none;color:var(--sage-primary)">Inventory</a>
+    </div>
+    {% for s in low_stock %}
+    <div class="feed-item">
+      <div class="feed-icon amber"><i class="bi bi-exclamation-triangle"></i></div>
+      <div>
+        <div class="feed-text"><strong>{{ s.drug }}</strong></div>
+        <div class="feed-time">{{ s.quantity_on_hand }} on hand · reorder at {{ s.reorder_level }} · {{ s.store.name }}</div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">All stock above reorder levels.</div>
+    {% endfor %}
+  </div>
+
+</div>

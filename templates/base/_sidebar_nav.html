@@ -7,7 +7,7 @@
 
 <div class="nav-section-label">Workspace</div>
 
-{% if role in "super_admin,hospital_admin,doctor,resident,nurse,receptionist,records_officer" %}
+{% if role in "super_admin,hospital_admin,doctor,resident,nurse,chew,receptionist,records_officer" %}
 <a class="nav-item {% if '/patients' in url and 'register' not in url %}active{% endif %}" href="/patients/">
   <i class="bi bi-people"></i>Patients
 </a>
@@ -16,7 +16,7 @@
 </a>
 {% endif %}
 
-{% if role in "super_admin,hospital_admin,doctor,resident,nurse,receptionist" %}
+{% if role in "super_admin,hospital_admin,doctor,resident,nurse,chew,receptionist" %}
 <a class="nav-item {% if '/scheduling/appointments' in url %}active{% endif %}" href="{% url 'scheduling:appointments' %}">
   <i class="bi bi-calendar3"></i>Appointments
 </a>
@@ -30,7 +30,7 @@
 </a>
 {% endif %}
 
-{% if role in "super_admin,doctor,resident,nurse" %}
+{% if role in "super_admin,doctor,resident,nurse,chew" %}
 <a class="nav-item {% if '/encounters' in url %}active{% endif %}" href="{% url 'encounters:list' %}">
   <i class="bi bi-person-vcard"></i>Encounters
 </a>
@@ -38,13 +38,13 @@
 
 <div class="nav-section-label">Clinical</div>
 
-{% if role in "super_admin,doctor,resident,nurse" %}
+{% if role in "super_admin,doctor,resident" %}
 <a class="nav-item {% if '/prescriptions' in url %}active{% endif %}" href="{% url 'prescriptions:list' %}">
   <i class="bi bi-capsule"></i>e-Prescribing
 </a>
 {% endif %}
 
-{% if role in "super_admin,doctor,resident,nurse,lab_tech" %}
+{% if role in "super_admin,doctor,resident,nurse,chew,lab_tech,radiologist" %}
 <a class="nav-item {% if '/lab' in url and '/tests' not in url %}active{% endif %}" href="/lab/">
   <i class="bi bi-droplet-half"></i>Laboratory
 </a>
@@ -64,7 +64,7 @@
 </a>
 {% endif %}
 
-{% if role in "super_admin,doctor,resident,nurse,hospital_admin" %}
+{% if role in "super_admin,doctor,resident,nurse,chew,hospital_admin" %}
 <a class="nav-item {% if '/admissions' in url %}active{% endif %}" href="{% url 'admissions:ward_map' %}">
   <i class="bi bi-hospital"></i>Wards &amp; Beds
 </a>
@@ -76,7 +76,7 @@
 </a>
 {% endif %}
 
-{% if role in "super_admin,doctor,resident,nurse,hospital_admin" %}
+{% if role in "super_admin,doctor,resident,nurse,chew,hospital_admin" %}
 <a class="nav-item {% if '/antenatal' in url %}active{% endif %}" href="{% url 'antenatal:list' %}">
   <i class="bi bi-heart-pulse"></i>Antenatal (ANC)
 </a>

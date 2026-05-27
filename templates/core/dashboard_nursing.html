@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block title %}Nursing Station — SAGE EMR{% endblock %}
+
+{% block content %}
+{% now "H" as hr %}
+
+<!-- Page header -->
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Nursing Station · {{ today|date:"l · j F Y" }}</div>
+    <h1 class="page-title">
+      {% if hr < "12" %}Good morning{% elif hr < "17" %}Good afternoon{% else %}Good evening{% endif %},
+      <em>{{ request.user.first_name|default:request.user.email }}</em>.
+    </h1>
+    <p class="page-sub">{{ queue_waiting }} patient{{ queue_waiting|pluralize }} in the queue today · {{ active_admissions }} inpatient{{ active_admissions|pluralize }} on the ward.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'patients:register' %}" class="btn btn-ghost"><i class="bi bi-person-plus"></i>Register Patient</a>
+    <a href="{% url 'scheduling:walkin' %}" class="btn btn-ghost"><i class="bi bi-box-arrow-in-right"></i>Walk-in</a>
+    <a href="{% url 'scheduling:queue' %}" class="btn btn-primary"><i class="bi bi-list-ol"></i>Triage Queue</a>
+  </div>
+</div>
+
+<!-- Stat row -->
+<div class="stat-grid">
+
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-amber-soft);color:var(--sage-amber)"><i class="bi bi-clock-history"></i></div>
+    <div class="stat-label">Queue Today</div>
+    <div class="stat-value num">{{ queue_waiting }}</div>
+    <div class="stat-meta"><span class="delta flat">Live</span><span>waiting or in consult</span></div>
+    <div style="display:flex;gap:4px;margin-top:12px;height:36px;align-items:flex-end">
+      <div style="flex:1;background:var(--sage-amber-soft);height:60%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:30%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber);height:100%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:50%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:40%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber-soft);height:70%;border-radius:2px"></div>
+      <div style="flex:1;background:var(--sage-amber);height:90%;border-radius:2px"></div>
+    </div>
+  </div>
+
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-teal-soft);color:var(--sage-teal)"><i class="bi bi-hospital"></i></div>
+    <div class="stat-label">Active Admissions</div>
+    <div class="stat-value num">{{ active_admissions }}</div>
+    <div class="stat-meta"><span class="delta flat">Live</span><span>inpatients to care for</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,18 L25,16 L50,20 L75,14 L100,10 L125,12 L150,8 L175,10 L200,6" stroke="#1B998B" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="stat">
+    <div class="glyph"><i class="bi bi-people"></i></div>
+    <div class="stat-label">Today's Patients</div>
+    <div class="stat-value num">{{ patients_today }}</div>
+    <div class="stat-meta"><span class="delta flat">Today</span><span>visits (encounters + ANC)</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12" stroke="#0F4C81" stroke-width="1.5" fill="none"/>
+      <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12 L200,36 L0,36 Z" fill="url(#g1)" opacity=".18"/>
+      <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0F4C81"/><stop offset="1" stop-color="#0F4C81" stop-opacity="0"/></linearGradient></defs>
+    </svg>
+  </div>
+
+  <div class="stat">
+    <div class="glyph" style="background:rgba(27,153,139,.12);color:#1B998B"><i class="bi bi-heart-pulse"></i></div>
+    <div class="stat-label">Antenatal Active</div>
+    <div class="stat-value num">{{ active_anc_count }}</div>
+    <div class="stat-meta"><span class="delta {% if anc_due_soon_count %}down{% else %}flat{% endif %}">{{ anc_due_soon_count }}</span><span>due within 4 weeks</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,30 L25,24 L50,26 L75,18 L100,20 L125,12 L150,14 L175,8 L200,10" stroke="#1B998B" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+
+</div>
+
+<!-- 2-col layout -->
+<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px">
+
+  <!-- Left: Today's clinic queue (triage focus) -->
+  <div class="table-wrap">
+    <div class="table-head">
+      <div>
+        <div class="card-title">Today's Queue — Triage</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ today|date:"j M Y" }}</div>
+      </div>
+      <div class="filters" id="queue-filters">
+        <span class="chip on" data-filter="all">All <span class="num" id="cnt-all">{{ queue_today|length }}</span></span>
+        <span class="chip" data-filter="waiting">Waiting <span class="num" id="cnt-waiting">0</span></span>
+        <span class="chip" data-filter="with_doctor">In progress <span class="num" id="cnt-with_doctor">0</span></span>
+        <span class="chip" data-filter="completed">Done <span class="num" id="cnt-completed">0</span></span>
+      </div>
+    </div>
+
+    {% if queue_today %}
+    <table class="data" id="queue-table">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Time</th>
+          <th>Clinic</th>
+          <th>Triage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in queue_today %}
+        <tr class="patient-row" data-status="{{ q.status }}" onclick="location.href='{% url 'patients:detail' q.patient.pk %}'">
+          <td>
+            <span class="triage {% if q.triage_level == 'red' %}red{% elif q.triage_level == 'yellow' %}amber{% else %}green{% endif %}"></span>
+            <div style="display:inline-block;vertical-align:middle">
+              <div class="pname">{{ q.patient.full_name }}</div>
+              <div class="pmeta">{{ q.patient.hospital_number }}</div>
+            </div>
+          </td>
+          <td class="num">{{ q.arrived_at|time:"H:i" }}</td>
+          <td style="font-size:13px;color:var(--text-2)">{{ q.clinic.name }}</td>
+          <td>
+            {% if q.triage_level == 'red' %}
+              <span class="tag red">Urgent</span>
+            {% elif q.triage_level == 'yellow' %}
+              <span class="tag amber">Semi-urgent</span>
+            {% else %}
+              <span class="tag green">Non-urgent</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if q.status == 'waiting' %}
+              <span class="tag amber"><span class="dot"></span>Waiting</span>
+            {% elif q.status == 'with_doctor' %}
+              <span class="tag blue"><span class="dot"></span>With Doctor</span>
+            {% elif q.status == 'completed' %}
+              <span class="tag green"><span class="dot"></span>Done</span>
+            {% else %}
+              <span class="tag gray"><span class="dot"></span>{{ q.get_status_display }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <script>
+      (function () {
+        const rows = document.querySelectorAll('#queue-table tbody tr');
+        const chips = document.querySelectorAll('#queue-filters .chip');
+
+        // tally counts per status
+        const counts = {};
+        rows.forEach(r => { const s = r.dataset.status; counts[s] = (counts[s] || 0) + 1; });
+        ['waiting', 'with_doctor', 'completed'].forEach(s => {
+          const el = document.getElementById('cnt-' + s);
+          if (el) el.textContent = counts[s] || 0;
+        });
+
+        chips.forEach(chip => {
+          chip.addEventListener('click', function () {
+            chips.forEach(c => c.classList.remove('on'));
+            this.classList.add('on');
+            const f = this.dataset.filter;
+            rows.forEach(r => {
+              r.style.display = (f === 'all' || r.dataset.status === f) ? '' : 'none';
+            });
+          });
+        });
+      })();
+    </script>
+    {% else %}
+    <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
+      <i class="bi bi-calendar2-check" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+      <div style="font-size:14px">No patients in queue today</div>
+      <a href="{% url 'scheduling:queue' %}" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--sage-primary);text-decoration:none">Open queue <i class="bi bi-arrow-right"></i></a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Today's summary -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Today's Summary</div>
+        <span class="card-sub">Live</span>
+      </div>
+      <div style="display:flex;gap:20px;align-items:center">
+        <div class="donut">
+          <div class="donut-center">
+            <div class="donut-num num">{{ active_admissions }}</div>
+            <div class="donut-lbl">Admitted</div>
+          </div>
+        </div>
+        <ul class="legend-list" style="flex:1">
+          <li><span class="sw" style="background:var(--sage-primary)"></span>Visits today<span class="vv">{{ patients_today }}</span></li>
+          <li><span class="sw" style="background:var(--sage-teal)"></span>Admissions<span class="vv">{{ active_admissions }}</span></li>
+          <li><span class="sw" style="background:var(--sage-amber)"></span>Queue<span class="vv">{{ queue_waiting }}</span></li>
+          <li><span class="sw" style="background:#1B998B"></span>Antenatal<span class="vv">{{ active_anc_count }}</span></li>
+        </ul>
+      </div>
+      <div style="margin-top:14px;text-align:right">
+        <a href="{% url 'admissions:ward_map' %}" style="font-size:12px;color:var(--sage-primary);text-decoration:none;font-weight:500">Ward map <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Recent Activity</div>
+        <span class="card-sub">Live</span>
+      </div>
+
+      {% for adm in recent_admissions|slice:":4" %}
+      <div class="feed-item">
+        <div class="feed-icon blue"><i class="bi bi-hospital"></i></div>
+        <div>
+          <div class="feed-text"><strong>{{ adm.patient.full_name }}</strong> admitted to {{ adm.bed.room.ward.name }}</div>
+          <div class="feed-time">{{ adm.admitted_at|timesince }} ago · Bed {{ adm.bed.label }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% for p in recent_patients|slice:":3" %}
+      <div class="feed-item">
+        <div class="feed-icon green"><i class="bi bi-person-plus"></i></div>
+        <div>
+          <div class="feed-text">New patient registered — <strong>{{ p.full_name }}</strong></div>
+          <div class="feed-time">{{ p.created_at|timesince }} ago · {{ p.hospital_number }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not recent_admissions and not recent_patients %}
+      <div style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">No recent activity</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Antenatal Module ── -->
+<div style="margin-top:24px;">
+  <div class="table-head" style="margin-bottom:14px;padding:0;">
+    <div>
+      <div class="card-title" style="font-size:15px;">Antenatal Care (ANC)</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px;">Active pregnancies being followed at this facility</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;">
+        <div style="background:rgba(27,153,139,.1);border-radius:8px;padding:7px 14px;text-align:center;">
+          <div style="font-size:18px;font-weight:700;color:#1B998B;line-height:1;">{{ active_anc_count }}</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-top:2px;">Active</div>
+        </div>
+        {% if anc_due_soon_count %}
+        <div style="background:rgba(230,168,23,.1);border-radius:8px;padding:7px 14px;text-align:center;">
+          <div style="font-size:18px;font-weight:700;color:#9A6E00;line-height:1;">{{ anc_due_soon_count }}</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-top:2px;">Due ≤4 wks</div>
+        </div>
+        {% endif %}
+      </div>
+      <a href="{% url 'antenatal:create' %}" class="btn btn-primary" style="font-size:13px;">
+        <i class="bi bi-plus-lg"></i>New ANC Record
+      </a>
+      <a href="{% url 'antenatal:list' %}" class="btn btn-ghost" style="font-size:13px;">
+        <i class="bi bi-heart-pulse"></i>View All
+      </a>
+    </div>
+  </div>
+
+  {% if anc_dashboard_list %}
+  <div class="table-wrap" style="margin-top:0;">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>EDD</th>
+          <th>GA Today</th>
+          <th>Blood Grp</th>
+          <th>G / P</th>
+          <th>Last Visit</th>
+          <th>Next Visit</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in anc_dashboard_list %}
+        {% with lv=rec.visits.all|first %}
+        <tr onclick="location.href='{% url 'antenatal:detail' rec.pk %}'" style="cursor:pointer;">
+          <td>
+            <div class="pname">{{ rec.patient.full_name }}</div>
+            <div class="pmeta">{{ rec.patient.hospital_number }}</div>
+          </td>
+          <td style="white-space:nowrap;">
+            {{ rec.edd|date:"j M Y" }}
+            {% if rec.weeks_to_edd <= 4 %}
+            <span class="tag amber" style="margin-left:4px;font-size:10px;">≤4 wks</span>
+            {% endif %}
+          </td>
+          <td class="num">{{ rec.gestational_age_weeks }}<sup>+{{ rec.gestational_age_days }}</sup> wks</td>
+          <td>
+            {% if rec.blood_group %}{{ rec.blood_group }}{% if rec.rhesus %} {{ rec.get_rhesus_display }}{% endif %}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+          </td>
+          <td>G{{ rec.gravida }}P{{ rec.para }}</td>
+          <td style="color:var(--text-2);white-space:nowrap;">
+            {% if lv %}{{ lv.visit_date|date:"j M Y" }}{% else %}<span style="color:var(--text-3)">No visits</span>{% endif %}
+          </td>
+          <td style="white-space:nowrap;">
+            {% if lv and lv.next_visit_date %}
+              {% if lv.next_visit_date <= today %}
+                <span class="tag amber">{{ lv.next_visit_date|date:"j M Y" }}</span>
+              {% else %}
+                <span style="color:var(--text-2);">{{ lv.next_visit_date|date:"j M Y" }}</span>
+              {% endif %}
+            {% else %}
+              <span style="color:var(--text-3)">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'patients:detail' rec.patient.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation()">
+              Patient
+            </a>
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if active_anc_count > 10 %}
+  <div style="text-align:right;margin-top:10px;">
+    <a href="{% url 'antenatal:list' %}" style="font-size:13px;color:var(--sage-primary);text-decoration:none;font-weight:500;">
+      View all {{ active_anc_count }} ANC patients <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="card" style="text-align:center;padding:36px 20px;color:var(--text-3);">
+    <i class="bi bi-heart-pulse" style="font-size:30px;display:block;margin-bottom:10px;opacity:.4;color:#1B998B;"></i>
+    <div style="font-size:14px;">No active ANC patients on record.</div>
+    <div style="font-size:12px;margin-top:6px;">ANC records are created through the admin or by clinic staff during booking.</div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

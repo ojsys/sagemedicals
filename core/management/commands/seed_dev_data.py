@@ -40,6 +40,7 @@ STAFF = [
     ("ngozi.adeyemi@sagemed.ng",       "Ngozi",        "Adeyemi",   "resident",       "General Medicine",  "+2348031234563"),
     ("fatima.usman@sagemed.ng",        "Fatima",       "Usman",     "nurse",          "Outpatient",        "+2348031234564"),
     ("samuel.obi@sagemed.ng",          "Samuel",       "Obi",       "nurse",          "Ward A",            "+2348031234565"),
+    ("blessing.okoro@sagemed.ng",      "Blessing",     "Okoro",     "chew",           "Outpatient",        "+2348031234571"),
     ("kelechi.nwachukwu@sagemed.ng",   "Kelechi",      "Nwachukwu", "pharmacist",     "Pharmacy",          "+2348031234566"),
     ("ibrahim.musa@sagemed.ng",        "Ibrahim",      "Musa",      "lab_tech",       "Laboratory",        "+2348031234567"),
     ("tunde.adewale@sagemed.ng",       "Tunde",        "Adewale",   "billing_officer","Billing",           "+2348031234568"),

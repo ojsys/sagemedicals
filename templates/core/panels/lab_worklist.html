@@ -1,0 +1,50 @@
+<div class="table-wrap">
+  <div class="table-head">
+    <div>
+      <div class="card-title">Lab Worklist</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">Orders awaiting collection, processing or verification</div>
+    </div>
+    <a href="{% url 'laboratory:worklist' %}" class="btn btn-ghost btn-sm">Open worklist <i class="bi bi-arrow-right"></i></a>
+  </div>
+
+  {% if worklist %}
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>Test</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Ordered</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in worklist %}
+      <tr class="patient-row" onclick="location.href='{% url 'laboratory:order_detail' o.pk %}'">
+        <td>
+          <div class="pname">{{ o.patient.full_name }}</div>
+          <div class="pmeta">{{ o.patient.hospital_number }}</div>
+        </td>
+        <td style="font-size:13px;color:var(--text-2)">{{ o.test.name }}</td>
+        <td>
+          {% if o.priority == 'stat' %}<span class="tag red">STAT</span>
+          {% elif o.priority == 'urgent' %}<span class="tag amber">Urgent</span>
+          {% else %}<span class="tag gray">Routine</span>{% endif %}
+        </td>
+        <td>
+          {% if o.status == 'ordered' %}<span class="tag amber"><span class="dot"></span>To collect</span>
+          {% elif o.status == 'resulted' %}<span class="tag blue"><span class="dot"></span>Verify</span>
+          {% else %}<span class="tag gray"><span class="dot"></span>{{ o.get_status_display }}</span>{% endif %}
+        </td>
+        <td class="num" style="white-space:nowrap">{{ o.created_at|date:"j M · H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
+    <i class="bi bi-clipboard-check" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+    <div style="font-size:14px">No pending lab orders — the worklist is clear.</div>
+  </div>
+  {% endif %}
+</div>

@@ -1,0 +1,42 @@
+<div class="table-wrap">
+  <div class="table-head">
+    <div>
+      <div class="card-title">Recently Registered Patients</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">Newest records in the master patient index</div>
+    </div>
+    <a href="{% url 'patients:search' %}" class="btn btn-ghost btn-sm">All patients <i class="bi bi-arrow-right"></i></a>
+  </div>
+
+  {% if recent_patients %}
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>Hospital No.</th>
+        <th>Age / Sex</th>
+        <th>Phone</th>
+        <th>Registered</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in recent_patients %}
+      <tr class="patient-row" onclick="location.href='{% url 'patients:detail' p.pk %}'">
+        <td>
+          <div class="pname">{{ p.full_name }}</div>
+          <div class="pmeta">{{ p.occupation }}</div>
+        </td>
+        <td><span class="num" style="font-size:12px;color:var(--text-2)">{{ p.hospital_number }}</span></td>
+        <td>{{ p.age_display }} · {{ p.get_sex_display }}</td>
+        <td class="num">{{ p.phone }}</td>
+        <td style="white-space:nowrap;color:var(--text-2)">{{ p.created_at|date:"j M Y" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
+    <i class="bi bi-folder2-open" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+    <div style="font-size:14px">No patient records yet.</div>
+  </div>
+  {% endif %}
+</div>
