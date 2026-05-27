@@ -13,9 +13,7 @@
 </div>
 
 <div style="max-width:500px">
-  <form method="post"
-        hx-get="{% url 'patients:search' %}"
-        hx-trigger="none">
+  <form method="post">
     {% csrf_token %}
 
     <div class="card">
@@ -24,10 +22,9 @@
       <div style="margin-bottom:14px">
         <label class="form-label">Patient <span style="color:var(--sage-red)">*</span></label>
         <input type="text" id="patient-search" class="form-control" placeholder="Search by name or hospital number…"
-               hx-get="{% url 'patients:search' %}"
+               hx-get="{% url 'patients:search_htmx' %}?picker=1"
                hx-trigger="keyup changed delay:300ms"
                hx-target="#patient-results"
-               hx-include="[name='q']"
                name="q" autocomplete="off">
         <div id="patient-results" style="border:1px solid var(--line);border-radius:var(--radius);margin-top:4px;overflow:hidden;display:none"></div>
         <input type="hidden" name="patient" id="patient-pk">
@@ -61,16 +58,33 @@
 </div>
 
 <script>
-  document.getElementById('patient-results').addEventListener('click', function(e) {
-    const item = e.target.closest('[data-pk]');
-    if (!item) return;
-    document.getElementById('patient-pk').value = item.dataset.pk;
-    document.getElementById('patient-search').value = item.textContent.trim();
-    document.getElementById('patient-results').innerHTML = '';
-    document.getElementById('patient-results').style.display = 'none';
-  });
-  document.getElementById('patient-search').addEventListener('keyup', function() {
-    document.getElementById('patient-results').style.display = this.value ? 'block' : 'none';
-  });
+  (function () {
+    const searchInput = document.getElementById('patient-search');
+    const results     = document.getElementById('patient-results');
+    const hiddenPk    = document.getElementById('patient-pk');
+
+    // Pick a patient from the dropdown: fill the field, don't navigate away.
+    results.addEventListener('click', function (e) {
+      const item = e.target.closest('[data-pk]');
+      if (!item) return;
+      hiddenPk.value = item.dataset.pk;
+      searchInput.value = item.dataset.label;
+      results.innerHTML = '';
+      results.style.display = 'none';
+    });
+
+    // Editing the box again clears any previous selection.
+    searchInput.addEventListener('input', function () {
+      hiddenPk.value = '';
+    });
+
+    // Only show the dropdown once htmx has swapped in fresh results.
+    searchInput.addEventListener('keyup', function () {
+      results.style.display = this.value.trim() ? 'block' : 'none';
+    });
+    results.addEventListener('htmx:afterSwap', function () {
+      results.style.display = results.innerHTML.trim() ? 'block' : 'none';
+    });
+  })();
 </script>
 {% endblock %}

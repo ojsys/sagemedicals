@@ -228,6 +228,9 @@ class WalkInView(View):
         patient_pk = request.POST.get("patient")
         clinic_pk = request.POST.get("clinic")
         priority = request.POST.get("priority", QueueEntry.TriageLevel.GREEN)
+        if not patient_pk:
+            messages.error(request, "Please search for and select a patient before adding to the queue.")
+            return render(request, self.template_name, {"clinics": Clinic.objects.filter(is_active=True)})
         patient = get_object_or_404(Patient, pk=patient_pk)
         clinic = get_object_or_404(Clinic, pk=clinic_pk)
         QueueEntry.objects.create(

@@ -31,6 +31,7 @@ class PatientSearchView(View):
         form = PatientSearchForm(request.GET or None)
         query = request.GET.get("q", "").strip()
         filter_type = request.GET.get("filter", "all")
+        is_picker = bool(request.GET.get("picker"))
 
         base_qs = Patient.objects.filter(is_active=True).prefetch_related("allergies")
 
@@ -43,7 +44,11 @@ class PatientSearchView(View):
             clinic__name="Emergency Department",
         ).values_list("patient_id", flat=True)
 
-        if query:
+        if is_picker:
+            # Picker mode (e.g. walk-in queue): only ever show matches for an
+            # actual query, never the full patient list.
+            qs = self._search(query) if query else Patient.objects.none()
+        elif query:
             qs = self._search(query)
             if filter_type == "inpatient":
                 qs = qs.filter(pk__in=admitted_pks)
@@ -77,6 +82,8 @@ class PatientSearchView(View):
         }
 
         if request.headers.get("HX-Request"):
+            if is_picker:
+                return render(request, "patients/partials/patient_picker.html", ctx)
             return render(request, self.partial_template, ctx)
 
         return render(request, self.template_name, ctx)

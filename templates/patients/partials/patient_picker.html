@@ -1,0 +1,17 @@
+{% if patients %}
+<ul style="list-style:none;margin:0;padding:0;max-height:280px;overflow-y:auto">
+  {% for patient in patients %}
+  <li data-pk="{{ patient.pk }}"
+      data-label="{{ patient.full_name }} · {{ patient.hospital_number }}"
+      class="picker-item"
+      style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center">
+    <span class="pname">{{ patient.full_name }}</span>
+    <span class="num" style="color:var(--text-2);font-size:12px">{{ patient.hospital_number }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% elif query %}
+<div style="padding:14px 12px;color:var(--text-3);font-size:13px">
+  No patients found for <strong style="color:var(--text)">"{{ query }}"</strong>
+</div>
+{% endif %}
