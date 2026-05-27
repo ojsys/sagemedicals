@@ -37,13 +37,29 @@
     {% csrf_token %}
     <div class="card">
       <div class="card-head"><div class="card-title">Appointment Details</div></div>
+
+      <div style="margin-bottom:14px">
+        <label class="form-label">Patient <span style="color:var(--sage-red)">*</span></label>
+        <input type="text" id="patient-search" class="form-control" placeholder="Search by name or hospital number…"
+               hx-get="{% url 'patients:search_htmx' %}?picker=1"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#patient-results"
+               name="q" autocomplete="off"
+               value="{% if patient %}{{ patient.full_name }} · {{ patient.hospital_number }}{% endif %}">
+        <div id="patient-results" style="border:1px solid var(--line);border-radius:var(--radius);margin-top:4px;overflow:hidden;display:none"></div>
+        <input type="hidden" name="patient" id="patient-pk" value="{% if patient %}{{ patient.pk }}{% endif %}">
+        {% if form.patient.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.patient.errors }}</div>{% endif %}
+      </div>
+
       {% for f in form %}
+      {% if f.name != 'patient' %}
       <div style="margin-bottom:14px">
         <label class="form-label">{{ f.label }}{% if f.field.required %} <span style="color:var(--sage-red)">*</span>{% endif %}</label>
         {{ f }}
         {% if f.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ f.errors }}</div>{% endif %}
         {% if f.help_text %}<div style="color:var(--text-3);font-size:12px;margin-top:3px">{{ f.help_text }}</div>{% endif %}
       </div>
+      {% endif %}
       {% endfor %}
       <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--line)">
         <button class="btn btn-primary"><i class="bi bi-check2"></i>Book</button>
@@ -56,4 +72,35 @@
     </div>
   </form>
 </div>
+
+<script>
+  (function () {
+    const searchInput = document.getElementById('patient-search');
+    const results     = document.getElementById('patient-results');
+    const hiddenPk    = document.getElementById('patient-pk');
+
+    // Pick a patient from the dropdown: fill the field, don't navigate away.
+    results.addEventListener('click', function (e) {
+      const item = e.target.closest('[data-pk]');
+      if (!item) return;
+      hiddenPk.value = item.dataset.pk;
+      searchInput.value = item.dataset.label;
+      results.innerHTML = '';
+      results.style.display = 'none';
+    });
+
+    // Editing the box again clears any previous selection.
+    searchInput.addEventListener('input', function () {
+      hiddenPk.value = '';
+    });
+
+    // Only show the dropdown once htmx has swapped in fresh results.
+    searchInput.addEventListener('keyup', function () {
+      results.style.display = this.value.trim() ? 'block' : 'none';
+    });
+    results.addEventListener('htmx:afterSwap', function () {
+      results.style.display = results.innerHTML.trim() ? 'block' : 'none';
+    });
+  })();
+</script>
 {% endblock %}

@@ -35,6 +35,7 @@ class AppointmentForm(django_forms.ModelForm):
             else:
                 f.widget.attrs.setdefault("class", "form-control")
         self.fields["schedule"].queryset = ClinicSchedule.objects.filter(is_active=True).select_related("clinic", "consultant")
+        self.fields["schedule"].empty_label = "Select Clinic"
 
 
 class ClinicScheduleForm(django_forms.ModelForm):
@@ -194,7 +195,13 @@ class AppointmentCreateView(View):
             from django.contrib import messages
             messages.success(request, f"Appointment booked for {appt.date} at {appt.slot_time.strftime('%H:%M')}.")
             return redirect("patients:detail", pk=appt.patient.pk)
-        return render(request, self.template_name, {"form": form})
+        # Re-render with the picked patient restored so the search box keeps its value.
+        patient = Patient.objects.filter(pk=request.POST.get("patient")).first()
+        return render(request, self.template_name, {
+            "form": form,
+            "patient": patient,
+            "schedule_count": ClinicSchedule.objects.filter(is_active=True).count(),
+        })
 
 
 @method_decorator(login_required, name="dispatch")
