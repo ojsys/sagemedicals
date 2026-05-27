@@ -10,6 +10,7 @@
     --sage-teal:       #1B998B;
     --sage-green:      #2E7D55;
     --sage-red:        #B83A26;
+    --bg:              #F4F5F2;
     --surface:         #FFFFFF;
     --surface-warm:    #FBFBF7;
     --line:            #DCDFD7;
@@ -23,13 +24,17 @@
     --radius-lg:       14px;
   }
 
-  @page { size: A4; margin: 16mm; }
+  /* No page margin — the gray page background runs edge to edge, and the
+     body padding becomes the gutter around the white invoice card (matching
+     the on-screen layout). */
+  @page { size: A4; margin: 0; }
 
   * { box-sizing: border-box; }
-  html, body {
+  html { background: var(--bg); }
+  body {
     margin: 0;
-    padding: 0;
-    background: #fff;
+    padding: 12mm;
+    background: var(--bg);
     color: var(--text);
     font-family: var(--body);
     font-size: 14px;
@@ -39,8 +44,8 @@
   .mono { font-family: var(--mono); }
   .num  { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
-  /* Invoice document styles — copied from base.html so the PDF matches the page */
-  .invoice { background: var(--surface); padding: 0; max-width: none; border: none; border-radius: 0; }
+  /* Invoice card — copied from base.html so the PDF matches the page */
+  .invoice { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 32px; max-width: none; }
   .inv-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 24px; border-bottom: 2px solid var(--sage-ink); margin-bottom: 24px; }
   .inv-brand-mark { font-family: var(--display); font-size: 28px; font-weight: 600; letter-spacing: -0.04em; color: var(--sage-ink); }
   .inv-brand-mark .dot { color: var(--sage-teal); }
