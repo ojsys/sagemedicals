@@ -152,12 +152,40 @@ class PatientDetailView(View):
 
     def get(self, request, pk):
         patient = get_object_or_404(Patient, pk=pk, is_active=True)
+
+        # Holistic record — surface the patient's clinical & financial history
+        # directly on the profile (most recent first).
+        encounters = (
+            patient.encounters.select_related("attending")
+            .order_by("-date_time")[:10]
+        )
+        lab_orders = (
+            patient.lab_orders.select_related("test", "ordering_clinician")
+            .order_by("-created_at")[:10]
+        )
+        invoices = (
+            patient.invoices.select_related("encounter")
+            .order_by("-created_at")[:10]
+        )
+        prescriptions = (
+            patient.prescriptions.select_related("drug")
+            .order_by("-created_at")[:10]
+        )
+
         return render(request, self.template_name, {
             "patient": patient,
             "allergies": patient.allergies.all(),
             "conditions": patient.chronic_conditions.all(),
             "allergy_form": AllergyForm(),
             "condition_form": ChronicConditionForm(),
+            "encounters": encounters,
+            "lab_orders": lab_orders,
+            "invoices": invoices,
+            "prescriptions": prescriptions,
+            "encounter_count": patient.encounters.count(),
+            "lab_count": patient.lab_orders.count(),
+            "invoice_count": patient.invoices.count(),
+            "prescription_count": patient.prescriptions.count(),
         })
 
 

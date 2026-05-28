@@ -108,12 +108,18 @@ class LabWorklistView(View):
         priority_filter = request.GET.get("priority", "")
         patient_pk = request.GET.get("patient")
 
-        active_qs = LabOrder.objects.exclude(
-            status__in=[LabOrder.Status.RELEASED, LabOrder.Status.CANCELLED]
-        ).select_related("patient", "test", "ordering_clinician", "result")
+        active_qs = LabOrder.objects.select_related(
+            "patient", "test", "ordering_clinician", "result"
+        )
 
         if patient_pk:
+            # Viewing one patient = full lab history (include released/cancelled).
             active_qs = active_qs.filter(patient_id=patient_pk)
+        else:
+            # General worklist = only orders that still need action.
+            active_qs = active_qs.exclude(
+                status__in=[LabOrder.Status.RELEASED, LabOrder.Status.CANCELLED]
+            )
         if panel_filter:
             active_qs = active_qs.filter(test__panel=panel_filter)
         if priority_filter:

@@ -51,14 +51,15 @@
 </div>
 
 <!-- Tabs -->
-<div class="tabs">
+<div class="tabs" id="patient-tabs">
   <a href="#demographics" class="tab active">Demographics</a>
-  <a href="{% url 'encounters:list' %}?patient={{ patient.pk }}" class="tab">Encounters</a>
-  <a href="{% url 'laboratory:worklist' %}?patient={{ patient.pk }}" class="tab">Labs</a>
-  <a href="{% url 'billing:list' %}?patient={{ patient.pk }}" class="tab">Billing</a>
+  <a href="#encounters" class="tab">Encounters{% if encounter_count %} ({{ encounter_count }}){% endif %}</a>
+  <a href="#labs" class="tab">Labs{% if lab_count %} ({{ lab_count }}){% endif %}</a>
+  <a href="#billing" class="tab">Billing{% if invoice_count %} ({{ invoice_count }}){% endif %}</a>
+  <a href="#prescriptions" class="tab">Medications{% if prescription_count %} ({{ prescription_count }}){% endif %}</a>
 </div>
 
-<div class="patient-shell">
+<div class="patient-shell" id="demographics">
 
   <!-- Left column -->
   <div>
@@ -213,4 +214,130 @@
 
   </div>
 </div>
+
+<!-- ── Records ─────────────────────────────────────────────── -->
+
+<!-- Encounters -->
+<div class="card" id="encounters" style="margin-top:20px">
+  <div class="card-head">
+    <div class="card-title" style="font-size:15px"><i class="bi bi-journal-medical" style="margin-right:8px"></i>Encounters{% if encounter_count %} <span style="color:var(--text-3);font-weight:400">· {{ encounter_count }}</span>{% endif %}</div>
+    <a href="{% url 'encounters:list' %}?patient={{ patient.pk }}" class="btn btn-sm btn-ghost">View all</a>
+  </div>
+  {% if encounters %}
+  <table class="data">
+    <thead><tr><th>Date</th><th>Type</th><th>Complaint</th><th>Clinician</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for e in encounters %}
+      <tr class="patient-row" onclick="location.href='{% url 'encounters:workspace' e.pk %}'">
+        <td style="white-space:nowrap">{{ e.date_time|date:"d M Y" }}<div class="pmeta">{{ e.date_time|date:"H:i" }}</div></td>
+        <td>{{ e.get_encounter_type_display }}</td>
+        <td style="color:var(--text-2)">{{ e.chief_complaint|truncatechars:48|default:"—" }}</td>
+        <td>{% if e.attending.is_doctor %}Dr. {{ e.attending.last_name }}{% else %}{{ e.attending.get_full_name }}{% endif %}</td>
+        <td>{% if e.status == 'signed' %}<span class="tag green" style="font-size:11px"><span class="dot"></span>Signed</span>{% elif e.status == 'locked' %}<span class="tag amber" style="font-size:11px">Locked</span>{% else %}<span class="tag gray" style="font-size:11px"><span class="dot"></span>Draft</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px">No encounters recorded yet.</div>
+  {% endif %}
+</div>
+
+<!-- Labs -->
+<div class="card" id="labs" style="margin-top:20px">
+  <div class="card-head">
+    <div class="card-title" style="font-size:15px"><i class="bi bi-droplet-half" style="margin-right:8px"></i>Laboratory{% if lab_count %} <span style="color:var(--text-3);font-weight:400">· {{ lab_count }}</span>{% endif %}</div>
+    <a href="{% url 'laboratory:worklist' %}?patient={{ patient.pk }}" class="btn btn-sm btn-ghost">View all</a>
+  </div>
+  {% if lab_orders %}
+  <table class="data">
+    <thead><tr><th>Date</th><th>Test</th><th>Priority</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for o in lab_orders %}
+      <tr class="patient-row" onclick="location.href='{% url 'laboratory:order_detail' o.pk %}'">
+        <td style="white-space:nowrap">{{ o.created_at|date:"d M Y" }}<div class="pmeta">{{ o.created_at|date:"H:i" }}</div></td>
+        <td>{{ o.test.name }}</td>
+        <td>{% if o.priority == 'stat' %}<span class="tag red" style="font-size:11px">STAT</span>{% elif o.priority == 'urgent' %}<span class="tag amber" style="font-size:11px">Urgent</span>{% else %}<span class="tag gray" style="font-size:11px">Routine</span>{% endif %}</td>
+        <td>
+          {% if o.status == 'released' or o.status == 'verified' %}<span class="tag green" style="font-size:11px"><span class="dot"></span>{{ o.get_status_display }}</span>
+          {% elif o.status == 'cancelled' or o.status == 'rejected' %}<span class="tag red" style="font-size:11px">{{ o.get_status_display }}</span>
+          {% else %}<span class="tag amber" style="font-size:11px"><span class="dot"></span>{{ o.get_status_display }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px">No lab orders for this patient.</div>
+  {% endif %}
+</div>
+
+<!-- Billing -->
+<div class="card" id="billing" style="margin-top:20px">
+  <div class="card-head">
+    <div class="card-title" style="font-size:15px"><i class="bi bi-receipt" style="margin-right:8px"></i>Billing{% if invoice_count %} <span style="color:var(--text-3);font-weight:400">· {{ invoice_count }}</span>{% endif %}</div>
+    <a href="{% url 'billing:list' %}?patient={{ patient.pk }}" class="btn btn-sm btn-ghost">View all</a>
+  </div>
+  {% if invoices %}
+  <table class="data">
+    <thead><tr><th>Invoice</th><th>Date</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for inv in invoices %}
+      <tr class="patient-row" onclick="location.href='{% url 'billing:invoice' inv.pk %}'">
+        <td><span class="num" style="font-size:12px;color:var(--text-2)">{{ inv.invoice_number }}</span></td>
+        <td style="white-space:nowrap">{{ inv.created_at|date:"d M Y" }}</td>
+        <td class="num">₦{{ inv.total|floatformat:0 }}</td>
+        <td class="num" style="color:var(--sage-teal)">₦{{ inv.amount_paid|floatformat:0 }}</td>
+        <td class="num" style="{% if inv.balance > 0 %}color:var(--sage-red);font-weight:600{% else %}color:var(--sage-green){% endif %}">₦{{ inv.balance|floatformat:0 }}</td>
+        <td>
+          {% if inv.status == 'paid' %}<span class="tag green" style="font-size:11px"><span class="dot"></span>Paid</span>
+          {% elif inv.status == 'partial' %}<span class="tag amber" style="font-size:11px"><span class="dot"></span>Partial</span>
+          {% elif inv.status == 'draft' %}<span class="tag gray" style="font-size:11px">Draft</span>
+          {% elif inv.status == 'void' %}<span class="tag red" style="font-size:11px">Void</span>
+          {% elif inv.status == 'waived' %}<span class="tag teal" style="font-size:11px">Waived</span>
+          {% else %}<span class="tag blue" style="font-size:11px">{{ inv.get_status_display }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px">No invoices for this patient.</div>
+  {% endif %}
+</div>
+
+<!-- Medications / Prescriptions -->
+<div class="card" id="prescriptions" style="margin-top:20px">
+  <div class="card-head">
+    <div class="card-title" style="font-size:15px"><i class="bi bi-capsule" style="margin-right:8px"></i>Medications{% if prescription_count %} <span style="color:var(--text-3);font-weight:400">· {{ prescription_count }}</span>{% endif %}</div>
+  </div>
+  {% if prescriptions %}
+  <table class="data">
+    <thead><tr><th>Date</th><th>Drug</th><th>Dose</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for rx in prescriptions %}
+      <tr>
+        <td style="white-space:nowrap">{{ rx.created_at|date:"d M Y" }}</td>
+        <td>{{ rx.drug }}</td>
+        <td style="color:var(--text-2)">{{ rx.dose }}{% if rx.get_frequency_display %} · {{ rx.get_frequency_display }}{% endif %}</td>
+        <td>{% if rx.status == 'dispensed' %}<span class="tag green" style="font-size:11px"><span class="dot"></span>Dispensed</span>{% elif rx.status == 'cancelled' %}<span class="tag red" style="font-size:11px">Cancelled</span>{% else %}<span class="tag amber" style="font-size:11px"><span class="dot"></span>{{ rx.get_status_display }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px">No prescriptions for this patient.</div>
+  {% endif %}
+</div>
+
+<script>
+  // Highlight the tab matching the section nearest the top as you scroll/click.
+  (function () {
+    const tabs = Array.from(document.querySelectorAll('#patient-tabs .tab'));
+    tabs.forEach(t => t.addEventListener('click', function () {
+      tabs.forEach(x => x.classList.remove('active'));
+      this.classList.add('active');
+    }));
+  })();
+</script>
 {% endblock %}
