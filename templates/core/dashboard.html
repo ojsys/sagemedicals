@@ -22,13 +22,13 @@
 </div>
 
 <!-- Stat row -->
-<div class="stat-grid">
+<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
 
   <div class="stat">
     <div class="glyph"><i class="bi bi-people"></i></div>
     <div class="stat-label">Today's Patients</div>
     <div class="stat-value num">{{ patients_today }}</div>
-    <div class="stat-meta"><span class="delta flat">Today</span><span>visits (encounters + ANC)</span></div>
+    <div class="stat-meta"><span class="delta flat">Today</span><span>seen across all clinics</span></div>
     <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
       <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12" stroke="#0F4C81" stroke-width="1.5" fill="none"/>
       <path d="M0,28 Q20,22 40,24 T80,18 T120,14 T160,8 T200,12 L200,36 L0,36 Z" fill="url(#g1)" opacity=".18"/>
@@ -69,6 +69,26 @@
     <div class="stat-meta"><span class="delta {% if pending_labs > 0 %}down{% else %}flat{% endif %}">{{ pending_labs|pluralize:"1,many" }}</span><span>ordered or in progress</span></div>
     <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
       <path d="M0,30 L25,24 L50,26 L75,18 L100,20 L125,12 L150,14 L175,8 L200,4" stroke="#B83A26" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-green-soft);color:var(--sage-green)"><i class="bi bi-calendar-month"></i></div>
+    <div class="stat-label">Patients This Month</div>
+    <div class="stat-value num">{{ patients_month }}</div>
+    <div class="stat-meta"><span class="delta flat">{{ today|date:"F" }}</span><span>seen so far this month</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,30 L25,26 L50,22 L75,24 L100,16 L125,18 L150,10 L175,12 L200,6" stroke="#0F4C81" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="stat">
+    <div class="glyph" style="background:var(--sage-teal-soft);color:var(--sage-teal)"><i class="bi bi-person-vcard"></i></div>
+    <div class="stat-label">Total Patients</div>
+    <div class="stat-value num">{{ total_patients }}</div>
+    <div class="stat-meta"><span class="delta flat">All time</span><span>active records</span></div>
+    <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+      <path d="M0,32 L25,30 L50,26 L75,24 L100,20 L125,18 L150,14 L175,10 L200,6" stroke="#1B998B" stroke-width="1.5" fill="none"/>
     </svg>
   </div>
 

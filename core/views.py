@@ -162,13 +162,41 @@ class DashboardView(AccessMixin, View):
         from patients.models import Patient
         from scheduling.models import Appointment, QueueEntry
 
+        # "Patients today" = every distinct patient with a clinical touchpoint
+        # today across all clinics. Queue entries (walk-ins + checked-in
+        # appointments) are the reliable arrival signal; encounters and ANC
+        # visits are folded in so documented-but-unqueued patients still count.
         enc_pids = set(
             Encounter.objects.filter(date_time__date=today).values_list("patient_id", flat=True)
         )
         anc_pids = set(
             ANCVisit.objects.filter(visit_date=today).values_list("record__patient_id", flat=True)
         )
-        patients_today = len(enc_pids | anc_pids)
+        queue_pids = set(
+            QueueEntry.objects.filter(date=today).values_list("patient_id", flat=True)
+        )
+        patients_today = len(enc_pids | anc_pids | queue_pids)
+
+        # Distinct patients seen so far this month (same touchpoints), plus the
+        # all-time active patient base for the "Total Patients" card.
+        month_start = today.replace(day=1)
+        enc_month = set(
+            Encounter.objects.filter(
+                date_time__date__gte=month_start, date_time__date__lte=today
+            ).values_list("patient_id", flat=True)
+        )
+        anc_month = set(
+            ANCVisit.objects.filter(
+                visit_date__gte=month_start, visit_date__lte=today
+            ).values_list("record__patient_id", flat=True)
+        )
+        queue_month = set(
+            QueueEntry.objects.filter(
+                date__gte=month_start, date__lte=today
+            ).values_list("patient_id", flat=True)
+        )
+        patients_month = len(enc_month | anc_month | queue_month)
+        total_patients = Patient.objects.filter(is_active=True).count()
 
         active_admissions = Admission.objects.filter(
             status=Admission.Status.ACTIVE
@@ -224,6 +252,8 @@ class DashboardView(AccessMixin, View):
         return {
             "today": today,
             "patients_today": patients_today,
+            "patients_month": patients_month,
+            "total_patients": total_patients,
             "active_admissions": active_admissions,
             "queue_waiting": queue_waiting,
             "pending_labs": pending_labs,

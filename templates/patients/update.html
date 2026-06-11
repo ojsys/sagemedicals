@@ -28,6 +28,7 @@
         <div class="col-md-3"><label class="form-label">Marital Status</label>{{ form.marital_status }}</div>
         <div class="col-md-4"><label class="form-label">Occupation</label>{{ form.occupation }}</div>
         <div class="col-md-3"><label class="form-label">Blood Group</label>{{ form.blood_group }}</div>
+        <div class="col-md-3"><label class="form-label">Preferred Language</label>{{ form.preferred_language }}</div>
         <div class="col-md-3"><label class="form-label">Religion</label>{{ form.religion }}</div>
         <div class="col-md-3"><label class="form-label">State of Origin</label>{{ form.state_of_origin }}</div>
         <div class="col-md-3"><label class="form-label">LGA of Origin</label>{{ form.lga_of_origin }}</div>
@@ -65,11 +66,12 @@
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label">Payer Type <span style="color:var(--sage-red)">*</span></label>
-          <select name="payer_type" class="form-select" x-model="payer">
+          <select name="{{ form.payer_type.html_name }}" class="form-select" x-model="payer">
             {% for val, label in form.fields.payer_type.choices %}
             <option value="{{ val }}" {% if form.payer_type.value == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
+          {% if form.payer_type.errors %}<div style="color:var(--sage-red);font-size:12px;margin-top:4px">{{ form.payer_type.errors.0 }}</div>{% endif %}
         </div>
         <!-- NHIA fields -->
         <div class="col-md-4" x-show="payer === 'nhia'" x-cloak>
