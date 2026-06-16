@@ -51,6 +51,47 @@ class ANCRecordForm(SmartSelectMixin, forms.ModelForm):
         return cleaned
 
 
+class ANCConcludeForm(forms.ModelForm):
+    """Records the pregnancy outcome and archives the ANC record."""
+
+    class Meta:
+        model = ANCRecord
+        fields = [
+            "outcome", "outcome_date", "delivery_mode",
+            "babies_count", "outcome_notes",
+        ]
+        widgets = {
+            "outcome_date":  forms.DateInput(attrs={"type": "date"}),
+            "outcome_notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            w = field.widget
+            if isinstance(w, forms.Select):
+                w.attrs.setdefault("class", "form-select")
+            else:
+                w.attrs.setdefault("class", "form-control")
+
+        self.fields["outcome"].required = True
+        self.fields["outcome_date"].required = True
+        self.fields["outcome_date"].initial = date.today()
+        self.fields["babies_count"].initial = 1
+
+    def clean(self):
+        cleaned = super().clean()
+        outcome = cleaned.get("outcome")
+        mode = cleaned.get("delivery_mode")
+        # Mode of delivery only applies to a delivery/stillbirth.
+        if mode and outcome in {"miscarriage", "transferred"}:
+            self.add_error(
+                "delivery_mode",
+                "Mode of delivery does not apply to this outcome.",
+            )
+        return cleaned
+
+
 class ANCVisitForm(SmartSelectMixin, forms.ModelForm):
     class Meta:
         model = ANCVisit

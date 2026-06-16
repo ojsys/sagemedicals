@@ -10,7 +10,7 @@ from django.db.models import Q
 
 from patients.models import Patient
 
-from .forms import ANCRecordForm, ANCVisitForm, ObstetricScanForm
+from .forms import ANCConcludeForm, ANCRecordForm, ANCVisitForm, ObstetricScanForm
 from .models import ANCRecord, ANCVisit, ObstetricScan
 
 
@@ -53,6 +53,94 @@ class ANCListView(View):
                 is_active=True, edd__lte=today + timedelta(weeks=4)
             ).count(),
         })
+
+
+# ── Archive (concluded pregnancies) ──────────────────────────
+
+@method_decorator(login_required, name="dispatch")
+class ANCArchiveView(View):
+    template_name = "antenatal/archive.html"
+
+    def get(self, request):
+        qs = (
+            ANCRecord.objects.filter(is_active=False)
+            .select_related("patient")
+            .prefetch_related("visits")
+            .order_by("-outcome_date", "-edd")
+        )
+
+        q = request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(patient__first_name__icontains=q)
+                | Q(patient__last_name__icontains=q)
+                | Q(patient__hospital_number__icontains=q)
+            )
+
+        outcome = request.GET.get("outcome", "").strip()
+        if outcome:
+            qs = qs.filter(outcome=outcome)
+
+        return render(request, self.template_name, {
+            "records": qs,
+            "q": q,
+            "outcome": outcome,
+            "outcome_choices": ANCRecord.OUTCOME_CHOICES,
+            "total_archived": ANCRecord.objects.filter(is_active=False).count(),
+        })
+
+
+# ── Conclude / archive an ANC record (e.g. after delivery) ───
+
+@method_decorator(login_required, name="dispatch")
+class ANCConcludeView(View):
+    template_name = "antenatal/conclude_form.html"
+
+    def get(self, request, pk):
+        record = get_object_or_404(ANCRecord.objects.select_related("patient"), pk=pk)
+        if not record.is_active:
+            messages.info(request, "This ANC record has already been concluded.")
+            return redirect("antenatal:detail", pk=record.pk)
+        return render(request, self.template_name, {
+            "form": ANCConcludeForm(instance=record),
+            "record": record,
+            "patient": record.patient,
+        })
+
+    def post(self, request, pk):
+        record = get_object_or_404(ANCRecord.objects.select_related("patient"), pk=pk)
+        form = ANCConcludeForm(request.POST, instance=record)
+        if form.is_valid():
+            record = form.save(commit=False)
+            record.is_active = False
+            record.save()
+            messages.success(
+                request,
+                f"{record.patient.full_name}'s pregnancy has been recorded as "
+                f"{record.outcome_display.lower()} and moved to the archive.",
+            )
+            return redirect("antenatal:detail", pk=record.pk)
+        return render(request, self.template_name, {
+            "form": form,
+            "record": record,
+            "patient": record.patient,
+        })
+
+
+# ── Reopen a concluded record (undo) ─────────────────────────
+
+@method_decorator(login_required, name="dispatch")
+class ANCReopenView(View):
+    def post(self, request, pk):
+        record = get_object_or_404(ANCRecord.objects.select_related("patient"), pk=pk)
+        record.is_active = True
+        record.save(update_fields=["is_active", "updated_at"])
+        messages.success(
+            request,
+            f"{record.patient.full_name}'s ANC record has been reopened and is "
+            "active again.",
+        )
+        return redirect("antenatal:detail", pk=record.pk)
 
 
 # ── Create ANC Record ─────────────────────────────────────────

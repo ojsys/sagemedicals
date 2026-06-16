@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Antenatal Archive — SAGE EMR{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="{% url 'antenatal:list' %}" style="color:var(--text-3);text-decoration:none;">Antenatal Care</a>
+      <span style="margin:0 6px;color:var(--text-3);">/</span>
+      Archive
+    </div>
+    <h1 class="page-title">Antenatal Archive</h1>
+    <p class="page-sub">{{ total_archived }} concluded pregnanc{{ total_archived|pluralize:"y,ies" }} — delivered, lost, or transferred.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'antenatal:list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i>Active ANC
+    </a>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:8px;flex:1;min-width:200px;max-width:360px;">
+    <input type="hidden" name="outcome" value="{{ outcome }}">
+    <div style="flex:1;position:relative;">
+      <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:13px;"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search patient name or ID…"
+        style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text-1);">
+    </div>
+    <button type="submit" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">Search</button>
+    {% if q %}<a href="?outcome={{ outcome }}" class="btn btn-ghost" style="padding:8px 12px;font-size:13px;">Clear</a>{% endif %}
+  </form>
+
+  <div class="filters">
+    <a href="?q={{ q }}" class="chip {% if not outcome %}on{% endif %}">All</a>
+    {% for val, label in outcome_choices %}
+    <a href="?q={{ q }}&outcome={{ val }}" class="chip {% if outcome == val %}on{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if records %}
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>Outcome</th>
+        <th>Outcome Date</th>
+        <th>Mode</th>
+        <th>Babies</th>
+        <th>EDD</th>
+        <th>G / P</th>
+        <th>Visits</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in records %}
+      <tr onclick="location.href='{% url 'antenatal:detail' rec.pk %}'" style="cursor:pointer;">
+        <td>
+          <div class="pname">{{ rec.patient.full_name }}</div>
+          <div class="pmeta">{{ rec.patient.hospital_number }}{% if rec.patient.sex %} · {{ rec.patient.get_sex_display }}{% endif %}</div>
+        </td>
+        <td>
+          {% if rec.outcome == 'delivered' %}<span class="tag teal">{{ rec.outcome_display }}</span>
+          {% elif rec.outcome == 'stillbirth' or rec.outcome == 'miscarriage' %}<span class="tag red">{{ rec.outcome_display }}</span>
+          {% else %}<span class="tag gray">{{ rec.outcome_display }}</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap;">
+          {% if rec.outcome_date %}{{ rec.outcome_date|date:"j M Y" }}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}
+        </td>
+        <td>{% if rec.delivery_mode %}{{ rec.get_delivery_mode_display }}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}</td>
+        <td class="num">{% if rec.babies_count %}{{ rec.babies_count }}{% else %}<span style="color:var(--text-3)">—</span>{% endif %}</td>
+        <td style="white-space:nowrap;color:var(--text-2);">{{ rec.edd|date:"j M Y" }}</td>
+        <td>G{{ rec.gravida }}P{{ rec.para }}</td>
+        <td class="num">{{ rec.visits.count }}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <a href="{% url 'antenatal:detail' rec.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation()">
+              ANC
+            </a>
+            <a href="{% url 'patients:detail' rec.patient.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation()">
+              Patient
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div style="text-align:center;padding:60px 20px;color:var(--text-3);">
+  <i class="bi bi-archive" style="font-size:40px;display:block;margin-bottom:12px;opacity:.3;color:#1B998B;"></i>
+  {% if q or outcome %}
+  <div style="font-size:15px;">No archived records match your filter.</div>
+  <a href="{% url 'antenatal:archive' %}" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--sage-primary);text-decoration:none;">Clear filters</a>
+  {% else %}
+  <div style="font-size:15px;">No concluded ANC records yet.</div>
+  <div style="font-size:12px;margin-top:6px;">Records appear here once a pregnancy outcome is recorded from the ANC detail page.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -8,6 +8,20 @@ from core.models import BaseModel
 class ANCRecord(BaseModel):
     """One record per pregnancy for a patient."""
 
+    OUTCOME_CHOICES = [
+        ("delivered", "Delivered (live birth)"),
+        ("stillbirth", "Stillbirth"),
+        ("miscarriage", "Miscarriage / pregnancy loss"),
+        ("transferred", "Transferred to another facility"),
+        ("other", "Other"),
+    ]
+    DELIVERY_MODE_CHOICES = [
+        ("svd", "Spontaneous vaginal delivery (SVD)"),
+        ("assisted", "Assisted vaginal delivery"),
+        ("cs", "Caesarean section (C/S)"),
+        ("other", "Other"),
+    ]
+
     patient = models.ForeignKey(
         "patients.Patient",
         on_delete=models.CASCADE,
@@ -39,6 +53,28 @@ class ANCRecord(BaseModel):
     )
     notes = models.TextField(blank=True)
 
+    # ── Pregnancy outcome (set when the record is archived) ──────────
+    outcome = models.CharField(
+        "Outcome",
+        max_length=20, blank=True, choices=OUTCOME_CHOICES,
+        help_text="How this pregnancy concluded.",
+    )
+    outcome_date = models.DateField(
+        "Outcome / delivery date", null=True, blank=True,
+    )
+    delivery_mode = models.CharField(
+        "Mode of delivery",
+        max_length=20, blank=True, choices=DELIVERY_MODE_CHOICES,
+    )
+    babies_count = models.PositiveSmallIntegerField(
+        "Number of babies", null=True, blank=True,
+        help_text="e.g. 1 for a singleton, 2 for twins.",
+    )
+    outcome_notes = models.TextField(
+        "Outcome notes", blank=True,
+        help_text="Delivery summary, baby sex/weight, complications, etc.",
+    )
+
     class Meta:
         ordering = ["-edd"]
         verbose_name = "ANC Record"
@@ -46,6 +82,14 @@ class ANCRecord(BaseModel):
 
     def __str__(self):
         return f"{self.patient.full_name} — EDD {self.edd}"
+
+    @property
+    def is_concluded(self):
+        return not self.is_active
+
+    @property
+    def outcome_display(self):
+        return self.get_outcome_display() if self.outcome else "Concluded"
 
     # ── Computed props ──────────────────────────────────────────────
 

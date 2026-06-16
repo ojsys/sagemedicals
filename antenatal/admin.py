@@ -33,9 +33,9 @@ class ObstetricScanInline(admin.StackedInline):
 class ANCRecordAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
     list_display = [
         "patient", "edd", "gestational_age_today", "gravida_para",
-        "booking_date", "is_active",
+        "booking_date", "is_active", "outcome",
     ]
-    list_filter = ["is_active", "rhesus", "blood_group"]
+    list_filter = ["is_active", "outcome", "rhesus", "blood_group"]
     search_fields = [
         "patient__first_name", "patient__last_name",
         "patient__hospital_number",
@@ -49,6 +49,10 @@ class ANCRecordAdmin(SuperuserForceDeleteMixin, admin.ModelAdmin):
         ("Pregnancy Dates", {"fields": ["lmp", "edd", "booking_date"]}),
         ("Obstetric History", {"fields": ["gravida", "para"]}),
         ("Investigations", {"fields": ["blood_group", "rhesus"]}),
+        ("Outcome", {"fields": [
+            "outcome", "outcome_date", "delivery_mode",
+            "babies_count", "outcome_notes",
+        ]}),
         ("Notes", {"fields": ["notes"], "classes": ["collapse"]}),
     ]
 
