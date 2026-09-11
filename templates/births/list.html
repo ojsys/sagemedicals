@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Birth Certificates — SAGE EMR{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Maternity</div>
+    <h1 class="page-title">Birth Register</h1>
+    <p class="page-sub">{{ total }} birth{{ total|pluralize }} registered · {{ this_month }} this month. Every record prints as a SAGE Medical Centre certificate of birth.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'births:create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i>Register Birth
+    </a>
+  </div>
+</div>
+
+<form method="get" style="display:flex;gap:8px;max-width:420px;margin-bottom:16px;">
+  <div style="flex:1;position:relative;">
+    <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:13px;"></i>
+    <input type="text" name="q" value="{{ q }}" placeholder="Child, mother, hospital or certificate no…"
+      style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--line);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text-1);">
+  </div>
+  <button type="submit" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">Search</button>
+  {% if q %}<a href="{% url 'births:list' %}" class="btn btn-ghost" style="padding:8px 12px;font-size:13px;">Clear</a>{% endif %}
+</form>
+
+{% if records %}
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Certificate No.</th>
+        <th>Child</th>
+        <th>Born</th>
+        <th>Weight</th>
+        <th>Mother</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in records %}
+      <tr onclick="location.href='{% url 'births:detail' rec.pk %}'" style="cursor:pointer;">
+        <td style="font-family:var(--font-mono, monospace);font-size:12.5px;white-space:nowrap;">{{ rec.certificate_number }}</td>
+        <td>
+          <div class="pname">{{ rec.child_full_name }}</div>
+          <div class="pmeta">{{ rec.get_sex_display }} · {{ rec.birth_type_display }}</div>
+        </td>
+        <td style="white-space:nowrap;">
+          {{ rec.date_of_birth|date:"j M Y" }}
+          <div class="pmeta">{{ rec.time_of_birth|time:"g:i A" }}</div>
+        </td>
+        <td class="num">{{ rec.weight_kg }} kg</td>
+        <td>
+          <div class="pname">{{ rec.mother.full_name }}</div>
+          <div class="pmeta">{{ rec.mother.hospital_number }}</div>
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <a href="{% url 'births:certificate' rec.pk %}" target="_blank" rel="noopener" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation()">
+              <i class="bi bi-file-earmark-pdf"></i>Certificate
+            </a>
+            <a href="{% url 'births:edit' rec.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation()">
+              Edit
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:14px;font-size:13px;color:var(--text-3);">
+  {% if page.has_previous %}<a href="?q={{ q|urlencode }}&page={{ page.previous_page_number }}" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;"><i class="bi bi-chevron-left"></i>Previous</a>{% endif %}
+  <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a href="?q={{ q|urlencode }}&page={{ page.next_page_number }}" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;">Next<i class="bi bi-chevron-right"></i></a>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div style="text-align:center;padding:60px 20px;color:var(--text-3);">
+  <i class="bi bi-award" style="font-size:40px;display:block;margin-bottom:12px;opacity:.3;color:#1B998B;"></i>
+  {% if q %}
+  <div style="font-size:15px;">No births match "{{ q }}".</div>
+  <a href="{% url 'births:list' %}" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--sage-primary);text-decoration:none;">Clear search</a>
+  {% else %}
+  <div style="font-size:15px;">No births registered yet.</div>
+  <div style="font-size:12px;margin-top:6px;">Register a birth here, or use <strong>Issue Birth Certificate</strong> on a delivered ANC record.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

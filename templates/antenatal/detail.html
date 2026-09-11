@@ -25,6 +25,11 @@
       <i class="bi bi-check2-circle"></i>Record Outcome
     </a>
     {% else %}
+    {% if record.outcome == 'delivered' %}
+    <a href="{% url 'births:create' %}?anc={{ record.pk }}" class="btn btn-primary">
+      <i class="bi bi-award"></i>Issue Birth Certificate
+    </a>
+    {% endif %}
     <form method="post" action="{% url 'antenatal:reopen' record.pk %}" style="display:inline;"
           onsubmit="return confirm('Reopen this record and return the patient to the active antenatal list?');">
       {% csrf_token %}
@@ -51,6 +56,15 @@
       {% if record.outcome_notes %}
       <div style="font-size:13px;color:var(--text-1);margin-top:8px;">{{ record.outcome_notes|linebreaksbr }}</div>
       {% endif %}
+      {% with certs=record.birth_records.all %}{% if certs %}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        {% for b in certs %}
+        <a href="{% url 'births:detail' b.pk %}" class="tag teal" style="text-decoration:none;">
+          <i class="bi bi-award"></i> {{ b.child_full_name }} · {{ b.certificate_number }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}{% endwith %}
     </div>
     <a href="{% url 'antenatal:archive' %}" class="btn btn-ghost" style="font-size:12px;">
       <i class="bi bi-archive"></i>View Archive

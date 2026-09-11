@@ -96,6 +96,10 @@ class ANCRecord(BaseModel):
     def _ref_date(self):
         return self.lmp if self.lmp else (self.edd - timedelta(days=280))
 
+    def gestational_age_on(self, day):
+        """Completed weeks of gestation on a given date (e.g. the delivery date)."""
+        return max(0, (day - self._ref_date()).days // 7)
+
     @property
     def gestational_age_weeks(self):
         days = (date.today() - self._ref_date()).days

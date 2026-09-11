@@ -1,0 +1,6 @@
+<div{% if wide %} style="grid-column:1/-1;"{% endif %}>
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span style="color:var(--sage-red)">*</span>{% endif %}</label>
+  {{ field }}
+  {% if field.help_text %}<div style="font-size:11px;color:var(--text-3);margin-top:3px;">{{ field.help_text }}</div>{% endif %}
+  {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
+</div>

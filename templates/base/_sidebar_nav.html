@@ -82,6 +82,13 @@
 </a>
 {% endif %}
 
+{# Roles kept in sync with births.views.BIRTH_REGISTER_ROLES #}
+{% if role in "super_admin,hospital_admin,doctor,resident,nurse,chew,records_officer" %}
+<a class="nav-item {% if '/births' in url %}active{% endif %}" href="{% url 'births:list' %}">
+  <i class="bi bi-award"></i>Birth Certificates
+</a>
+{% endif %}
+
 <div class="nav-section-label">Operations</div>
 
 {% if role in "super_admin,billing_officer" %}

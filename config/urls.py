@@ -29,6 +29,7 @@ urlpatterns = [
     path("admissions/", include("admissions.urls")),
     path("surgery/", include("surgery.urls")),
     path("antenatal/", include("antenatal.urls")),
+    path("births/", include("births.urls")),
     path("portal/", include("portal.urls")),
     path("reports/", include("reports.urls")),
     path("notifications/", include("notifications.urls")),

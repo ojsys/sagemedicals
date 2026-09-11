@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Birth — SAGE EMR{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="{% url 'births:list' %}" style="color:var(--text-3);text-decoration:none;">Birth Register</a>
+      {% if record %}
+        <span style="margin:0 6px;color:var(--text-3);">/</span>
+        <a href="{% url 'births:detail' record.pk %}" style="color:var(--text-3);text-decoration:none;">{{ record.certificate_number }}</a>
+      {% endif %}
+    </div>
+    <h1 class="page-title">{% if record %}Edit Birth Record{% else %}Register a Birth{% endif %}</h1>
+    {% if anc and not record %}
+    <p class="page-sub">Pre-filled from {{ anc.patient.full_name }}'s delivery record — add the baby's details below.</p>
+    {% endif %}
+  </div>
+  <div class="page-actions">
+    <a href="{% if record %}{% url 'births:detail' record.pk %}{% elif anc %}{% url 'antenatal:detail' anc.pk %}{% else %}{% url 'births:list' %}{% endif %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i>Cancel
+    </a>
+  </div>
+</div>
+
+<div style="max-width:720px;">
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if anc %}<input type="hidden" name="anc_record" value="{{ anc.pk }}">{% endif %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" style="margin-bottom:16px;">
+      {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Mother -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Mother</div></div>
+
+      {% if record or anc %}
+      {# Mother is fixed when editing or when issuing from an ANC record #}
+      <input type="hidden" name="mother" value="{{ mother.pk }}">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--sage-primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0;">
+          {{ mother.first_name.0 }}{{ mother.last_name.0 }}
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:14px;">{{ mother.full_name }}</div>
+          <div style="font-size:12px;color:var(--text-3);">{{ mother.hospital_number }}{% if anc %} · ANC EDD {{ anc.edd|date:"j M Y" }}{% endif %}</div>
+        </div>
+      </div>
+      {% else %}
+      <label class="form-label" for="patient-search">Search mother <span style="color:var(--sage-red)">*</span></label>
+      <input type="text" id="patient-search" class="form-control" placeholder="Type name or hospital number…"
+             hx-get="{% url 'antenatal:patient_search' %}"
+             hx-trigger="keyup changed delay:300ms"
+             hx-target="#patient-results"
+             name="q" autocomplete="off" value="{{ mother.full_name|default:'' }}">
+      <div id="patient-results"
+           style="border:1px solid var(--line);border-radius:var(--radius);margin-top:4px;overflow:hidden;display:none;background:var(--surface);box-shadow:0 4px 16px rgba(0,0,0,.08);"></div>
+      <input type="hidden" name="mother" id="patient-pk" value="{{ mother.pk|default:'' }}">
+      <div id="patient-badge" style="{% if not mother %}display:none;{% endif %}">
+        {% if mother %}
+        <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:var(--radius);padding:10px 14px;margin-top:12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--sage-primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0;">
+            {{ mother.first_name.0 }}{{ mother.last_name.0 }}
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">{{ mother.full_name }}</div>
+            <div style="font-size:12px;color:var(--text-3);">{{ mother.hospital_number }}</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Child -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Child</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+        {% include "births/partials/field.html" with field=form.child_first_name %}
+        {% include "births/partials/field.html" with field=form.child_middle_name %}
+        {% include "births/partials/field.html" with field=form.child_surname %}
+        {% include "births/partials/field.html" with field=form.sex %}
+      </div>
+    </div>
+
+    <!-- Birth details -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="card-title">Birth Details</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+        {% include "births/partials/field.html" with field=form.date_of_birth %}
+        {% include "births/partials/field.html" with field=form.time_of_birth %}
+        {% include "births/partials/field.html" with field=form.weight_kg %}
+        {% include "births/partials/field.html" with field=form.length_cm %}
+        {% include "births/partials/field.html" with field=form.gestational_age_weeks %}
+        {% include "births/partials/field.html" with field=form.delivery_mode %}
+        {% include "births/partials/field.html" with field=form.babies_in_delivery %}
+        {% include "births/partials/field.html" with field=form.birth_order %}
+      </div>
+    </div>
+
+    <!-- Parents & attendant -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-head"><div class="card-title">Father &amp; Attendant</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+        {% include "births/partials/field.html" with field=form.father_name %}
+        {% include "births/partials/field.html" with field=form.attended_by %}
+        {% include "births/partials/field.html" with field=form.notes wide=True %}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-award"></i>{% if record %}Save Changes{% else %}Register Birth &amp; Create Certificate{% endif %}
+      </button>
+      <a href="{% if record %}{% url 'births:detail' record.pk %}{% else %}{% url 'births:list' %}{% endif %}" class="btn btn-ghost">Cancel</a>
+    </div>
+
+  </form>
+</div>
+
+{% if not record and not anc %}
+<script>
+(function () {
+  const searchEl  = document.getElementById('patient-search');
+  const resultsEl = document.getElementById('patient-results');
+  const pkEl      = document.getElementById('patient-pk');
+  const badgeEl   = document.getElementById('patient-badge');
+
+  searchEl.addEventListener('keyup', function () {
+    resultsEl.style.display = this.value.trim() ? 'block' : 'none';
+  });
+
+  // Rows carry data-pk, data-name, data-hn, data-initials
+  resultsEl.addEventListener('click', function (e) {
+    const row = e.target.closest('[data-pk]');
+    if (!row) return;
+
+    pkEl.value = row.dataset.pk;
+    searchEl.value = row.dataset.name;
+    resultsEl.innerHTML = '';
+    resultsEl.style.display = 'none';
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:var(--radius);padding:10px 14px;margin-top:12px;';
+    const avatar = document.createElement('div');
+    avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:var(--sage-primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0;';
+    avatar.textContent = row.dataset.initials || '?';
+    const text = document.createElement('div');
+    const name = document.createElement('div');
+    name.style.cssText = 'font-weight:600;font-size:14px;';
+    name.textContent = row.dataset.name;
+    const hn = document.createElement('div');
+    hn.style.cssText = 'font-size:12px;color:var(--text-3);';
+    hn.textContent = row.dataset.hn;
+    text.append(name, hn);
+    wrap.append(avatar, text);
+    badgeEl.replaceChildren(wrap);
+    badgeEl.style.display = 'block';
+  });
+
+  resultsEl.addEventListener('mouseover', function (e) {
+    const row = e.target.closest('[data-pk]');
+    if (row) row.style.background = 'var(--bg)';
+  });
+  resultsEl.addEventListener('mouseout', function (e) {
+    const row = e.target.closest('[data-pk]');
+    if (row) row.style.background = '';
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!searchEl.contains(e.target) && !resultsEl.contains(e.target)) {
+      resultsEl.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endif %}
+
+{% endblock %}

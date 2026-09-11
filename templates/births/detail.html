@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ record.child_full_name }} — Birth Certificate{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="{% url 'births:list' %}" style="color:var(--text-3);text-decoration:none;">Birth Register</a>
+      <span style="margin:0 6px;color:var(--text-3);">/</span>
+      {{ record.certificate_number }}
+    </div>
+    <h1 class="page-title">{{ record.child_full_name }}</h1>
+    <p class="page-sub">{{ record.get_sex_display }} · born {{ record.date_of_birth|date:"j F Y" }} at {{ record.time_of_birth|time:"g:i A" }} · {{ record.weight_kg }} kg</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'births:edit' record.pk %}" class="btn btn-ghost"><i class="bi bi-pencil"></i>Edit</a>
+    <a href="{% url 'births:certificate' record.pk %}?download=1" class="btn btn-ghost"><i class="bi bi-download"></i>Download PDF</a>
+    <a href="{% url 'births:certificate' record.pk %}" target="_blank" rel="noopener" class="btn btn-primary"><i class="bi bi-printer"></i>Open &amp; Print</a>
+  </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+
+  <div class="card" style="flex:2 1 520px;min-width:0;padding:10px;">
+    <iframe src="{% url 'births:certificate' record.pk %}#view=Fit&toolbar=0"
+            title="Birth certificate preview"
+            style="display:block;width:100%;aspect-ratio:297/220;border:0;border-radius:var(--radius);background:#fff;"></iframe>
+  </div>
+
+  <div class="card" style="flex:1 1 280px;min-width:0;">
+    <div class="card-head"><div class="card-title">Record</div></div>
+    <dl style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin:0;font-size:13px;">
+      <dt style="color:var(--text-3);">Certificate</dt><dd style="margin:0;font-family:var(--font-mono, monospace);">{{ record.certificate_number }}</dd>
+      <dt style="color:var(--text-3);">Mother</dt>
+      <dd style="margin:0;">
+        <a href="{% url 'patients:detail' record.mother.pk %}" style="color:var(--sage-primary);text-decoration:none;">{{ record.mother.full_name }}</a>
+        <div style="font-size:11.5px;color:var(--text-3);">{{ record.mother.hospital_number }}</div>
+      </dd>
+      <dt style="color:var(--text-3);">Father</dt><dd style="margin:0;">{{ record.father_name|default:"—" }}</dd>
+      <dt style="color:var(--text-3);">Birth type</dt><dd style="margin:0;">{{ record.birth_type_display }}</dd>
+      <dt style="color:var(--text-3);">Delivery</dt><dd style="margin:0;">{{ record.get_delivery_mode_display|default:"—" }}</dd>
+      <dt style="color:var(--text-3);">Gestation</dt><dd style="margin:0;">{% if record.gestational_age_weeks %}{{ record.gestational_age_weeks }} weeks{% else %}—{% endif %}</dd>
+      <dt style="color:var(--text-3);">Length</dt><dd style="margin:0;">{% if record.length_cm %}{{ record.length_cm }} cm{% else %}—{% endif %}</dd>
+      <dt style="color:var(--text-3);">Attended by</dt><dd style="margin:0;">{{ record.attended_by.display_name|default:"—" }}</dd>
+      {% if record.anc_record %}
+      <dt style="color:var(--text-3);">ANC record</dt>
+      <dd style="margin:0;"><a href="{% url 'antenatal:detail' record.anc_record.pk %}" style="color:var(--sage-primary);text-decoration:none;">EDD {{ record.anc_record.edd|date:"j M Y" }}</a></dd>
+      {% endif %}
+      <dt style="color:var(--text-3);">Registered</dt>
+      <dd style="margin:0;">{{ record.created_at|date:"j M Y, g:i A" }}{% if record.created_by %}<div style="font-size:11.5px;color:var(--text-3);">by {{ record.created_by.display_name }}</div>{% endif %}</dd>
+    </dl>
+    {% if record.notes %}
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--text-3);margin-bottom:4px;">Internal notes</div>
+      <div style="font-size:13px;">{{ record.notes|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
