@@ -138,6 +138,9 @@ a.stat.on { border-color:var(--sage-ink); box-shadow:0 0 0 1px var(--sage-ink) i
       <option value="7d" {% if period == '7d' %}selected{% endif %}>Last 7 days</option>
       <option value="30d" {% if period == '30d' %}selected{% endif %}>Last 30 days</option>
     </select>
+    <select name="sort" class="form-select" aria-label="Sort order">
+      {% for key, label in sorts.items %}<option value="{{ key }}" {% if sort == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
     {% if patient %}<input type="hidden" name="patient" value="{{ patient.pk }}">{% endif %}
     {% include "laboratory/partials/worklist_status_input.html" %}
     <span id="lab-spinner" class="lab-spinner"><span class="spinner-border spinner-border-sm" style="width:12px;height:12px;margin-right:6px"></span>Searching…</span>

@@ -123,8 +123,7 @@ WORKLIST_TABS = {
     "cancelled": ("Cancelled / Expired", [_S.CANCELLED, _S.REJECTED]),
     "all": ("All", None),
 }
-# Tabs that are queues to work through: urgent first, then oldest first.
-QUEUE_TABS = {"active", "pending", "in_progress", "awaiting_verify", "critical"}
+SORTS = {"newest": "Newest first", "oldest": "Oldest first", "priority": "STAT / Urgent first"}
 UNACKED_CRITICAL = Q(result__is_critical=True, result__critical_acknowledged_at__isnull=True)
 PERIODS = {"today": 0, "7d": 7, "30d": 30}
 
@@ -166,6 +165,9 @@ class LabWorklistView(View):
         priority_filter = request.GET.get("priority", "")
         period = request.GET.get("period", "")
         patient_pk = request.GET.get("patient")
+        sort = request.GET.get("sort", "")
+        if sort not in SORTS:
+            sort = "newest"
         status = request.GET.get("status", "")
         if status not in WORKLIST_TABS:
             status = ""
@@ -202,12 +204,14 @@ class LabWorklistView(View):
         elif WORKLIST_TABS[tab][1]:
             qs = qs.filter(status__in=WORKLIST_TABS[tab][1])
 
-        if tab in QUEUE_TABS:
+        if sort == "priority":
             qs = qs.annotate(priority_rank=Case(
                 When(priority=LabOrder.Priority.STAT, then=0),
                 When(priority=LabOrder.Priority.URGENT, then=1),
                 default=2,
             )).order_by("priority_rank", "created_at")
+        elif sort == "oldest":
+            qs = qs.order_by("created_at")
         else:
             qs = qs.order_by("-created_at")
 
@@ -235,6 +239,8 @@ class LabWorklistView(View):
             "panel_filter": panel_filter,
             "priority_filter": priority_filter,
             "period": period,
+            "sort": sort,
+            "sorts": SORTS,
             "expiry_hours": LAB_ORDER_EXPIRY_HOURS,
             "bulk_actionable": tab not in ("released", "cancelled"),
             "page_range": page.paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),

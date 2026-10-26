@@ -173,13 +173,25 @@ def test_worklist_is_paginated(client, patient, fbc, labtech):
 
 
 @pytest.mark.django_db
-def test_stat_orders_lead_the_queue(client, patient, fbc, labtech):
-    from laboratory.models import LabOrder
-
-    routine = _order(patient, fbc, labtech, hours_ago=5)
-    stat = _order(patient, fbc, labtech, priority=LabOrder.Priority.STAT)
+def test_newest_orders_first_by_default(client, patient, fbc, labtech):
+    older = _order(patient, fbc, labtech, hours_ago=5)
+    newer = _order(patient, fbc, labtech, hours_ago=1)
     client.force_login(labtech)
     resp = client.get(reverse("laboratory:worklist"))
+    assert list(resp.context["orders"]) == [newer, older]
+
+    resp = client.get(reverse("laboratory:worklist"), {"sort": "oldest"})
+    assert list(resp.context["orders"]) == [older, newer]
+
+
+@pytest.mark.django_db
+def test_priority_sort_puts_stat_first(client, patient, fbc, labtech):
+    from laboratory.models import LabOrder
+
+    stat = _order(patient, fbc, labtech, hours_ago=5, priority=LabOrder.Priority.STAT)
+    routine = _order(patient, fbc, labtech)
+    client.force_login(labtech)
+    resp = client.get(reverse("laboratory:worklist"), {"sort": "priority"})
     assert list(resp.context["orders"]) == [stat, routine]
 
 
