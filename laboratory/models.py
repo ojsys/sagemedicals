@@ -66,6 +66,7 @@ class LabOrder(BaseModel):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="samples_collected"
     )
     rejection_reason = models.CharField(max_length=200, blank=True)
+    cancel_reason = models.CharField(max_length=200, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -74,8 +75,14 @@ class LabOrder(BaseModel):
             models.Index(fields=["encounter"]),
         ]
 
+    AUTO_EXPIRED_PREFIX = "Auto-cancelled"
+
     def __str__(self):
         return f"{self.test.name} — {self.patient} [{self.get_status_display()}]"
+
+    @property
+    def was_auto_expired(self):
+        return self.status == self.Status.CANCELLED and self.cancel_reason.startswith(self.AUTO_EXPIRED_PREFIX)
 
 
 class LabResult(BaseModel):

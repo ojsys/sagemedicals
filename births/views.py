@@ -10,7 +10,6 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 
-from accounts.models import Role
 from antenatal.models import ANCRecord
 from patients.models import Patient
 
@@ -18,20 +17,12 @@ from .certificate import build_birth_certificate_pdf
 from .forms import BirthRecordForm
 from .models import BirthRecord
 
-# Keep in sync with the "Birth Certificates" link in templates/base/_sidebar_nav.html.
-BIRTH_REGISTER_ROLES = frozenset({
-    Role.SUPER_ADMIN, Role.HOSPITAL_ADMIN,
-    Role.DOCTOR, Role.RESIDENT, Role.NURSE, Role.CHEW,
-    Role.RECORDS_OFFICER,
-})
-
 
 class BirthRegisterAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Clinical staff who attend deliveries, plus records and hospital admin."""
+    """Any hospital staff member — every role except patient-portal accounts."""
 
     def test_func(self):
-        u = self.request.user
-        return bool(u.is_superuser or getattr(u, "role", None) in BIRTH_REGISTER_ROLES)
+        return bool(getattr(self.request.user, "is_hospital_staff", False))
 
     def handle_no_permission(self):
         if self.request.user.is_authenticated:

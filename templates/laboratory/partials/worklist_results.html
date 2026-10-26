@@ -1,0 +1,175 @@
+{% if is_htmx %}{% include "laboratory/partials/worklist_status_input.html" with oob=True %}{% endif %}
+
+<nav class="tabs lab-tabs" aria-label="Order status">
+  {% for t in tabs %}
+  <a class="tab {% if t.key == tab %}active{% endif %} {% if t.key == 'critical' and t.count %}crit{% endif %}"
+     href="{% querystring status=t.key page=None %}"
+     hx-get="{% querystring status=t.key page=None %}" hx-target="#lab-results" hx-push-url="true">
+    {{ t.label }}<span class="count">{{ t.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+{% if query or patient %}
+<div style="padding:10px 20px;font-size:12.5px;color:var(--text-2);border-bottom:1px solid var(--line-soft);background:var(--bg)">
+  {{ page_obj.paginator.count }} {{ tab_label|lower }} request{{ page_obj.paginator.count|pluralize }}
+  {% if query %}matching <strong>“{{ query }}”</strong>{% endif %}
+  {% if patient %}for <strong>{{ patient.full_name }}</strong>{% endif %}
+  {% if query %}· <a href="{% querystring q=None page=None %}" hx-get="{% querystring q=None page=None %}" hx-target="#lab-results" hx-push-url="true"
+       onclick="document.getElementById('lab-q').value=''" style="color:var(--sage-primary)">Clear search</a>{% endif %}
+</div>
+{% endif %}
+
+{% if orders %}
+  {% if bulk_actionable %}
+  <div class="bulk-bar">
+    <strong><span data-picked>0</span> selected</strong>
+    <button form="bulk-form" name="action" value="collect" class="btn btn-sm"><i class="bi bi-droplet"></i>Mark collected</button>
+    <input form="bulk-form" name="reason" type="text" maxlength="150" placeholder="Cancel reason (optional)">
+    <button form="bulk-form" name="action" value="cancel" class="btn btn-sm"><i class="bi bi-x-circle"></i>Cancel selected</button>
+  </div>
+  {% endif %}
+
+  <div class="lab-th">
+    <span>{% if bulk_actionable %}<input type="checkbox" id="lab-select-all" aria-label="Select all on this page">{% endif %}</span>
+    <span>Patient</span>
+    <span>Test</span>
+    <span>Status</span>
+    <span style="text-align:right">Requested</span>
+    <span></span>
+  </div>
+
+  {% for order in orders %}
+  {% with result=order.result %}
+  <div class="lab-row {% if order.priority == 'stat' %}prio-stat{% elif order.priority == 'urgent' %}prio-urgent{% endif %}"
+       onclick="if(!event.target.closest('a,button,input,form'))location.href='{% url 'laboratory:order_detail' order.pk %}'">
+
+    <div class="c-chk">
+      {% if bulk_actionable and order.status not in 'released,verified,cancelled,rejected' %}
+      <input type="checkbox" name="orders" value="{{ order.pk }}" form="bulk-form" aria-label="Select {{ order.test.name }} for {{ order.patient.full_name }}">
+      {% endif %}
+    </div>
+
+    <div class="c-pt">
+      {% if patient %}
+      <div class="lab-pt">{{ order.patient.full_name }}</div>
+      {% else %}
+      <a class="lab-pt" href="{% url 'laboratory:worklist' %}?patient={{ order.patient.pk }}" title="All lab requests for this patient" style="text-decoration:none">{{ order.patient.full_name }}</a>
+      {% endif %}
+      <div class="lab-sub">{{ order.patient.hospital_number }}{% if order.barcode %} · {{ order.barcode }}{% endif %}</div>
+    </div>
+
+    <div class="c-test">
+      <div style="color:var(--text-2);font-weight:500">{{ order.test.name }}</div>
+      <div class="lab-tags">
+        {% if order.priority == 'stat' %}<span class="tag red">STAT</span>
+        {% elif order.priority == 'urgent' %}<span class="tag amber"><span class="dot"></span>Urgent</span>{% endif %}
+        {% if result and result.is_critical and not result.critical_acknowledged_at %}
+          <span class="tag red"><i class="bi bi-exclamation-octagon-fill" style="font-size:9px"></i> Critical</span>
+        {% endif %}
+        {% if order.is_overdue %}<span class="tag amber" title="Past the {{ order.test.turnaround_hours }}h turnaround time"><i class="bi bi-hourglass-split" style="font-size:9px"></i> Overdue</span>{% endif %}
+        {% if order.test.panel %}<span class="tag gray">{{ order.test.panel }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="c-prog" style="font-size:11.5px">
+      {% if order.status == 'ordered' %}
+        <div style="color:var(--text-3)">Pending collection</div>
+        <div class="progress"><div class="progress-bar" style="width:5%;background:var(--line)"></div></div>
+        <div style="margin-top:4px;font-family:var(--mono);font-size:10.5px;{% if order.expires_in_hours <= 6 %}color:var(--sage-red){% elif order.expires_in_hours <= 24 %}color:var(--sage-amber){% else %}color:var(--text-3){% endif %}">
+          <i class="bi bi-clock"></i> expires in {{ order.expires_in_hours }}h
+        </div>
+      {% elif order.status == 'sample_collected' %}
+        <div style="color:var(--text-3)">Sample received</div>
+        <div class="progress"><div class="progress-bar" style="width:30%"></div></div>
+      {% elif order.status == 'in_progress' %}
+        <div style="color:var(--text-3)">Running</div>
+        <div class="progress"><div class="progress-bar" style="width:60%"></div></div>
+      {% elif order.status == 'resulted' %}
+        <div style="color:var(--sage-amber)">Awaiting verify</div>
+        <div class="progress"><div class="progress-bar" style="width:85%;background:var(--sage-amber)"></div></div>
+      {% elif order.status == 'verified' or order.status == 'released' %}
+        {% if result %}
+        <div style="font-family:var(--mono);font-size:13px;font-weight:600;
+          {% if result.abnormal_flag == 'critical_low' or result.abnormal_flag == 'critical_high' %}color:var(--sage-red)
+          {% elif result.abnormal_flag == 'normal' %}color:var(--sage-green){% else %}color:var(--sage-amber){% endif %}">
+          {{ result.value|truncatechars:22 }} {{ result.unit }}
+        </div>
+        {% endif %}
+        <span class="tag green" style="font-size:10.5px;margin-top:3px"><span class="dot"></span>{{ order.get_status_display }}</span>
+      {% elif order.status == 'cancelled' %}
+        {% if order.was_auto_expired %}
+          <span class="tag gray" style="font-size:10.5px"><i class="bi bi-clock-history" style="font-size:9px"></i> Expired</span>
+        {% else %}
+          <span class="tag gray" style="font-size:10.5px">Cancelled</span>
+        {% endif %}
+        {% if order.cancel_reason and not order.was_auto_expired %}<div style="color:var(--text-3);margin-top:3px" title="{{ order.cancel_reason }}">{{ order.cancel_reason|truncatechars:40 }}</div>{% endif %}
+      {% elif order.status == 'rejected' %}
+        <span class="tag red" style="font-size:10.5px">Sample rejected</span>
+        {% if order.rejection_reason %}<div style="color:var(--text-3);margin-top:3px">{{ order.rejection_reason|truncatechars:40 }}</div>{% endif %}
+      {% endif %}
+    </div>
+
+    <div class="c-time lab-time">
+      {% if order.created_at|date:"Ymd" == today|date:"Ymd" %}Today {{ order.created_at|time:"H:i" }}{% else %}{{ order.created_at|date:"d M · H:i" }}{% endif %}<br>
+      <span style="font-size:10.5px">{{ order.ordering_clinician.last_name|default:order.ordering_clinician.get_full_name }}</span>
+    </div>
+
+    <div class="c-act lab-act">
+      {% if order.status == 'ordered' %}
+        <form method="post" action="{% url 'laboratory:collect' order.pk %}" style="display:inline">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ return_url }}">
+          <button class="btn btn-ghost btn-sm"><i class="bi bi-droplet"></i>Collect</button>
+        </form>
+      {% elif order.status == 'sample_collected' or order.status == 'in_progress' %}
+        <a href="{% url 'laboratory:result_entry' order.pk %}?next={{ return_url|urlencode }}" class="btn btn-sm btn-primary">Enter Results</a>
+      {% elif order.status == 'resulted' %}
+        <form method="post" action="{% url 'laboratory:result_verify' order.pk %}" style="display:inline">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ return_url }}">
+          <button class="btn btn-sm btn-teal">Verify &amp; Release</button>
+        </form>
+      {% elif order.status == 'verified' or order.status == 'released' %}
+        <a href="{% url 'laboratory:result_pdf' order.pk %}" target="_blank" class="btn btn-ghost btn-sm" title="Print result"><i class="bi bi-printer"></i></a>
+        <a href="{% url 'laboratory:order_detail' order.pk %}" class="btn btn-ghost btn-sm">View</a>
+      {% else %}
+        <a href="{% url 'laboratory:order_detail' order.pk %}" class="btn btn-ghost btn-sm">View</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+
+  <div class="lab-pager">
+    <span>Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+    {% if page_obj.has_other_pages %}
+    <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+      {% if page_obj.has_previous %}
+      <a class="btn btn-ghost btn-sm" href="{% querystring page=page_obj.previous_page_number %}"
+         hx-get="{% querystring page=page_obj.previous_page_number %}" hx-target="#lab-results" hx-push-url="true">← Prev</a>
+      {% endif %}
+      {% for n in page_range %}
+        {% if n == page_obj.paginator.ELLIPSIS %}<span style="padding:0 4px">…</span>
+        {% elif n == page_obj.number %}<span class="chip on">{{ n }}</span>
+        {% else %}<a class="chip" href="{% querystring page=n %}" hx-get="{% querystring page=n %}" hx-target="#lab-results" hx-push-url="true">{{ n }}</a>{% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a class="btn btn-ghost btn-sm" href="{% querystring page=page_obj.next_page_number %}"
+         hx-get="{% querystring page=page_obj.next_page_number %}" hx-target="#lab-results" hx-push-url="true">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+{% else %}
+  <div style="text-align:center;padding:60px 20px;color:var(--text-3)">
+    <i class="bi {% if query %}bi-search{% else %}bi-check-circle{% endif %}" style="font-size:40px;display:block;margin-bottom:12px;opacity:.2"></i>
+    {% if query %}
+      No {{ tab_label|lower }} requests match “{{ query }}”.
+      {% if tab != 'all' %}<a href="{% querystring status='all' page=None %}" hx-get="{% querystring status='all' page=None %}" hx-target="#lab-results" hx-push-url="true" style="color:var(--sage-primary)">Search all statuses</a>{% endif %}
+    {% elif tab == 'active' %}
+      Worklist is clear — no active lab orders.
+    {% else %}
+      No {{ tab_label|lower }} lab orders{% if panel_filter %} in {{ panel_filter }}{% endif %}.
+    {% endif %}
+  </div>
+{% endif %}

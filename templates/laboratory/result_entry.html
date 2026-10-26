@@ -37,7 +37,7 @@
     </p>
   </div>
   <div class="page-actions">
-    <a href="{% url 'laboratory:worklist' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Worklist</a>
+    <a href="{{ next }}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i>Worklist</a>
   </div>
 </div>
 
@@ -184,7 +184,7 @@
       </div>
 
       <div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);justify-content:flex-end">
-        <a href="{% url 'laboratory:worklist' %}" class="btn btn-ghost">Cancel</a>
+        <a href="{{ next }}" class="btn btn-ghost">Cancel</a>
         <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i>Save Result</button>
       </div>
     </form>

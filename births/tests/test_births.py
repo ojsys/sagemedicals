@@ -100,6 +100,26 @@ def test_certificate_survives_very_long_names(mother):
 # ── Access ────────────────────────────────────────────────────
 
 @pytest.mark.django_db
+def test_every_staff_role_can_register_births(client, mother):
+    from accounts.models import Role, User
+    from births.models import BirthRecord
+    staff_roles = [r for r in Role if r != Role.PATIENT]
+    for i, role in enumerate(staff_roles):
+        user = User.objects.create_user(email=f"staff{i}@test.ng", password="x", role=role)
+        client.force_login(user)
+        assert client.get(reverse("births:list")).status_code == 200, role
+        assert reverse("births:list") in client.get(reverse("core:dashboard")).content.decode(), role
+        resp = client.post(reverse("births:create"), {
+            "mother": mother.pk,
+            "child_first_name": f"Baby{i}", "child_surname": "Okafor", "sex": "F",
+            "date_of_birth": timezone.localdate().isoformat(), "time_of_birth": "10:00",
+            "weight_kg": "3.1", "birth_order": 1, "babies_in_delivery": 1,
+        })
+        assert resp.status_code == 302, role
+    assert BirthRecord.objects.count() == len(staff_roles)
+
+
+@pytest.mark.django_db
 def test_patient_role_cannot_access_register(client, portal_user, mother):
     record = _record(mother)
     client.force_login(portal_user)

@@ -269,6 +269,9 @@ class DashboardView(AccessMixin, View):
     # ── Laboratory (lab scientists / radiologists) ──
     def _lab_context(self, request):
         from laboratory.models import LabOrder
+        from laboratory.services import expire_stale_orders
+
+        expire_stale_orders()
         S = LabOrder.Status
         today = date.today()
 

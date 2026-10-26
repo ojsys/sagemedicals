@@ -116,6 +116,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f"Dr. {name}" if self.is_doctor else name
 
     @property
+    def is_hospital_staff(self):
+        """True for every staff role — anyone who isn't a patient-portal account."""
+        return bool(self.is_superuser or (self.role and self.role != Role.PATIENT))
+
+    @property
     def can_manage_staff(self):
         """True for the platform Super Admin or any user granted Lead Doctor rights."""
         return bool(

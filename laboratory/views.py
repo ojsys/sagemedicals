@@ -1,15 +1,25 @@
+from datetime import timedelta
+
 from django import forms as django_forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Case, Count, Q, When
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.defaultfilters import pluralize
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 
 from core.forms import SmartSelectMixin
 from encounters.models import Encounter
 from laboratory.models import LabOrder, LabResult, LabTest
+from laboratory.services import cancel_order, remove_lab_invoice_item
+from patients.models import Patient
 
 
 class LabOrderForm(SmartSelectMixin, django_forms.ModelForm):
@@ -99,63 +109,197 @@ class LabOrderCreateView(View):
         return redirect("encounters:workspace", pk=encounter_pk)
 
 
+WORKLIST_PAGE_SIZE = 25
+
+_S = LabOrder.Status
+# Worklist tabs: key -> (label, statuses). "critical" is result-based and handled separately.
+WORKLIST_TABS = {
+    "active": ("Active", [_S.ORDERED, _S.SAMPLE_COLLECTED, _S.IN_PROGRESS, _S.RESULTED, _S.VERIFIED]),
+    "pending": ("Pending Collection", [_S.ORDERED]),
+    "in_progress": ("In Progress", [_S.SAMPLE_COLLECTED, _S.IN_PROGRESS]),
+    "awaiting_verify": ("Awaiting Verify", [_S.RESULTED]),
+    "critical": ("Critical", None),
+    "released": ("Released", [_S.VERIFIED, _S.RELEASED]),
+    "cancelled": ("Cancelled / Expired", [_S.CANCELLED, _S.REJECTED]),
+    "all": ("All", None),
+}
+# Tabs that are queues to work through: urgent first, then oldest first.
+QUEUE_TABS = {"active", "pending", "in_progress", "awaiting_verify", "critical"}
+UNACKED_CRITICAL = Q(result__is_critical=True, result__critical_acknowledged_at__isnull=True)
+PERIODS = {"today": 0, "7d": 7, "30d": 30}
+
+
+def _safe_next(request, default="laboratory:worklist"):
+    """Where to send the user after an action — back to their filtered worklist if given."""
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
+    if next_url and url_has_allowed_host_and_scheme(next_url, {request.get_host()}, request.is_secure()):
+        return next_url
+    return reverse(default)
+
+
+def _search_orders(qs, query):
+    """Every word must match the patient's name/number, the barcode or the test."""
+    for term in query.split():
+        qs = qs.filter(
+            Q(patient__first_name__icontains=term)
+            | Q(patient__last_name__icontains=term)
+            | Q(patient__hospital_number__icontains=term)
+            | Q(barcode__icontains=term)
+            | Q(test__name__icontains=term)
+            | Q(test__code__icontains=term)
+        )
+    return qs
+
+
 @method_decorator(login_required, name="dispatch")
 class LabWorklistView(View):
     template_name = "laboratory/worklist.html"
+    partial_template = "laboratory/partials/worklist_results.html"
 
     def get(self, request):
+        from laboratory.services import LAB_ORDER_EXPIRY_HOURS, expire_stale_orders
+
+        expire_stale_orders()
+
+        query = request.GET.get("q", "").strip()
         panel_filter = request.GET.get("panel", "")
         priority_filter = request.GET.get("priority", "")
+        period = request.GET.get("period", "")
         patient_pk = request.GET.get("patient")
+        status = request.GET.get("status", "")
+        if status not in WORKLIST_TABS:
+            status = ""
+        # Searching or viewing one patient means "find their requests" — look across every status.
+        tab = status or ("all" if query or patient_pk else "active")
 
-        active_qs = LabOrder.objects.select_related(
-            "patient", "test", "ordering_clinician", "result"
-        )
-
+        qs = LabOrder.objects.select_related("patient", "test", "ordering_clinician", "result")
+        patient = None
         if patient_pk:
-            # Viewing one patient = full lab history (include released/cancelled).
-            active_qs = active_qs.filter(patient_id=patient_pk)
-        else:
-            # General worklist = only orders that still need action.
-            active_qs = active_qs.exclude(
-                status__in=[LabOrder.Status.RELEASED, LabOrder.Status.CANCELLED]
-            )
+            patient = get_object_or_404(Patient, pk=patient_pk)
+            qs = qs.filter(patient=patient)
+        if query:
+            qs = _search_orders(qs, query)
         if panel_filter:
-            active_qs = active_qs.filter(test__panel=panel_filter)
+            qs = qs.filter(test__panel=panel_filter)
         if priority_filter:
-            active_qs = active_qs.filter(priority=priority_filter)
+            qs = qs.filter(priority=priority_filter)
+        if period in PERIODS:
+            since = timezone.localdate() - timedelta(days=PERIODS[period])
+            qs = qs.filter(created_at__date__gte=since)
 
-        # stat priority: STAT first, then urgent, then routine; within each by age
-        priority_order = {"stat": 0, "urgent": 1, "routine": 2}
-        orders = sorted(active_qs, key=lambda o: (priority_order.get(o.priority, 3), o.created_at))
+        # Tab counts reflect the current search/filters so it is obvious where matches live.
+        counts = qs.aggregate(**{
+            key: Count("pk", filter=UNACKED_CRITICAL if key == "critical" else Q(status__in=statuses))
+            for key, (_, statuses) in WORKLIST_TABS.items() if key != "all"
+        }, all=Count("pk"))
+        tabs = [
+            {"key": key, "label": label, "count": counts[key]}
+            for key, (label, _) in WORKLIST_TABS.items()
+        ]
 
-        # Stats across ALL active (unfiltered for accuracy)
-        all_active = LabOrder.objects.exclude(status__in=[LabOrder.Status.RELEASED, LabOrder.Status.CANCELLED])
-        stats = {
-            "pending_collection": all_active.filter(status=LabOrder.Status.ORDERED).count(),
-            "in_progress": all_active.filter(status__in=[
-                LabOrder.Status.SAMPLE_COLLECTED, LabOrder.Status.IN_PROGRESS
-            ]).count(),
-            "awaiting_verify": all_active.filter(status=LabOrder.Status.RESULTED).count(),
-            "critical": all_active.filter(result__is_critical=True).exclude(
-                result__critical_acknowledged_at__isnull=False
-            ).count(),
+        if tab == "critical":
+            qs = qs.filter(UNACKED_CRITICAL)
+        elif WORKLIST_TABS[tab][1]:
+            qs = qs.filter(status__in=WORKLIST_TABS[tab][1])
+
+        if tab in QUEUE_TABS:
+            qs = qs.annotate(priority_rank=Case(
+                When(priority=LabOrder.Priority.STAT, then=0),
+                When(priority=LabOrder.Priority.URGENT, then=1),
+                default=2,
+            )).order_by("priority_rank", "created_at")
+        else:
+            qs = qs.order_by("-created_at")
+
+        page = Paginator(qs, WORKLIST_PAGE_SIZE).get_page(request.GET.get("page", 1))
+
+        now = timezone.now()
+        for order in page:
+            age_hours = (now - order.created_at).total_seconds() / 3600
+            if order.status == LabOrder.Status.ORDERED:
+                order.expires_in_hours = max(0, int(LAB_ORDER_EXPIRY_HOURS - age_hours))
+            order.is_overdue = (
+                order.status in (_S.SAMPLE_COLLECTED, _S.IN_PROGRESS, _S.RESULTED)
+                and age_hours > order.test.turnaround_hours
+            )
+
+        ctx = {
+            "page_obj": page,
+            "orders": page.object_list,
+            "tabs": tabs,
+            "tab": tab,
+            "tab_label": WORKLIST_TABS[tab][0],
+            "status": status,
+            "query": query,
+            "patient": patient,
+            "panel_filter": panel_filter,
+            "priority_filter": priority_filter,
+            "period": period,
+            "expiry_hours": LAB_ORDER_EXPIRY_HOURS,
+            "bulk_actionable": tab not in ("released", "cancelled"),
+            "page_range": page.paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
+            "return_url": request.get_full_path(),
+            "today": timezone.localdate(),
+            "is_htmx": bool(request.headers.get("HX-Request")),
         }
+        if ctx["is_htmx"]:
+            return render(request, self.partial_template, ctx)
 
-        panels = (
-            LabTest.objects.filter(is_active=True)
+        all_active = LabOrder.objects.filter(status__in=WORKLIST_TABS["active"][1])
+        ctx["stats"] = {
+            "pending_collection": all_active.filter(status=_S.ORDERED).count(),
+            "in_progress": all_active.filter(status__in=WORKLIST_TABS["in_progress"][1]).count(),
+            "awaiting_verify": all_active.filter(status=_S.RESULTED).count(),
+            "critical": LabOrder.objects.filter(UNACKED_CRITICAL).count(),
+        }
+        ctx["panels"] = (
+            LabTest.objects.exclude(panel="")
             .values_list("panel", flat=True)
             .distinct()
             .order_by("panel")
         )
+        return render(request, self.template_name, ctx)
 
-        return render(request, self.template_name, {
-            "orders": orders,
-            "stats": stats,
-            "panels": panels,
-            "panel_filter": panel_filter,
-            "priority_filter": priority_filter,
-        })
+
+@method_decorator(login_required, name="dispatch")
+class LabBulkActionView(View):
+    """Collect samples for, or cancel, several selected worklist orders at once."""
+
+    def post(self, request):
+        action = request.POST.get("action")
+        ids = [i for i in request.POST.getlist("orders") if i.isdigit()]
+        next_url = _safe_next(request)
+
+        if not ids:
+            messages.error(request, "Select at least one order first.")
+            return redirect(next_url)
+
+        orders = LabOrder.objects.filter(pk__in=ids).select_related("test")
+        if action == "collect":
+            done = 0
+            for order in orders.filter(status=_S.ORDERED):
+                order.status = _S.SAMPLE_COLLECTED
+                order.collected_at = timezone.now()
+                order.collected_by = request.user
+                order._current_user = request.user
+                order.save(update_fields=["status", "collected_at", "collected_by"])
+                done += 1
+            skipped = len(ids) - done
+            messages.success(request, f"Marked {done} sample{pluralize(done)} collected."
+                             + (f" {skipped} skipped (not pending collection)." if skipped else ""))
+        elif action == "cancel":
+            reason = request.POST.get("reason", "").strip() or "Cancelled from worklist"
+            done = 0
+            for order in orders.exclude(status__in=[_S.RELEASED, _S.VERIFIED, _S.CANCELLED]):
+                with transaction.atomic():
+                    cancel_order(order, f"{reason} — {request.user.get_full_name() or request.user}", request.user)
+                done += 1
+            skipped = len(ids) - done
+            messages.success(request, f"Cancelled {done} order{pluralize(done)} and removed unpaid billing lines."
+                             + (f" {skipped} skipped (already released or cancelled)." if skipped else ""))
+        else:
+            messages.error(request, "Unknown bulk action.")
+        return redirect(next_url)
 
 
 @method_decorator(login_required, name="dispatch")
@@ -168,6 +312,7 @@ class LabResultEntryView(View):
         return render(request, self.template_name, {
             "order": order,
             "form": LabResultForm(instance=result),
+            "next": _safe_next(request),
         })
 
     def post(self, request, pk):
@@ -183,8 +328,8 @@ class LabResultEntryView(View):
             order.status = LabOrder.Status.RESULTED
             order.save(update_fields=["status"])
             messages.success(request, "Result saved.")
-            return redirect("laboratory:worklist")
-        return render(request, self.template_name, {"order": order, "form": form})
+            return redirect(_safe_next(request))
+        return render(request, self.template_name, {"order": order, "form": form, "next": _safe_next(request)})
 
 
 @method_decorator(login_required, name="dispatch")
@@ -202,7 +347,7 @@ class LabResultVerifyView(View):
         if result.is_critical:
             pass
         messages.success(request, "Result verified and released to clinician.")
-        return redirect("laboratory:worklist")
+        return redirect(_safe_next(request))
 
 
 @method_decorator(login_required, name="dispatch")
@@ -215,7 +360,7 @@ class SampleCollectView(View):
         order._current_user = request.user
         order.save(update_fields=["status", "collected_at", "collected_by"])
         messages.success(request, f"Sample collected for {order.test.name} — {order.patient.full_name}.")
-        return redirect("laboratory:worklist")
+        return redirect(_safe_next(request))
 
 
 @method_decorator(login_required, name="dispatch")
@@ -339,22 +484,6 @@ class LabTestToggleView(View):
         return redirect("laboratory:test_catalogue")
 
 
-def _remove_lab_invoice_item(order):
-    """Best-effort: drop the matching InvoiceItem this lab order added (description-based match)."""
-    if not order.encounter_id:
-        return
-    from billing.models import Invoice, InvoiceItem
-    invoices = Invoice.objects.filter(encounter_id=order.encounter_id).exclude(status=Invoice.Status.PAID)
-    for inv in invoices:
-        item = InvoiceItem.objects.filter(
-            invoice=inv, description=f"Lab: {order.test.name}"
-        ).order_by("-created_at").first()
-        if item:
-            item.delete()
-            inv.recalculate()
-            return
-
-
 @method_decorator(login_required, name="dispatch")
 class LabOrderCancelView(View):
     """Cancel a lab order that hasn't been released yet and remove its billing line."""
@@ -364,10 +493,8 @@ class LabOrderCancelView(View):
         if order.status in (LabOrder.Status.RELEASED, LabOrder.Status.VERIFIED):
             messages.error(request, "Cannot cancel a released or verified order.")
             return redirect("laboratory:order_detail", pk=pk)
-        order.status = LabOrder.Status.CANCELLED
-        order._current_user = request.user
-        order.save(update_fields=["status"])
-        _remove_lab_invoice_item(order)
+        reason = request.POST.get("reason", "").strip() or "Cancelled"
+        cancel_order(order, f"{reason} — {request.user.get_full_name() or request.user}", request.user)
         messages.success(request, f"Lab order for {order.test.name} cancelled and billing line removed.")
         return redirect("laboratory:order_detail", pk=pk)
 
@@ -382,7 +509,7 @@ class LabOrderDeleteView(View):
             messages.error(request, "Only cancelled orders can be deleted.")
             return redirect("laboratory:order_detail", pk=pk)
         # Belt and braces — remove any lingering billing item too.
-        _remove_lab_invoice_item(order)
+        remove_lab_invoice_item(order)
         label = order.test.name
         encounter_pk = order.encounter_id
         order.delete()
